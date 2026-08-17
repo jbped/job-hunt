@@ -60,6 +60,9 @@ everything else interprets it.
 
 - [vault-schema.md](references/vault-schema.md) — creating, moving, or
   reorganising notes; frontmatter shapes.
+- [evidence-interview.md](references/evidence-interview.md) — capturing career
+  evidence by interview: the question dimensions, batch protocol, and how
+  answers are filed.
 - [application-tracking.md](references/application-tracking.md) — applications,
   discovery, compensation, contacts, interviews, level synthesis.
 - [writing-standards.md](references/writing-standards.md) — any copy that will
@@ -110,17 +113,22 @@ Ask in small batches. A long questionnaire gets abandoned.
 
 ## Capture career evidence
 
+Evidence is captured by structured interview — the full protocol is
+[evidence-interview.md](references/evidence-interview.md). The shape of it:
+
 1. Read the role note and any linked accomplishments first.
-2. Separate context, contribution, collaboration, decisions, adoption, impact,
-   and learning — these get conflated, and untangling them later is hard.
-3. Ask a small batch of high-value questions. Accept `unknown`.
-4. Record each metric's type and source, including the denominator and period.
-   A percentage without its population is incomplete evidence.
-5. Record ownership precisely: sole, shared, supporting, team size, cross-team.
-6. Preserve limitations, failed hypotheses, and setbacks. They are the best
-   interview material and they vanish if not written down early.
-7. Update one canonical accomplishment note; link it from the role.
-8. Index anything still unresolved in `Working Notes/Open Questions.md`.
+2. Keep open questions in the note's `## Questions` section, grouped by the
+   interview dimensions (context, contribution, collaboration, decisions,
+   adoption, impact, learning, publication).
+3. Ask in batches of three to five, highest resume leverage first. Accept
+   `unknown` and record it where the fact would live.
+4. Chase every metric to its class, source, denominator, and period, and every
+   ownership word to sole, shared, primary, or supporting.
+5. File answers into the note body or frontmatter and delete the question;
+   never answer inline. Promote status only when the evidence supports it.
+6. Update one canonical accomplishment note; link it from the role.
+7. Index anything still unresolved in `Working Notes/Open Questions.md` by
+   linking the note's Questions section, not restating it.
 
 ## Create or update an application
 

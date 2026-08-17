@@ -51,7 +51,7 @@ in one place; only entries whose audience is `application` or `public` are
 printed — `recruiter` details are for conversation, never for artifacts.
 
 To change the visual design, edit the definitions at the top of
-`Templates/PDF/*.ps`. Avoid adding fixed-position drawing commands after them;
+the skill's `assets/templates/PDF/*.ps`. Avoid adding fixed-position drawing commands after them;
 hardcoded coordinates are what made the old manual reflow necessary.
 
 ## Resume selection

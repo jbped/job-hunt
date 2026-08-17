@@ -3,7 +3,7 @@
 
 Replaces the manual PostScript reflow the old generation guide described. The
 visual identity — colours, fonts, icons, the blue rule — comes from the existing
-`Templates/PDF/*.ps` prologue unchanged. What this script computes is the part a
+skill's `assets/templates/PDF/*.ps` prologue unchanged. What this script computes is the part a
 human should never have to: measuring each line against the real font metrics,
 wrapping it, and stacking the vertical positions.
 
@@ -654,9 +654,9 @@ def render(vault: Path, folder: Path, kind: str, pages: int = 1,
     source = folder / source_name
     if not source.exists():
         raise SystemExit(f"No {source_name} in {folder.relative_to(vault)}")
-    template = vault / "Templates" / template_name
+    template = v.TEMPLATES_DIR / template_name
     if not template.exists():
-        raise SystemExit(f"Missing template: Templates/{template_name}")
+        raise SystemExit(f"Missing skill template: {template}")
 
     for tool in ("ps2pdf", "pdfinfo", "pdftotext", "pdffonts"):
         if shutil.which(tool) is None:

@@ -29,6 +29,7 @@ the two, and nothing personal is ever committed here.
   references/         schema, tracking rules, writing standards
   assets/
     vault-template/   an empty vault to start from
+    templates/        the note scaffolds the scripts create from
     ui/               the local dashboard
 .env                  points at your vault (gitignored; see .env.example)
 ```
@@ -42,7 +43,6 @@ Applications/           one folder per application: posting, analysis, artifacts
 People/                 one note per person: contacts, referrals, references
 Resources/              ingested source documents (old resumes, diplomas)
 Working Notes/          open questions, generated skill matrix and field reference
-Templates/              the scaffolds everything is created from
 ```
 
 The skill lives at `.agents/skills/` (the cross-agent standard location);
@@ -109,7 +109,8 @@ python $s/export_index.py --write-skill-matrix   # skills -> evidence map
   belong on a resume.
 - Contact details carry an audience level (`self | application | recruiter |
   public`); anything marked `self` never leaves the vault.
-- Every script has a hand-editable fallback. Copy a template and the whole
+- Every script has a hand-editable fallback. Copy a note from
+  `assets/templates/` and the whole
   workflow still works.
 - The dashboard binds `127.0.0.1` only, and writes additionally require the
   per-session token the served page carries — a browser tab on another site

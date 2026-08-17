@@ -16,8 +16,7 @@ tags:
 
 ## Career evidence
 
-No roles recorded yet. Ask your agent to interview you about your most recent job,
-or create a note from [[Templates/Accomplishment]].
+No roles recorded yet. Ask your agent to interview you about your most recent job.
 
 - [[Career Evidence.base]]
 

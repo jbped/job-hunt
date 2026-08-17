@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Scaffold an application folder from the vault templates.
+"""Scaffold an application folder from the skill's templates.
 
 Deterministic on purpose: the CLI and the web UI both call this, so an
 application created either way has identical structure and prefilled fields.
@@ -46,7 +46,7 @@ def safe_name(value: str) -> str:
 def create(vault: Path, company: str, position: str, *, url: str = "",
            discovery: str = "", detail: str = "", source: str = "",
            today: str | None = None) -> Path:
-    templates = vault / "Templates"
+    templates = v.TEMPLATES_DIR
     company_dir, position_dir = safe_name(company), safe_name(position)
     if not company_dir or not position_dir:
         raise SystemExit(

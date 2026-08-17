@@ -36,8 +36,6 @@ VAULT_ROOT/
 ├── Working Notes/
 │   ├── Open Questions.md
 │   └── Field Reference.md         (generated from scripts/schema.py)
-├── Templates/
-│   └── PDF/
 └── .cache/                        (derived; safe to delete)
 ```
 
@@ -61,7 +59,8 @@ whose provenance lines point back at it, and never edit an ingested document.
   that application's folder.
 - `Application Brief.md` is hand-maintained: update fields, never restructure.
 - `Analysis.md` is agent-generated: rewrite it freely.
-- Templates are scaffolds, never the only copy of a submitted artifact.
+- Templates ship with the skill (`assets/templates/`), not the vault; a
+  submitted artifact is never a template's only copy.
 - `.cache/` is derived. `export_index.py` rebuilds it and nothing reads it as truth.
 
 ## Frontmatter

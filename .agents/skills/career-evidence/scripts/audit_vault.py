@@ -30,7 +30,6 @@ REQUIRED_ROOT = [
     "People",
     "Resources",
     "Working Notes",
-    "Templates",
 ]
 
 APPLICATION_FILES = [
@@ -42,21 +41,18 @@ APPLICATION_FILES = [
     "Submission Notes.md",
 ]
 
+# Templates ship with the skill, not the vault; this guards the checkout itself.
 TEMPLATES = [
     "Application Brief.md",
     "Analysis.md",
-    "Accomplishment.md",
-    "Role.md",
     "Job Description.md",
     "Contacts.md",
     "Interviews.md",
-    "Person.md",
     "Resume Content.md",
     "Cover Letter.md",
     "Submission Notes.md",
     "PDF/Resume - Figma Inspired.ps",
     "PDF/Cover Letter - Figma Inspired.ps",
-    "PDF/Generation Guide.md",
 ]
 
 # Folders under Applications/ that are not real applications and are exempt from
@@ -184,8 +180,8 @@ def audit(vault: Path, check_wikilinks: bool = True) -> Report:
             report.error(f"missing root item: {relative}")
 
     for relative in TEMPLATES:
-        if not (vault / "Templates" / relative).exists():
-            report.error(f"missing template: Templates/{relative}")
+        if not (v.TEMPLATES_DIR / relative).exists():
+            report.error(f"missing skill template: assets/templates/{relative}")
 
     applications = vault / "Applications"
     if applications.is_dir():

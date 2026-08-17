@@ -30,7 +30,6 @@ DIRECTORIES = [
     "Career Evidence/Accomplishments",
     "People",
     "Resources",
-    "Templates/PDF",
     "Working Notes",
 ]
 

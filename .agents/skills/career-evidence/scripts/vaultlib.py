@@ -31,6 +31,7 @@ FRONTMATTER_FENCE = "---"
 # --------------------------------------------------------------------------
 
 SKILL_ROOT = Path(__file__).resolve().parent.parent
+TEMPLATES_DIR = SKILL_ROOT / "assets" / "templates"
 ENV_VAR = "CAREER_EVIDENCE_VAULT"
 
 

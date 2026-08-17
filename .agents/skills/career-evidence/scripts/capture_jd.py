@@ -51,7 +51,7 @@ def capture(note: Path, posting: str, *, source_url: str = "", source_kind: str 
         raise SystemExit(
             f"{note.name} has no '## Verbatim posting' block delimited by "
             "<!-- verbatim-start --> and <!-- verbatim-end -->.\n"
-            "Recreate it from Templates/Job Description.md."
+            "Recreate it from the skill's assets/templates/Job Description.md."
         )
 
     existing = match.group(2)

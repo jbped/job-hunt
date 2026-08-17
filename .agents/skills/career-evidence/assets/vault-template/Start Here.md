@@ -34,7 +34,6 @@ brief is not, so the agent leaves it alone.
 | `Personal Information/` | Contact details and audiences, education, self-knowledge |
 | `Resources/` | Source documents: old resumes, diplomas, certificates |
 | `Working Notes/` | Scratch, open questions, field vocabulary |
-| `Templates/` | The scaffolds everything is created from |
 
 A referral is not a reference. Someone who forwards your resume is a contact;
 someone who agreed to vouch for you when asked is a reference. Both live on the

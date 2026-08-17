@@ -156,11 +156,25 @@ def check_job_description(report: Report, note: Path, vault: Path, fm: dict, tex
         )
 
 
+def _without_entry_format(text: str) -> str:
+    """Drop `## Entry format` sections — self-documentation, not content.
+
+    Their example headings (like `## [[People/Full Name]]`) are illustrations,
+    so links inside them must not count as orphans. The section runs to the end
+    of the note by contract — the tools insert new entries above it, so nothing
+    real can follow it.
+    """
+    lines = text.split("\n")
+    stop = next((i for i, line in enumerate(lines)
+                 if line.strip().lower() == "## entry format"), len(lines))
+    return "\n".join(lines[:stop])
+
+
 def check_links(report: Report, note: Path, vault: Path, text: str) -> None:
     """Flag wikilinks that resolve to nothing, since Obsidian shows them as normal text."""
     stems = {p.stem for p in vault.rglob("*.md")}
     names = {p.name for p in vault.rglob("*") if p.is_file()}
-    for target in WIKILINK.findall(text):
+    for target in WIKILINK.findall(_without_entry_format(text)):
         target = target.strip()
         if not target:
             continue

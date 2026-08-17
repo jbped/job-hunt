@@ -1,0 +1,39 @@
+name: Release skill zip
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run safety tests
+        working-directory: .agents/skills/career-evidence/scripts
+        run: python3 test_safety.py
+
+      - name: Build skill zip
+        working-directory: .agents/skills/career-evidence/scripts
+        run: python3 package_skill.py
+
+      - name: Attach zip to release
+        if: startsWith(github.ref, 'refs/tags/')
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" dist/career-evidence-skill.zip \
+            --generate-notes || \
+          gh release upload "$GITHUB_REF_NAME" dist/career-evidence-skill.zip --clobber
+
+      - name: Upload build artifact
+        if: "!startsWith(github.ref, 'refs/tags/')"
+        uses: actions/upload-artifact@v4
+        with:
+          name: career-evidence-skill
+          path: dist/career-evidence-skill.zip

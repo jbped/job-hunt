@@ -49,14 +49,29 @@ The skill lives at `.agents/skills/` (the cross-agent standard location);
 `.claude/skills/career-evidence` is a symlink to it, so opening this repo in
 Claude Code loads it automatically. Nothing needs installing.
 
+## Getting it
+
+Two ways in, same skill either way:
+
+- **Clone the repo** (recommended). Open it in Claude Code and the skill loads
+  automatically; you also get the git history and can pull updates.
+- **Download the zip** from the [Releases page](../../releases) — unzip it into
+  your agent's skills directory (for Claude Code, `~/.claude/skills/`), which
+  makes the skill available in every project. It carries everything: scripts,
+  references, the vault template, and the dashboard.
+
+The zip is built by `scripts/package_skill.py`, so you can also produce one
+yourself from a checkout.
+
 ## Setup
 
 ```fish
 cp .env.example .env
 ```
 
-Then edit `.env` so `CAREER_EVIDENCE_VAULT` points at your vault. If you do not
-have one yet:
+Then edit `.env` so `CAREER_EVIDENCE_VAULT` points at your vault. (Zip install:
+create the `.env` inside the unzipped `career-evidence/` folder, next to
+`SKILL.md` — the scripts look there first.) If you do not have a vault yet:
 
 ```fish
 python .agents/skills/career-evidence/scripts/init_vault.py ~/Documents/Obsidian/job-hunt

@@ -5,7 +5,7 @@ role:
 status: draft
 ownership:
 team:
-technologies: []
+skills: []
 themes: []
 tags:
   - accomplishment

@@ -209,7 +209,7 @@ def build(vault: Path) -> dict:
                 "company": fm.get("company"),
                 "role": fm.get("role") or fm.get("title"),
                 "status": fm.get("status"),
-                "technologies": fm.get("technologies") or [],
+                "skills": fm.get("skills") or fm.get("technologies") or [],
                 "themes": fm.get("themes") or [],
                 "path": str(note.relative_to(vault)),
             })
@@ -228,17 +228,17 @@ def build(vault: Path) -> dict:
 
 
 def _skills(evidence: list[dict]) -> dict:
-    """Associate each technology with the evidence notes that support it.
+    """Associate each skill with the evidence notes that support it.
 
-    Derived entirely from `technologies:` frontmatter, so a skill with no
-    entry here has no evidence behind it — which is exactly what a resume
-    audit needs to know. Casing differences collapse to the first spelling
-    seen so 'GitHub' and 'Github' cannot fork into two skills.
+    Derived entirely from `skills:` frontmatter, so a skill with no entry
+    here has no evidence behind it — which is exactly what a resume audit
+    needs to know. Casing differences collapse to the first spelling seen
+    so 'GitHub' and 'Github' cannot fork into two skills.
     """
     canonical: dict[str, str] = {}
     out: dict[str, list[dict]] = {}
     for entry in evidence:
-        for tech in entry["technologies"]:
+        for tech in entry["skills"]:
             name = canonical.setdefault(str(tech).strip().lower(), str(tech).strip())
             out.setdefault(name, []).append({
                 "kind": entry["kind"],
@@ -250,13 +250,13 @@ def _skills(evidence: list[dict]) -> dict:
 
 
 def skill_matrix_markdown(vault: Path) -> str:
-    """Render the technology -> evidence association as an Obsidian note."""
+    """Render the skill -> evidence association as an Obsidian note."""
     skills = _skills(build(vault)["evidence"])
     out = [
         "# Skill Matrix\n\n",
-        "Generated from `technologies:` frontmatter across `Career Evidence/` — do not\n",
+        "Generated from `skills:` frontmatter across `Career Evidence/` — do not\n",
         "edit by hand; regenerate with `python scripts/export_index.py --write-skill-matrix`.\n\n",
-        "A technology listed on a resume but absent here has no evidence behind it.\n\n",
+        "A skill listed on a resume but absent here has no evidence behind it.\n\n",
     ]
     for name, entries in skills.items():
         out.append(f"## {name}\n\n")

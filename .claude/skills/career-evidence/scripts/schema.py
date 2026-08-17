@@ -153,11 +153,11 @@ NOTE_TYPES = {
     },
     "role": {
         "required": ["type", "company", "title", "status"],
-        "optional": ["start", "end", "team", "technologies", "tags"],
+        "optional": ["start", "end", "team", "skills", "tags"],
     },
     "accomplishment": {
         "required": ["type", "company", "status"],
-        "optional": ["role", "ownership", "team", "technologies", "themes", "tags"],
+        "optional": ["role", "ownership", "team", "skills", "themes", "tags"],
     },
     # One note per person. Referral and reference are relationships this person
     # holds, not separate note types; `applications` records their involvement

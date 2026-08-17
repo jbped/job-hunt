@@ -816,7 +816,7 @@ function renderEvidence() {
   }
   const skills = Object.entries(DATA.skills || {});
   if (skills.length) {
-    host.append(el("h2", {}, "Technical skills"));
+    host.append(el("h2", {}, "Skills"));
     const card = el("div", { className: "card stack" });
     for (const [name, entries] of skills) {
       card.append(el("div", { className: "row" },

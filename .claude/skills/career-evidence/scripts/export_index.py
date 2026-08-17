@@ -223,7 +223,48 @@ def build(vault: Path) -> dict:
         "interviews": interviews,
         "people": people,
         "evidence": evidence,
+        "skills": _skills(evidence),
     }
+
+
+def _skills(evidence: list[dict]) -> dict:
+    """Associate each technology with the evidence notes that support it.
+
+    Derived entirely from `technologies:` frontmatter, so a skill with no
+    entry here has no evidence behind it — which is exactly what a resume
+    audit needs to know. Casing differences collapse to the first spelling
+    seen so 'GitHub' and 'Github' cannot fork into two skills.
+    """
+    canonical: dict[str, str] = {}
+    out: dict[str, list[dict]] = {}
+    for entry in evidence:
+        for tech in entry["technologies"]:
+            name = canonical.setdefault(str(tech).strip().lower(), str(tech).strip())
+            out.setdefault(name, []).append({
+                "kind": entry["kind"],
+                "title": entry["title"],
+                "company": entry["company"],
+                "path": entry["path"],
+            })
+    return dict(sorted(out.items(), key=lambda kv: kv[0].lower()))
+
+
+def skill_matrix_markdown(vault: Path) -> str:
+    """Render the technology -> evidence association as an Obsidian note."""
+    skills = _skills(build(vault)["evidence"])
+    out = [
+        "# Skill Matrix\n\n",
+        "Generated from `technologies:` frontmatter across `Career Evidence/` — do not\n",
+        "edit by hand; regenerate with `python scripts/export_index.py --write-skill-matrix`.\n\n",
+        "A technology listed on a resume but absent here has no evidence behind it.\n\n",
+    ]
+    for name, entries in skills.items():
+        out.append(f"## {name}\n\n")
+        for e in entries:
+            label = "role" if e["kind"] == "role" else e["company"] or "accomplishment"
+            out.append(f"- [[{e['path'][:-3]}|{e['title']}]] ({label})\n")
+        out.append("\n")
+    return "".join(out)
 
 
 def write(vault: Path) -> Path:
@@ -239,6 +280,8 @@ def main() -> int:
     ap.add_argument("--stdout", action="store_true", help="print instead of writing .cache/")
     ap.add_argument("--write-field-reference", action="store_true",
                     help="regenerate Working Notes/Field Reference.md from schema.py")
+    ap.add_argument("--write-skill-matrix", action="store_true",
+                    help="regenerate Working Notes/Skill Matrix.md from evidence frontmatter")
     args = ap.parse_args()
 
     vault = v.require_vault(args.vault)
@@ -247,6 +290,12 @@ def main() -> int:
         target = vault / "Working Notes" / "Field Reference.md"
         target.parent.mkdir(parents=True, exist_ok=True)
         target.write_text(schema.field_reference_markdown(), encoding="utf-8")
+        print(f"wrote {target.relative_to(vault)}")
+
+    if args.write_skill_matrix:
+        target = vault / "Working Notes" / "Skill Matrix.md"
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_text(skill_matrix_markdown(vault), encoding="utf-8")
         print(f"wrote {target.relative_to(vault)}")
 
     if args.stdout:

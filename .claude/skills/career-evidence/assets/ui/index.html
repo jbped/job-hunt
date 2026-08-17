@@ -814,6 +814,20 @@ function renderEvidence() {
     }
     host.append(card);
   }
+  const skills = Object.entries(DATA.skills || {});
+  if (skills.length) {
+    host.append(el("h2", {}, "Technical skills"));
+    const card = el("div", { className: "card stack" });
+    for (const [name, entries] of skills) {
+      card.append(el("div", { className: "row" },
+        el("span", { className: "title", style: "min-width:10rem" }, name),
+        el("span", { className: "muted grow" },
+           entries.map(e => e.title).join(" · "))));
+    }
+    card.append(el("div", { className: "muted" },
+      "Derived from evidence frontmatter — a skill not listed here has no evidence behind it."));
+    host.append(card);
+  }
 }
 
 // -- entry point from other views ----------------------------------------

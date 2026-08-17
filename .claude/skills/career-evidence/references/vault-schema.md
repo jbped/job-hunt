@@ -79,8 +79,15 @@ start:
 end:
 status: needs-interview | source-verified | documented
 team:
+technologies: []
 tags: []
 ```
+
+`technologies` associates the role with the skills its evidence supports.
+`export_index.py` aggregates it (with accomplishments' lists) into a skills map
+and `--write-skill-matrix` renders it as `Working Notes/Skill Matrix.md` — a
+technology absent from that matrix has no evidence behind it and must not
+appear on a resume.
 
 `source-verified` means the facts came from a prior artifact such as an old resume
 rather than from the user — usable, but weaker than `documented`, and worth

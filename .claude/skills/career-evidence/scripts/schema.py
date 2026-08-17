@@ -153,7 +153,7 @@ NOTE_TYPES = {
     },
     "role": {
         "required": ["type", "company", "title", "status"],
-        "optional": ["start", "end", "team", "tags"],
+        "optional": ["start", "end", "team", "technologies", "tags"],
     },
     "accomplishment": {
         "required": ["type", "company", "status"],

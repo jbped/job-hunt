@@ -6,6 +6,7 @@ start:
 end:
 status: needs-interview
 team:
+technologies: []
 tags:
   - role
 ---

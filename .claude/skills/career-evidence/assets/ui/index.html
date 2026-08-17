@@ -1,0 +1,1003 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Job Hunt</title>
+<style>
+  :root {
+    --bg: #f6f7f9; --panel: #ffffff; --line: #e2e5ea; --ink: #16191d;
+    --muted: #666e79; --brand: #0b3c8f; --brand-soft: #eaf0fb;
+    --warn: #8a5a00; --warn-soft: #fdf3e0; --bad: #a11b2b; --bad-soft: #fdecee;
+    --good: #1b6b3a; --good-soft: #e8f5ed;
+    --radius: 10px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #14171b; --panel: #1c2026; --line: #2c323a; --ink: #e8eaed;
+      --muted: #98a1ad; --brand: #7aa5f0; --brand-soft: #1d2839;
+      --warn: #e0ad5a; --warn-soft: #2e2717; --bad: #f08a95; --bad-soft: #33191d;
+      --good: #7fd3a1; --good-soft: #16291e;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--ink);
+    font: 15px/1.5 ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  }
+  header {
+    position: sticky; top: 0; z-index: 10; background: var(--panel);
+    border-bottom: 1px solid var(--line); padding: 12px 20px;
+    display: flex; gap: 16px; align-items: center; flex-wrap: wrap;
+  }
+  header h1 { font-size: 16px; margin: 0; font-weight: 650; }
+  header .vault { color: var(--muted); font-size: 13px; }
+  nav { display: flex; gap: 4px; margin-left: auto; flex-wrap: wrap; }
+  nav button, .btn {
+    font: inherit; font-size: 13px; padding: 6px 12px; border-radius: 7px;
+    border: 1px solid var(--line); background: transparent; color: var(--ink);
+    cursor: pointer;
+  }
+  nav button:hover, .btn:hover { background: var(--brand-soft); }
+  nav button[aria-current="true"] { background: var(--brand); color: #fff; border-color: var(--brand); }
+  .btn-primary { background: var(--brand); color: #fff; border-color: var(--brand); }
+  main { padding: 20px; max-width: 1200px; margin: 0 auto; }
+  section { display: none; }
+  section[data-active] { display: block; }
+  h2 { font-size: 14px; text-transform: uppercase; letter-spacing: .06em;
+       color: var(--muted); margin: 28px 0 10px; font-weight: 650; }
+  h2:first-child { margin-top: 0; }
+  .card {
+    background: var(--panel); border: 1px solid var(--line);
+    border-radius: var(--radius); padding: 14px 16px; margin-bottom: 10px;
+  }
+  .row { display: flex; gap: 12px; align-items: baseline; flex-wrap: wrap; }
+  .grow { flex: 1 1 auto; min-width: 0; }
+  .title { font-weight: 620; }
+  .muted { color: var(--muted); font-size: 13px; }
+  .pill {
+    font-size: 11px; padding: 2px 9px; border-radius: 99px; font-weight: 600;
+    background: var(--brand-soft); color: var(--brand); white-space: nowrap;
+    text-transform: uppercase; letter-spacing: .04em;
+  }
+  .pill.warn { background: var(--warn-soft); color: var(--warn); }
+  .pill.bad { background: var(--bad-soft); color: var(--bad); }
+  .pill.good { background: var(--good-soft); color: var(--good); }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 10px; }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  th { text-align: left; font-size: 12px; color: var(--muted); font-weight: 600;
+       padding: 6px 10px; border-bottom: 1px solid var(--line); }
+  td { padding: 8px 10px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  tr:last-child td { border-bottom: none; }
+  .scroll { overflow-x: auto; }
+  a { color: var(--brand); }
+  label { display: block; font-size: 12px; color: var(--muted); margin: 10px 0 3px; font-weight: 600; }
+  input, select, textarea {
+    font: inherit; font-size: 14px; width: 100%; padding: 7px 9px;
+    border: 1px solid var(--line); border-radius: 7px;
+    background: var(--bg); color: var(--ink);
+  }
+  input:focus, select:focus, textarea:focus { outline: 2px solid var(--brand); outline-offset: -1px; }
+  .field-row { display: grid; grid-template-columns: 150px 1fr; gap: 10px; align-items: center;
+               padding: 5px 0; }
+  .field-row label { margin: 0; }
+  .saved { color: var(--good); font-size: 12px; }
+  .empty { color: var(--muted); padding: 24px; text-align: center;
+           border: 1px dashed var(--line); border-radius: var(--radius); }
+  dialog {
+    border: 1px solid var(--line); border-radius: var(--radius); padding: 20px;
+    background: var(--panel); color: var(--ink); max-width: 560px; width: 92vw;
+  }
+  dialog::backdrop { background: rgba(0,0,0,.45); }
+  #toast {
+    position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+    background: var(--ink); color: var(--bg); padding: 10px 18px; border-radius: 8px;
+    font-size: 14px; opacity: 0; transition: opacity .2s; pointer-events: none; z-index: 50;
+    max-width: 90vw;
+  }
+  #toast[data-show] { opacity: 1; }
+  #toast[data-kind="error"] { background: var(--bad); color: #fff; }
+  .banner { border-radius: var(--radius); padding: 12px 14px; margin-bottom: 14px; font-size: 14px; }
+  .banner.warn { background: var(--warn-soft); color: var(--warn); }
+  .banner.bad { background: var(--bad-soft); color: var(--bad); }
+  img.proof { width: 100%; border: 1px solid var(--line); border-radius: 8px; margin-top: 10px; }
+  .stack > * + * { margin-top: 8px; }
+
+  /* Split view: pickers and metadata on the left, one document on the right.
+     The rail scrolls independently so a long document never pushes the
+     navigation off-screen. */
+  .split { display: grid; grid-template-columns: minmax(280px, 340px) 1fr; gap: 16px;
+           align-items: start; }
+  .rail { position: sticky; top: 68px; max-height: calc(100vh - 88px);
+          overflow-y: auto; padding-right: 2px; }
+  .rail .card { padding: 10px 12px; }
+  .rail .field-row { grid-template-columns: 96px 1fr; gap: 8px; padding: 3px 0; }
+  .rail .field-row label { font-size: 11.5px; }
+  .rail input, .rail select { font-size: 13px; padding: 5px 7px; }
+  .rail h3 { font-size: 11px; text-transform: uppercase; letter-spacing: .07em;
+             color: var(--muted); margin: 0 0 8px; font-weight: 650; }
+  @media (max-width: 900px) {
+    .split { grid-template-columns: 1fr; }
+    .rail { position: static; max-height: none; }
+  }
+
+  /* Rail items double as the document picker, so the selected state has to be
+     unmistakable — it tells you what the right pane is showing. */
+  .pick {
+    display: flex; gap: 8px; align-items: center; width: 100%; text-align: left;
+    font: inherit; font-size: 13.5px; padding: 7px 9px; border-radius: 7px;
+    border: 1px solid transparent; background: transparent; color: var(--ink);
+    cursor: pointer;
+  }
+  .pick:hover { background: var(--brand-soft); }
+  .pick[aria-current="true"] {
+    background: var(--brand-soft); border-color: var(--brand); font-weight: 620;
+    color: var(--brand);
+  }
+  .pick .sub { margin-left: auto; font-size: 11px; color: var(--muted); font-weight: 400; }
+  .pick[aria-current="true"] .sub { color: var(--brand); }
+  .pick .dot { width: 6px; height: 6px; border-radius: 99px; background: var(--muted); flex: none; }
+  .pick .dot.bad { background: var(--bad); }
+  .pick .dot.good { background: var(--good); }
+  .pick .dot.brand { background: var(--brand); }
+
+  .viewer { min-height: 65vh; }
+  .viewer-head {
+    display: flex; gap: 12px; align-items: center; flex-wrap: wrap;
+    padding: 12px 16px; border-bottom: 1px solid var(--line);
+  }
+  .viewer-head .title { font-size: 15px; }
+  .viewer-doc { background: var(--panel); border: 1px solid var(--line);
+                border-radius: var(--radius); overflow: hidden; }
+  .viewer-doc .note-body { padding: 8px 20px 20px; font-size: 14.5px; }
+  .viewer-doc object, .viewer-doc iframe {
+    width: 100%; height: min(82vh, 1000px); border: none; display: block; background: var(--bg);
+  }
+  .rail-actions { display: flex; flex-wrap: wrap; gap: 6px; }
+  .rail-actions .btn { flex: 1 1 auto; }
+
+  /* Read-only note viewer */
+  details.note { border: 1px solid var(--line); border-radius: 8px; background: var(--bg); }
+  details.note > summary {
+    cursor: pointer; padding: 9px 12px; display: flex; gap: 10px; align-items: center;
+    list-style: none; border-radius: 8px; user-select: none;
+  }
+  details.note > summary::-webkit-details-marker { display: none; }
+  details.note > summary::before {
+    content: "▸"; color: var(--muted); font-size: 12px; transition: transform .15s;
+  }
+  details.note[open] > summary::before { transform: rotate(90deg); }
+  details.note > summary:hover { background: var(--brand-soft); }
+  details.note[open] > summary { border-bottom: 1px solid var(--line); border-radius: 8px 8px 0 0; }
+  .note-path { margin-left: auto; font-size: 11px; opacity: .7; }
+  .note-body { padding: 4px 18px 14px; font-size: 14px; }
+  .note-body h2, .note-body h3, .note-body h4, .note-body h5, .note-body h6 {
+    text-transform: none; letter-spacing: 0; color: var(--ink);
+    margin: 16px 0 6px; font-weight: 650;
+  }
+  .note-body h2 { font-size: 16px; }
+  .note-body h3 { font-size: 14px; color: var(--muted); }
+  .note-body h4, .note-body h5, .note-body h6 { font-size: 13px; color: var(--muted); }
+  .note-body p { margin: 6px 0; }
+  .note-body ul, .note-body ol { margin: 6px 0; padding-left: 22px; }
+  .note-body li { margin: 3px 0; }
+  .note-body code {
+    background: var(--brand-soft); padding: 1px 5px; border-radius: 4px;
+    font-size: 12.5px; font-family: ui-monospace, "SFMono-Regular", monospace;
+  }
+  .note-body pre.verbatim {
+    background: var(--panel); border: 1px solid var(--line); border-left: 3px solid var(--brand);
+    border-radius: 6px; padding: 12px 14px; overflow-x: auto;
+    font-size: 12.5px; line-height: 1.45; white-space: pre; margin: 10px 0;
+  }
+  .note-body pre.verbatim code { background: none; padding: 0; font-size: inherit; }
+  .note-body blockquote {
+    margin: 8px 0; padding: 4px 12px; border-left: 3px solid var(--line); color: var(--muted);
+  }
+  .note-body hr { border: none; border-top: 1px solid var(--line); margin: 14px 0; }
+  .note-body .wikilink {
+    color: var(--brand); background: var(--brand-soft);
+    padding: 1px 6px; border-radius: 4px; font-size: 13px;
+  }
+  .note-foot {
+    display: flex; gap: 12px; align-items: center; flex-wrap: wrap;
+    margin-top: 16px; padding-top: 10px; border-top: 1px dashed var(--line);
+    font-size: 12px;
+  }
+</style>
+</head>
+<body>
+<header>
+  <h1>Job Hunt</h1>
+  <span class="vault" id="vaultName"></span>
+  <nav>
+    <button data-view="now" aria-current="true">Now</button>
+    <button data-view="applications">Applications</button>
+    <button data-view="calendar">Calendar</button>
+    <button data-view="people">People</button>
+    <button data-view="evidence">Evidence</button>
+    <button class="btn-primary" id="newApp">New application</button>
+  </nav>
+</header>
+
+<main>
+  <div id="auditBanner"></div>
+
+  <section data-view="now" data-active>
+    <h2>What's coming up</h2>
+    <div id="upcoming"></div>
+    <h2>What I need to do</h2>
+    <div id="todo"></div>
+    <h2>Where I am</h2>
+    <div id="pipeline" class="grid"></div>
+  </section>
+
+  <section data-view="applications">
+    <div class="split">
+      <aside class="rail" id="rail"></aside>
+      <div class="viewer" id="viewer"></div>
+    </div>
+  </section>
+
+  <section data-view="calendar">
+    <h2>Interviews</h2>
+    <div id="calendar"></div>
+  </section>
+
+  <section data-view="people">
+    <h2>Contacts and referrals</h2>
+    <div id="contacts"></div>
+    <h2>Professional references</h2>
+    <div id="references"></div>
+  </section>
+
+  <section data-view="evidence">
+    <h2>Career evidence</h2>
+    <p class="muted">Read-only here. Evidence is written in conversation with your
+      agent, or by hand in Obsidian — it is the part that deserves care.</p>
+    <div id="evidence"></div>
+  </section>
+
+</main>
+
+<dialog id="modal"><form method="dialog" id="modalForm"></form></dialog>
+<div id="toast"></div>
+
+<script>
+"use strict";
+
+let DATA = null, SCHEMA = null, VIEW = "now";
+// CURRENT: the selected application. DOC: the document the right pane shows.
+let CURRENT = null, DOC = null;
+
+const $ = (sel, root = document) => root.querySelector(sel);
+const el = (tag, props = {}, ...kids) => {
+  const node = Object.assign(document.createElement(tag), props);
+  for (const kid of kids.flat()) if (kid != null)
+    node.append(kid.nodeType ? kid : document.createTextNode(kid));
+  return node;
+};
+const esc = (s) => String(s ?? "");
+const today = () => new Date().toISOString().slice(0, 10);
+const days = (a, b) => Math.round((new Date(b) - new Date(a)) / 86400000);
+
+function toast(message, kind) {
+  const node = $("#toast");
+  node.textContent = message;
+  node.dataset.kind = kind || "ok";
+  node.dataset.show = "1";
+  clearTimeout(node._timer);
+  node._timer = setTimeout(() => delete node.dataset.show, kind === "error" ? 6000 : 2500);
+}
+
+async function api(path, options) {
+  const response = await fetch(path, options);
+  const body = await response.json().catch(() => ({}));
+  if (!response.ok) throw new Error(body.error || `${response.status} ${response.statusText}`);
+  return body;
+}
+
+async function save(path, field, value, fingerprint) {
+  return api("/api/field", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ path, field, value, fingerprint }),
+  });
+}
+
+async function refresh() {
+  [DATA, SCHEMA] = await Promise.all([api("/api/index"), api("/api/schema")]);
+  $("#vaultName").textContent = SCHEMA.vault_name;
+  render();
+  api("/api/audit").then(renderAudit).catch(() => {});
+}
+
+// -- shared bits ----------------------------------------------------------
+
+function statusPill(status) {
+  const bad = (SCHEMA.terminal || []).includes(status);
+  const good = status === "offer";
+  return el("span", { className: `pill ${bad ? "bad" : good ? "good" : ""}` }, status);
+}
+
+// -- markdown rendering (read-only) ---------------------------------------
+// Deliberately small: this renders the vault's own notes for reading, not
+// arbitrary markdown. Everything is escaped before any tag is introduced, so a
+// note containing HTML displays as text rather than executing.
+
+function escapeHtml(text) {
+  return String(text).replace(/[&<>"']/g, c => (
+    { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+}
+
+function inline(text) {
+  const code = [];
+  let out = escapeHtml(text)
+    .replace(/`([^`]+)`/g, (_, body) => `\u0000${code.push(body) - 1}\u0000`);
+  out = out
+    .replace(/\[\[([^\]|]+)\|([^\]]+)\]\]/g, "$2")
+    .replace(/\[\[([^\]]+)\]\]/g, (_, target) =>
+      `<span class="wikilink">${target.split("/").pop()}</span>`)
+    .replace(/\[([^\]]+)\]\((https?:[^)\s]+)\)/g,
+      '<a href="$2" target="_blank" rel="noreferrer">$1</a>')
+    .replace(/(^|[\s(])(https?:\/\/[^\s<)]+)/g,
+      '$1<a href="$2" target="_blank" rel="noreferrer">$2</a>')
+    .replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>")
+    .replace(/(^|[^*])\*([^*\n]+)\*(?!\*)/g, "$1<em>$2</em>");
+  return out.replace(/\u0000(\d+)\u0000/g, (_, i) => `<code>${code[i]}</code>`);
+}
+
+function markdown(source) {
+  const lines = String(source).split("\n");
+  const out = [];
+  let list = null, fence = null, fenced = [];
+
+  const closeList = () => { if (list) { out.push(`</${list}>`); list = null; } };
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+
+    if (fence !== null) {
+      if (line.trim().startsWith("```")) {
+        out.push(`<pre class="verbatim"><code>${escapeHtml(fenced.join("\n"))}</code></pre>`);
+        fence = null; fenced = [];
+      } else fenced.push(line);
+      continue;
+    }
+    if (line.trim().startsWith("```")) { closeList(); fence = line; fenced = []; continue; }
+
+    // Frontmatter is metadata the dashboard already shows as fields; rendering
+    // it again as a wall of key/value lines just pushes the content down.
+    if (i === 0 && line.trim() === "---") {
+      const end = lines.indexOf("---", 1);
+      if (end > 0) { i = end; continue; }
+    }
+
+    if (!line.trim()) { closeList(); continue; }
+
+    const heading = line.match(/^(#{1,6})\s+(.*)$/);
+    if (heading) {
+      closeList();
+      const level = Math.min(heading[1].length + 1, 6);
+      out.push(`<h${level}>${inline(heading[2])}</h${level}>`);
+      continue;
+    }
+    if (/^([-*_])\1{2,}\s*$/.test(line.trim())) { closeList(); out.push("<hr>"); continue; }
+    if (line.trim().startsWith("> ")) {
+      closeList();
+      out.push(`<blockquote>${inline(line.trim().slice(2))}</blockquote>`);
+      continue;
+    }
+
+    const bullet = line.match(/^\s*[-*+]\s+(.*)$/);
+    const numbered = line.match(/^\s*\d+[.)]\s+(.*)$/);
+    if (bullet || numbered) {
+      const want = bullet ? "ul" : "ol";
+      if (list !== want) { closeList(); out.push(`<${want}>`); list = want; }
+      out.push(`<li>${inline((bullet || numbered)[1])}</li>`);
+      continue;
+    }
+
+    closeList();
+    out.push(`<p>${inline(line.trim())}</p>`);
+  }
+  if (fence !== null)
+    out.push(`<pre class="verbatim"><code>${escapeHtml(fenced.join("\n"))}</code></pre>`);
+  closeList();
+  return out.join("\n");
+}
+
+/** A collapsible read-only view of a note. Content is fetched on first open so
+ *  a detail page with eight notes costs one request, not eight. */
+function noteViewer(path, label) {
+  const box = el("details", { className: "note" });
+  const summary = el("summary", {},
+    el("span", { className: "title" }, label || path.split("/").pop().replace(/\.md$/, "")),
+    el("span", { className: "muted note-path" }, path));
+  const body = el("div", { className: "note-body" });
+  box.append(summary, body);
+
+  box.addEventListener("toggle", async () => {
+    if (!box.open || box.dataset.loaded) return;
+    box.dataset.loaded = "1";
+    body.innerHTML = '<p class="muted">Loading…</p>';
+    try {
+      const note = await api(`/api/note?path=${encodeURIComponent(path)}`);
+      body.innerHTML = markdown(note.text);
+      body.append(el("div", { className: "note-foot" },
+        el("span", { className: "muted" },
+           note.readonly ? "Evidence — read-only everywhere in this dashboard"
+                         : "Read-only here. Edit in Obsidian."),
+        obsidian(path)));
+    } catch (error) {
+      body.innerHTML = "";
+      body.append(el("div", { className: "banner bad" }, error.message));
+    }
+  });
+  return box;
+}
+
+function obsidian(path) {
+  const url = `obsidian://open?vault=${encodeURIComponent(SCHEMA.vault_name)}`
+            + `&file=${encodeURIComponent(path.replace(/\.md$/, ""))}`;
+  return el("a", { href: url, className: "muted" }, "open in Obsidian");
+}
+
+/** A frontmatter field the schema allows editing. Saves on change, not on keypress,
+ *  so a half-typed value is never written. */
+function editable(app, field, options) {
+  const value = app[field] ?? "";
+  const allowed = (SCHEMA[options?.enumKey] || options?.values);
+  const input = allowed
+    ? el("select", {}, ...["", ...allowed].map(v =>
+        el("option", { value: v, selected: v === value }, v || "—")))
+    : el("input", { type: options?.type || "text", value: esc(value),
+                    placeholder: options?.placeholder || "" });
+
+  input.addEventListener("change", async () => {
+    try {
+      const result = await save(app.brief, field, input.value, app.fingerprint);
+      app.fingerprint = result.fingerprint;
+      app[field] = input.value;
+      toast(result.changed ? "Saved" : "No change");
+      if (result.changed) refresh();
+    } catch (error) {
+      toast(error.message, "error");
+      if (String(error.message).includes("changed on disk")) refresh();
+    }
+  });
+  return input;
+}
+
+function fieldRow(labelText, control) {
+  return el("div", { className: "field-row" }, el("label", {}, labelText), control);
+}
+
+// -- views ----------------------------------------------------------------
+
+function renderAudit(report) {
+  const host = $("#auditBanner");
+  host.textContent = "";
+  if (report.errors?.length) {
+    host.append(el("div", { className: "banner bad" },
+      `${report.errors.length} vault error(s): ${report.errors[0]}`
+      + (report.errors.length > 1 ? ` (+${report.errors.length - 1} more)` : "")));
+  } else if (report.warnings?.length) {
+    host.append(el("div", { className: "banner warn" },
+      `${report.warnings.length} thing(s) missing information — `
+      + `find the value or leave it Unknown, but don't guess. First: ${report.warnings[0]}`));
+  }
+}
+
+function renderNow() {
+  const active = DATA.applications.filter(a => a.active);
+
+  const upcoming = DATA.interviews.filter(i => i.upcoming)
+    .sort((a, b) => (a.date || "9") .localeCompare(b.date || "9"));
+  const dueSoon = active
+    .filter(a => a.next_action && a.next_action_date)
+    .sort((a, b) => a.next_action_date.localeCompare(b.next_action_date));
+
+  const up = $("#upcoming"); up.textContent = "";
+  if (!upcoming.length && !dueSoon.length) {
+    up.append(el("div", { className: "empty" }, "Nothing scheduled."));
+  }
+  for (const iv of upcoming) {
+    up.append(el("div", { className: "card row" },
+      el("span", { className: "pill" }, iv.when || "date unknown"),
+      el("span", { className: "grow" },
+        el("span", { className: "title" }, `${iv.company} — ${iv.stage || "interview"}`),
+        el("div", { className: "muted" }, iv.method ? `${iv.method}` : "")),
+      obsidian(`${iv.application}/Interviews`)));
+  }
+  for (const app of dueSoon) {
+    const overdue = app.next_action_date < today();
+    up.append(el("div", { className: "card row" },
+      el("span", { className: `pill ${overdue ? "bad" : ""}` },
+         overdue ? `overdue ${app.next_action_date}` : app.next_action_date),
+      el("span", { className: "grow" },
+        el("span", { className: "title" }, `${app.company} — ${app.position}`),
+        el("div", { className: "muted" }, app.next_action))));
+  }
+
+  const todo = $("#todo"); todo.textContent = "";
+  const items = [];
+  for (const app of active) {
+    if (!app.next_action)
+      items.push([`${app.company} — ${app.position}`, "No next action recorded", app]);
+    else if (!app.next_action_date)
+      items.push([`${app.company} — ${app.position}`, `"${app.next_action}" has no due date`, app]);
+    if (app.date_applied && ["applied", "screening"].includes(app.status)
+        && days(app.date_applied, today()) > 14)
+      items.push([`${app.company} — ${app.position}`,
+                  `${days(app.date_applied, today())} days since applying, no status change`, app]);
+  }
+  const unconfirmed = DATA.references.filter(r => r.status !== "confirmed").length;
+  if (unconfirmed) items.push(["References", `${unconfirmed} not yet confirmed`, null]);
+
+  if (!items.length) todo.append(el("div", { className: "empty" }, "Nothing outstanding."));
+  for (const [title, detail, app] of items) {
+    todo.append(el("div", { className: "card row" },
+      el("span", { className: "grow" },
+        el("span", { className: "title" }, title),
+        el("div", { className: "muted" }, detail)),
+      app ? el("button", { className: "btn", onclick: () => openDetail(app.path) }, "Open") : null));
+  }
+
+  const pipeline = $("#pipeline"); pipeline.textContent = "";
+  for (const status of SCHEMA.status) {
+    const group = DATA.applications.filter(a => a.status === status);
+    if (!group.length) continue;
+    pipeline.append(el("div", { className: "card" },
+      el("div", { className: "row" }, statusPill(status),
+         el("span", { className: "muted" }, `${group.length}`)),
+      el("div", { className: "stack", style: "margin-top:8px" },
+        ...group.map(app => el("div", {},
+          el("a", { href: "#", onclick: (e) => { e.preventDefault(); openDetail(app.path); } },
+             `${app.company} — ${app.position}`))))));
+  }
+}
+
+// -- Applications: split view ---------------------------------------------
+// Left rail carries navigation, editable metadata, and the document list.
+// Right pane shows exactly one document. Keeping the picker permanently visible
+// means moving between the posting, the analysis, and the rendered PDF is one
+// click rather than a round trip through a list.
+
+const NOTE_ORDER = ["Job Description", "Analysis", "Contacts", "Interviews",
+                    "Resume Copy", "Cover Letter", "Submission Notes"];
+
+function renderApplications() {
+  const rail = $("#rail"), viewer = $("#viewer");
+  rail.textContent = ""; viewer.textContent = "";
+
+  if (!DATA.applications.length) {
+    rail.append(el("div", { className: "empty" }, "No applications yet."));
+    viewer.append(el("div", { className: "empty" },
+      "Use “New application” above to create the first one."));
+    return;
+  }
+
+  // Keep the selection across refreshes; fall back to the first application.
+  if (!CURRENT || !DATA.applications.some(a => a.path === CURRENT.path))
+    CURRENT = DATA.applications[0];
+  else
+    CURRENT = DATA.applications.find(a => a.path === CURRENT.path);
+
+  buildRail(rail);
+  renderViewer();
+}
+
+function buildRail(rail) {
+  const app = CURRENT;
+
+  // Applications
+  const picker = el("div", { className: "card" }, el("h3", {}, "Applications"));
+  for (const item of DATA.applications) {
+    const overdue = item.next_action_date && item.next_action_date < today();
+    const button = el("button", {
+        className: "pick",
+        onclick: () => { CURRENT = item; DOC = null; renderApplications(); },
+      },
+      el("span", { className: `dot ${item.active ? (overdue ? "bad" : "brand") : ""}` }),
+      el("span", {}, `${item.company} — ${item.position}`),
+      el("span", { className: "sub" }, item.status));
+    button.dataset.app = item.path;
+    button.setAttribute("aria-current", String(item.path === app.path));
+    picker.append(button);
+  }
+  rail.append(picker);
+
+  // Details — the editable frontmatter
+  rail.append(el("div", { className: "card" },
+    el("h3", {}, "Details"),
+    fieldRow("Status", editable(app, "status", { enumKey: "status" })),
+    fieldRow("Next action", editable(app, "next_action", { placeholder: "What happens next" })),
+    fieldRow("Due", editable(app, "next_action_date", { type: "date" })),
+    fieldRow("Applied", editable(app, "date_applied", { type: "date" })),
+    fieldRow("Job URL", editable(app, "job_url", { placeholder: "https://…" })),
+    fieldRow("Found via", editable(app, "discovery_method", { enumKey: "discovery_method" })),
+    fieldRow("Detail", editable(app, "discovery_detail", { placeholder: "Referrer, board, site" })),
+    fieldRow("Location", editable(app, "location")),
+    fieldRow("Work model", editable(app, "work_model", { enumKey: "work_model" })),
+    fieldRow("Comp status", editable(app, "compensation_status", { enumKey: "compensation_status" })),
+    fieldRow("Comp min", editable(app, "compensation_min")),
+    fieldRow("Comp max", editable(app, "compensation_max")),
+    fieldRow("Comp period", editable(app, "compensation_period", { enumKey: "compensation_period" }))));
+
+  // Documents
+  // Reading order, not alphabetical: the brief the user owns, then the posting,
+  // then everything derived from it.
+  const docs = el("div", { className: "card" }, el("h3", {}, "Documents"));
+  docs.append(docButton("Application Brief", app.brief, "note"));
+  const entries = Object.entries(app.notes || {})
+    .sort((a, b) => (NOTE_ORDER.indexOf(a[0]) + 1 || 99) - (NOTE_ORDER.indexOf(b[0]) + 1 || 99));
+  for (const [name, path] of entries) docs.append(docButton(name, path, "note"));
+  rail.append(docs);
+
+  // Artifacts
+  const pdfs = (app.artifacts || []).filter(a => a.name.endsWith(".pdf"));
+  const artifacts = el("div", { className: "card" }, el("h3", {}, "Artifacts"));
+  if (!pdfs.length)
+    artifacts.append(el("div", { className: "muted", style: "padding:2px 9px" },
+      "None rendered yet."));
+  for (const pdf of pdfs)
+    artifacts.append(docButton(pdf.name.replace(/\.pdf$/, ""), pdf.path, "pdf"));
+  artifacts.append(el("div", { className: "rail-actions", style: "margin-top:8px" },
+    el("button", { className: "btn btn-primary",
+        onclick: () => renderPdf(app, "resume") }, "Generate resume"),
+    el("button", { className: "btn",
+        onclick: () => renderPdf(app, "cover-letter") }, "Generate cover letter")));
+  artifacts.append(el("div", { id: "renderOut", style: "margin-top:8px" }));
+  rail.append(artifacts);
+
+  // Add
+  rail.append(el("div", { className: "card" },
+    el("h3", {}, "Add"),
+    el("div", { className: "rail-actions" },
+      el("button", { className: "btn", onclick: () => addContact(app) }, "Contact"),
+      el("button", { className: "btn", onclick: () => addInterview(app) }, "Interview"))));
+}
+
+function docButton(label, path, kind) {
+  const button = el("button", {
+      className: "pick",
+      onclick: () => { DOC = { label, path, kind }; renderViewer(); },
+    },
+    el("span", { className: `dot ${kind === "pdf" ? "good" : ""}` }),
+    el("span", {}, label));
+  button.dataset.doc = path;
+  return button;
+}
+
+/** Mark the rail entry matching what the right pane is showing. Driven by the
+ *  path on each button rather than its label, so duplicate names cannot confuse it. */
+function syncDocSelection() {
+  for (const button of document.querySelectorAll("#rail .pick[data-doc]"))
+    button.setAttribute("aria-current", String(!!DOC && button.dataset.doc === DOC.path));
+}
+
+async function renderViewer() {
+  const viewer = $("#viewer");
+  const app = CURRENT;
+
+  // Drop a selection left over from another application, then fall back to the
+  // note the user owns — it summarises the application better than anything else.
+  if (DOC && !DOC.path.startsWith(app.path) && DOC.path !== app.brief) DOC = null;
+  if (!DOC) DOC = { label: "Application Brief", path: app.brief, kind: "note" };
+  syncDocSelection();
+
+  viewer.textContent = "";
+  const head = el("div", { className: "viewer-head" },
+    el("span", { className: "title grow" }, DOC.label),
+    statusPill(app.status));
+  const body = el("div", {});
+  const doc = el("div", { className: "viewer-doc" }, head, body);
+  viewer.append(doc);
+
+  if (DOC.kind === "pdf") {
+    const url = `/file/${encodeURI(DOC.path)}`;
+    head.append(el("a", { href: url, target: "_blank", className: "muted" }, "open in a tab"));
+    body.append(el("object", { data: url, type: "application/pdf" },
+      el("div", { className: "empty" },
+        "This browser will not preview PDFs inline. ",
+        el("a", { href: url, target: "_blank" }, "Open it in a new tab."))));
+    return;
+  }
+
+  head.append(obsidian(DOC.path));
+  body.className = "note-body";
+  body.innerHTML = '<p class="muted">Loading…</p>';
+  try {
+    const note = await api(`/api/note?path=${encodeURIComponent(DOC.path)}`);
+    body.innerHTML = markdown(note.text);
+    body.append(el("div", { className: "note-foot" },
+      el("span", { className: "muted" },
+        note.readonly ? "Evidence — read-only everywhere in this dashboard"
+                      : "Read-only here. Edit fields on the left, or the note in Obsidian.")));
+  } catch (error) {
+    body.innerHTML = "";
+    body.append(el("div", { className: "banner bad" }, error.message));
+  }
+}
+
+function renderCalendar() {
+  const host = $("#calendar"); host.textContent = "";
+  const all = [...DATA.interviews].sort((a, b) =>
+    (b.date || "").localeCompare(a.date || ""));
+  if (!all.length) {
+    host.append(el("div", { className: "empty" },
+      "No interviews recorded. Add one from an application's page."));
+    return;
+  }
+  for (const iv of all) {
+    host.append(el("div", { className: "card row" },
+      el("span", { className: `pill ${iv.upcoming ? "" : "good"}` },
+         iv.upcoming ? "upcoming" : "done"),
+      el("span", { className: "grow" },
+        el("span", { className: "title" }, `${iv.when} — ${iv.company}`),
+        el("div", { className: "muted" },
+           [iv.stage, iv.method, iv.interviewers].filter(Boolean).join(" · "))),
+      iv.upcoming
+        ? el("button", { className: "btn", onclick: () => completeInterview(iv) }, "Mark complete")
+        : null,
+      obsidian(`${iv.application}/Interviews`)));
+  }
+}
+
+function renderPeople() {
+  const contacts = $("#contacts"); contacts.textContent = "";
+  if (!DATA.contacts.length) {
+    contacts.append(el("div", { className: "empty" }, "No contacts recorded."));
+  } else {
+    contacts.append(el("div", { className: "card scroll" }, el("table", {},
+      el("thead", {}, el("tr", {}, ...["Name", "Role", "Company", "Follow-up", ""]
+        .map(h => el("th", {}, h)))),
+      el("tbody", {}, ...DATA.contacts.map(c => el("tr", {},
+        el("td", {}, el("span", { className: "title" }, c.name)),
+        el("td", {}, el("span", { className: "muted" }, c.application_role || "—")),
+        el("td", {}, c.company),
+        el("td", {}, el("span", { className: "muted" }, c.next_follow_up || "—")),
+        el("td", {}, obsidian(c.note))))))));
+  }
+
+  const references = $("#references"); references.textContent = "";
+  if (!DATA.references.length) {
+    references.append(el("div", { className: "empty" },
+      "No references yet. A referral is not automatically a reference — add someone "
+      + "only after they have agreed."));
+    return;
+  }
+  for (const ref of DATA.references) {
+    const select = el("select", {}, ...SCHEMA.reference_permission.map(v =>
+      el("option", { value: v, selected: v === ref.status }, v)));
+    select.addEventListener("change", async () => {
+      try {
+        const result = await save(ref.path, "status", select.value, ref.fingerprint);
+        ref.fingerprint = result.fingerprint;
+        toast("Saved"); refresh();
+      } catch (error) { toast(error.message, "error"); refresh(); }
+    });
+    references.append(el("div", { className: "card row" },
+      el("span", { className: "grow" },
+        el("span", { className: "title" }, ref.name),
+        el("div", { className: "muted" },
+           [ref.relationship, ref.email, ref.phone].filter(Boolean).join(" · "))),
+      select, obsidian(ref.path)));
+  }
+}
+
+function renderEvidence() {
+  const host = $("#evidence"); host.textContent = "";
+  for (const kind of ["role", "accomplishment"]) {
+    const group = DATA.evidence.filter(e => e.kind === kind);
+    if (!group.length) continue;
+    host.append(el("h2", {}, kind === "role" ? "Roles" : "Accomplishments"));
+    const card = el("div", { className: "card stack" });
+    for (const item of group) {
+      const viewer = noteViewer(item.path, item.title);
+      $("summary", viewer).append(
+        el("span", { className: "pill", style: "margin-left:auto" }, item.status || "—"));
+      card.append(viewer);
+    }
+    host.append(card);
+  }
+}
+
+// -- entry point from other views ----------------------------------------
+
+/** Open an application in the split view. Other tabs link here, so selecting an
+ *  application is one concept rather than two. */
+function openDetail(path) {
+  const found = DATA.applications.find(a => a.path === path);
+  if (!found) return;
+  CURRENT = found;
+  DOC = null;
+  show("applications");
+}
+
+// -- write actions --------------------------------------------------------
+
+function modal(title, fields, onSubmit, submitLabel) {
+  const dialog = $("#modal"), form = $("#modalForm");
+  form.textContent = "";
+  form.append(el("h2", { style: "margin-top:0" }, title));
+  const inputs = {};
+  for (const field of fields) {
+    const input = field.options
+      ? el("select", {}, ...["", ...field.options].map(v =>
+          el("option", { value: v }, v || "—")))
+      : el(field.multiline ? "textarea" : "input",
+           { type: field.type || "text", placeholder: field.placeholder || "",
+             value: field.value || "", rows: 3 });
+    inputs[field.key] = input;
+    form.append(el("label", {}, field.label), input);
+  }
+  const error = el("div", { className: "muted", style: "margin-top:10px" });
+  form.append(error);
+  form.append(el("div", { className: "row", style: "margin-top:16px; justify-content:flex-end" },
+    el("button", { className: "btn", type: "button",
+                   onclick: () => dialog.close() }, "Cancel"),
+    el("button", { className: "btn btn-primary", type: "button", onclick: async (event) => {
+        const button = event.target;
+        button.disabled = true; error.textContent = "";
+        const values = {};
+        for (const [key, input] of Object.entries(inputs)) values[key] = input.value.trim();
+        try { await onSubmit(values); dialog.close(); await refresh(); }
+        catch (problem) { error.textContent = problem.message; error.style.color = "var(--bad)"; }
+        finally { button.disabled = false; }
+      } }, submitLabel || "Save")));
+  dialog.showModal();
+}
+
+function newApplication() {
+  modal("New application", [
+    { key: "company", label: "Company" },
+    { key: "position", label: "Role" },
+    { key: "url", label: "Job posting URL", placeholder: "https://… (leave blank if unknown)" },
+    { key: "discovery", label: "How you found it", options: SCHEMA.discovery_method },
+    { key: "detail", label: "Referrer name, board, or site" },
+  ], async (values) => {
+    if (!values.company || !values.position) throw new Error("Company and role are required.");
+    const result = await api("/api/application", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(values),
+    });
+    toast(`Created ${result.path}`);
+    setTimeout(() => openDetail(result.path), 150);
+  }, "Create");
+}
+
+function addContact(app) {
+  modal("Add a contact", [
+    { key: "title", label: "Full name" },
+    { key: "organization_and_title", label: "Organization and title" },
+    { key: "application_role", label: "Role in this application",
+      options: SCHEMA.contact_relationship },
+    { key: "relationship", label: "How you know them" },
+    { key: "email", label: "Email" },
+    { key: "phone", label: "Phone" },
+    { key: "next_follow_up", label: "Next follow-up", type: "date" },
+  ], async (values) => {
+    if (!values.title) throw new Error("A name is required.");
+    const { title, ...fields } = values;
+    await api("/api/entry", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ path: `${app.path}/Contacts.md`, title, fields }),
+    });
+    toast("Contact added");
+  }, "Add");
+}
+
+function addInterview(app) {
+  modal("Schedule an interview", [
+    { key: "when", label: "Date and time", placeholder: "2026-09-02 14:00 MDT" },
+    { key: "stage", label: "Stage", options: SCHEMA.stage },
+    { key: "method", label: "Method", options: SCHEMA.method },
+    { key: "point_of_contact", label: "Point of contact" },
+    { key: "interviewers", label: "Interviewers" },
+    { key: "location_or_link", label: "Location or link" },
+    { key: "preparation_priorities", label: "Preparation priorities", multiline: true },
+  ], async (values) => {
+    if (!values.when) throw new Error("A date is required.");
+    const { when, stage, ...fields } = values;
+    await api("/api/entry", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        path: `${app.path}/Interviews.md`, heading: "## Upcoming",
+        title: `${when} | ${stage || "Interview"}`, fields,
+      }),
+    });
+    toast("Interview scheduled");
+  }, "Schedule");
+}
+
+function completeInterview(iv) {
+  modal(`Completed: ${iv.company}`, [
+    { key: "sentiment", label: "How did it feel?" },
+    { key: "what_went_well", label: "What went well", multiline: true },
+    { key: "concerns", label: "Concerns", multiline: true },
+    { key: "takeaways", label: "Takeaways and new role information", multiline: true },
+    { key: "commitments_or_follow_ups", label: "Commitments or follow-ups" },
+    { key: "thank_you_sent", label: "Thank-you sent" },
+    { key: "next_step", label: "Next step" },
+  ], async (fields) => {
+    await api("/api/interview/complete", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        path: `${iv.application}/Interviews.md`,
+        title: `${iv.when} | ${iv.stage}`.replace(/ \| $/, ""),
+        fields,
+      }),
+    });
+    toast("Moved to Previous");
+  }, "Save");
+}
+
+async function renderPdf(app, kind) {
+  const host = $("#renderOut");
+  const say = (node) => { host.textContent = ""; host.append(node); };
+  say(el("div", { className: "muted" }, `Generating ${kind.replace("-", " ")}\u2026`));
+  try {
+    const { job } = await api("/api/render", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ path: app.path, kind }),
+    });
+    const poll = setInterval(async () => {
+      let state;
+      try { state = await api(`/api/job/${job}`); }
+      catch (error) { clearInterval(poll); say(el("div", { className: "banner bad" }, error.message)); return; }
+      if (state.state === "running") return;
+      clearInterval(poll);
+
+      if (state.state === "failed") {
+        say(el("div", { className: "banner bad" }, state.error));
+        return;
+      }
+      // Show the artifact where documents are shown, rather than squeezing a
+      // page preview into the rail.
+      DOC = { label: state.pdf.split("/").pop().replace(/\.pdf$/, ""),
+              path: state.pdf, kind: "pdf" };
+      say(state.problems?.length
+        ? el("div", { className: "banner bad" },
+            "Do not submit yet \u2014 " + state.problems.join("; "))
+        : el("div", { className: "muted" },
+            el("span", { className: "pill good" }, "validated"), " " + state.notes.join(" \u00b7 ")));
+      await refresh();
+    }, 700);
+  } catch (error) {
+    say(el("div", { className: "banner bad" }, error.message));
+  }
+}
+
+// -- wiring ---------------------------------------------------------------
+
+function show(view) {
+  VIEW = view;
+  for (const node of document.querySelectorAll("section"))
+    node.toggleAttribute("data-active", node.dataset.view === view);
+  for (const button of document.querySelectorAll("nav button[data-view]"))
+    button.setAttribute("aria-current", String(button.dataset.view === view));
+  render();
+}
+
+function render() {
+  if (!DATA || !SCHEMA) return;
+  if (VIEW === "now") renderNow();
+  else if (VIEW === "applications") renderApplications();
+  else if (VIEW === "calendar") renderCalendar();
+  else if (VIEW === "people") renderPeople();
+  else if (VIEW === "evidence") renderEvidence();
+}
+
+for (const button of document.querySelectorAll("nav button[data-view]"))
+  button.addEventListener("click", () => show(button.dataset.view));
+$("#newApp").addEventListener("click", newApplication);
+
+refresh().catch(error => {
+  document.querySelector("main").prepend(
+    el("div", { className: "banner bad" }, "Could not load the vault: " + error.message));
+});
+</script>
+</body>
+</html>

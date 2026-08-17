@@ -1,0 +1,78 @@
+filters:
+  and:
+    - note.type == "application"
+properties:
+  note.company:
+    displayName: Company
+  note.position:
+    displayName: Role
+  note.status:
+    displayName: Status
+  note.next_action:
+    displayName: Next action
+  note.next_action_date:
+    displayName: Due
+  note.date_applied:
+    displayName: Applied
+  note.location:
+    displayName: Location
+  note.work_model:
+    displayName: Model
+  note.discovery_method:
+    displayName: Found via
+views:
+  - type: table
+    name: Active
+    filters:
+      and:
+        - note.status != "rejected"
+        - note.status != "withdrawn"
+        - note.status != "closed"
+    order:
+      - note.company
+      - note.position
+      - note.status
+      - note.next_action
+      - note.next_action_date
+    sort:
+      - property: note.next_action_date
+        direction: ASC
+  - type: table
+    name: Next actions due
+    filters:
+      and:
+        - note.status != "rejected"
+        - note.status != "withdrawn"
+        - note.status != "closed"
+        - note.next_action_date != null
+    order:
+      - note.next_action_date
+      - note.company
+      - note.next_action
+    sort:
+      - property: note.next_action_date
+        direction: ASC
+  - type: table
+    name: Applied
+    filters:
+      and:
+        - note.date_applied != null
+    order:
+      - note.date_applied
+      - note.company
+      - note.position
+      - note.status
+    sort:
+      - property: note.date_applied
+        direction: DESC
+  - type: table
+    name: All
+    order:
+      - note.company
+      - note.position
+      - note.status
+      - note.date_found
+      - note.date_applied
+    sort:
+      - property: note.status
+        direction: ASC

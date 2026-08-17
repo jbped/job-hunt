@@ -1,0 +1,70 @@
+# Resume and cover-letter generation
+
+## Source order
+
+1. The exact job description
+2. `Analysis.md` — the position breakdown and evidence alignment
+3. Canonical role and accomplishment notes
+4. `About Me/Profile.md`, respecting its publication guidance
+5. Contacts and referral status
+
+Never treat a previously generated artifact as proof of a claim. If an old resume
+and the evidence notes disagree, the evidence notes win and the old resume is the
+thing to investigate — that disagreement is usually where an inflated claim first
+crept in.
+
+## Working copies
+
+- Draft into `Resume Copy.md` and `Cover Letter.md` in the application folder.
+- Link the evidence used, and record what was excluded and why. The exclusions
+  are what make the next tailoring pass fast.
+- Once a version is submitted, it is history. Revisions become new versions.
+
+## Rendering
+
+`render_pdf.py --app <folder> --kind resume|cover-letter` reads the markdown,
+measures every line against the real font metrics, computes wrapping and vertical
+positions, renders through `ps2pdf`, and validates the result. Output is versioned
+into `Artifacts/`.
+
+It checks page count, font embedding, text extraction, column overflow, title/date
+collisions, and unreplaced placeholders. If content does not fit, it reports how
+many lines are over and refuses rather than clipping — a clipped PDF looks correct
+until someone reads the bottom of it. Cut copy; reach for `--pages 2` only when a
+two-page document is intended.
+
+It also writes a proof PNG. Look at it. The automated checks catch structural
+faults, not ugly ones.
+
+### Source format
+
+The resume working copy needs `## Header` (name, professional title, and a
+`·`-separated contact line), `## Summary`, and `## Experience` with
+`### Title | Company | Dates` headings and `-` bullets. `## Additional Experience`,
+`## Education`, and `## Technical Skills` are optional.
+
+A cover letter is written as a letter — date, recipient block, salutation,
+paragraphs, sign-off. Everything above its first `## ` heading is rendered, and the
+letterhead comes from `About Me/Profile.md`, so contact details live in one place.
+
+To change the visual design, edit the definitions at the top of
+`Templates/PDF/*.ps`. Avoid adding fixed-position drawing commands after them;
+hardcoded coordinates are what made the old manual reflow necessary.
+
+## Resume selection
+
+- Rank evidence by relevance, strength, recency, ownership, and metric quality.
+- Use conventional headings and official job titles.
+- Prefer a focused one-page resume; use two when strong relevant evidence would
+  otherwise become unreadable.
+- Do not satisfy a keyword with an unsupported technology or inflated tenure.
+- Selection is the tailoring. Including everything is the same as choosing nothing.
+
+## Cover-letter selection
+
+- Two or three verified narratives, not prose that restates the resume.
+- State formal referrals accurately, and name contacts only when verified.
+- Explain equivalent experience directly when the posting allows it, rather than
+  implying the technology the employer asked for.
+- Ground motivation in the captured posting or verified research — not in praise
+  that could apply to any company.

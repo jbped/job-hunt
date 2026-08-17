@@ -10,21 +10,19 @@ tags:
 
 # Company | Position — Analysis
 
-Generated from the verbatim posting and canonical evidence. Record facts in [[Application Brief]]; this note holds interpretation. Rewriting it is safe — nothing here is a source of truth.
+Generated from the verbatim posting and canonical evidence. Record facts in
+[[Application Brief]]; this note holds interpretation. Rewriting it is safe —
+nothing here is a source of truth. Quote the posting only where a term is being
+judged; the verbatim capture lives in [[Job Description]] and is not restated here.
 
 ## Position TL;DR
 
-## Position breakdown
+## Compatibility confidence
 
-### Outcomes
-
-### Responsibilities
-
-### Technologies and domain
-
-### Team and collaboration
-
-### Constraints and logistics
+- Verdict: strong | moderate | weak — one sentence on what drives it
+- Strongest matches:
+- Material gaps:
+- Risks and logistics: level gap, location, work model, compensation signals
 
 ## Experience level
 
@@ -32,13 +30,10 @@ Generated from the verbatim posting and canonical evidence. Record facts in [[Ap
 - Synthesized level:
 - Candidate alignment:
 
-## Employer needs
+## Fit by term
 
-## Required skills and keywords
-
-## Preferred skills and keywords
-
-## Evidence alignment
+One entry per material term in the posting: the term, then the evidence that
+backs the verdict.
 
 ### Directly supported
 
@@ -46,10 +41,10 @@ Generated from the verbatim posting and canonical evidence. Record facts in [[Ap
 
 ### Unsupported; do not claim
 
-## Relevant evidence
+## Claims to verify
 
 ## Resume strategy
 
 ## Cover-letter strategy
 
-## Claims to verify
+## Relevant evidence

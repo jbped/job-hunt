@@ -48,9 +48,10 @@ This split is the thing to get right. Inside an application folder:
 - **`Application Brief.md` is the user's.** Status, URL, compensation, dates,
   next action. Update a field when asked; do not restructure it, reorder it, or
   move their prose into a shape you prefer. Someone reads this file by hand.
-- **`Analysis.md` is yours.** Position breakdown, evidence alignment, resume and
-  cover-letter strategy, claims to verify. Rewrite it freely — it is derived, and
-  regenerating it costs nothing.
+- **`Analysis.md` is yours.** Compatibility confidence, fit-by-term evidence
+  alignment, resume and cover-letter strategy, claims to verify. Synthesis only —
+  never a restated posting; quote a term only where it is being judged. Rewrite
+  it freely — it is derived, and regenerating it costs nothing.
 - **`Job Description.md` is neither.** It is evidence, checksummed. Never edit a
   captured posting; a changed posting is a new dated capture.
 
@@ -136,10 +137,12 @@ Evidence is captured by structured interview — the full protocol is
 1. `new_application.py "<Company>" "<Role>"` — scaffolds the folder and Artifacts/.
 2. `capture_jd.py` — stores the posting verbatim and stamps `verbatim_sha256`.
    Capture before analysing, so the analysis cannot quietly reshape the source.
-3. Write `Analysis.md`: TL;DR, outcomes, responsibilities, technologies,
-   collaboration model, logistics, and synthesised level with reasoning.
-4. Classify every job term as directly supported, adjacent or partial, or
-   unsupported. The unsupported list is the most useful thing in the note.
+3. Write `Analysis.md`, insight first: a three-sentence TL;DR, a compatibility
+   confidence verdict with its drivers, and the synthesised level with
+   reasoning. Do not restate the posting — it sits verbatim one file away.
+4. Classify every material job term as directly supported, adjacent or partial,
+   or unsupported, each with the evidence note that backs the verdict. The
+   unsupported list is the most useful thing in the note.
 5. Record compensation components exactly and identify their source. Never guess.
 6. Keep contacts, referrals, and interviews in their own notes.
 7. Keep `next_action` and `next_action_date` current while the application lives.

@@ -675,17 +675,12 @@ function buildRail(rail) {
   rail.append(picker);
 
   // Actions — what can be done to this application, in one place at the top.
+  // Generating artifacts lives with the artifacts, further down.
   rail.append(el("div", { className: "card" },
     el("h3", {}, "Actions"),
     el("div", { className: "rail-actions" },
       el("button", { className: "btn", onclick: () => addContact(app) }, "Add contact"),
-      el("button", { className: "btn", onclick: () => addInterview(app) }, "Schedule interview")),
-    el("div", { className: "rail-actions", style: "margin-top:6px" },
-      el("button", { className: "btn btn-primary",
-          onclick: () => renderPdf(app, "resume") }, "Generate resume"),
-      el("button", { className: "btn",
-          onclick: () => renderPdf(app, "cover-letter") }, "Generate cover letter")),
-    el("div", { id: "renderOut", style: "margin-top:8px" })));
+      el("button", { className: "btn", onclick: () => addInterview(app) }, "Schedule interview"))));
 
   // Documents
   // Reading order, not alphabetical: the brief the user owns, then the posting,
@@ -696,11 +691,15 @@ function buildRail(rail) {
     .sort((a, b) => (NOTE_ORDER.indexOf(a[0]) + 1 || 99) - (NOTE_ORDER.indexOf(b[0]) + 1 || 99));
   for (const [name, path] of entries) docs.append(docButton(name, path, "note"));
   const pdfs = (app.artifacts || []).filter(a => a.name.endsWith(".pdf"));
-  if (pdfs.length) {
-    docs.append(el("div", { className: "group-label" }, "Rendered artifacts"));
-    for (const pdf of pdfs)
-      docs.append(docButton(pdf.name.replace(/\.pdf$/, ""), pdf.path, "pdf"));
-  }
+  docs.append(el("div", { className: "group-label" }, "Rendered artifacts"));
+  for (const pdf of pdfs)
+    docs.append(docButton(pdf.name.replace(/\.pdf$/, ""), pdf.path, "pdf"));
+  docs.append(el("div", { className: "rail-actions", style: "margin-top:8px" },
+    el("button", { className: "btn btn-primary",
+        onclick: () => renderPdf(app, "resume") }, "Generate resume"),
+    el("button", { className: "btn",
+        onclick: () => renderPdf(app, "cover-letter") }, "Generate cover letter")));
+  docs.append(el("div", { id: "renderOut" }));
   rail.append(docs);
 
   // Details — every field the schema marks editable, plus the read-only dates.

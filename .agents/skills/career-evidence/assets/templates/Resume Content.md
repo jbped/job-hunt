@@ -12,7 +12,7 @@ Location · Phone · Email · LinkedIn
 
 ### Official Title | Company | Dates
 
-- 
+-
 
 ## Additional Experience
 
@@ -22,8 +22,8 @@ Location · Phone · Email · LinkedIn
 
 ## Evidence used
 
-- 
+-
 
 ## Claims excluded
 
-- 
+-

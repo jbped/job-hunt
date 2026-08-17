@@ -289,13 +289,15 @@ def main() -> int:
     if args.write_field_reference:
         target = vault / "Working Notes" / "Field Reference.md"
         target.parent.mkdir(parents=True, exist_ok=True)
-        target.write_text(schema.field_reference_markdown(), encoding="utf-8")
+        target.write_text(schema.field_reference_markdown().rstrip("\n") + "\n",
+                      encoding="utf-8")
         print(f"wrote {target.relative_to(vault)}")
 
     if args.write_skill_matrix:
         target = vault / "Working Notes" / "Skill Matrix.md"
         target.parent.mkdir(parents=True, exist_ok=True)
-        target.write_text(skill_matrix_markdown(vault), encoding="utf-8")
+        target.write_text(skill_matrix_markdown(vault).rstrip("\n") + "\n",
+                      encoding="utf-8")
         print(f"wrote {target.relative_to(vault)}")
 
     if args.stdout:

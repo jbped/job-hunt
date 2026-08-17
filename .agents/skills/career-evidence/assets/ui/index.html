@@ -686,6 +686,36 @@ function buildRail(rail) {
       el("button", { className: "btn", onclick: () => addContact(app) }, "Add contact"),
       el("button", { className: "btn", onclick: () => addInterview(app) }, "Schedule interview"))));
 
+  // People — who is attached to this application: referrals, references,
+  // contacts. Sourced from People notes (the one-note-per-person truth) plus
+  // this application's Contacts entries.
+  const involved = peopleFor(app);
+  const contacts = DATA.contacts.filter(c => c.application === app.path);
+  const seen = new Set(involved.map(p => p.name.toLowerCase()));
+  const peopleCard = el("div", { className: "card" }, el("h3", {}, "People"));
+  for (const person of involved) {
+    const roles = (person.applications || [])
+      .filter(a => involvementMatches(a, app)).flatMap(a => a.roles);
+    peopleCard.append(el("div", { className: "row", style: "padding:3px 0" },
+      el("span", { className: "grow" }, person.name),
+      ...[...new Set(roles)].map(r => el("span", { className: "pill" }, r)),
+      referencePill(person.reference_status),
+      obsidian(person.path)));
+  }
+  for (const c of contacts) {
+    if (seen.has(c.name.toLowerCase())) continue;
+    peopleCard.append(el("div", { className: "row", style: "padding:3px 0" },
+      el("span", { className: "grow" }, c.name),
+      c.application_role ? el("span", { className: "pill" }, c.application_role) : null,
+      el("span", { className: "muted", style: "font-size:11px" }, "contacts only")));
+  }
+  if (!involved.length && !contacts.length)
+    peopleCard.append(el("div", { className: "muted", style: "padding:2px 0 6px" },
+      "No one attached yet."));
+  peopleCard.append(el("div", { className: "rail-actions" },
+    el("button", { className: "btn", onclick: () => linkPerson(app) }, "Link person")));
+  rail.append(peopleCard);
+
   // Documents
   // Reading order, not alphabetical: the brief the user owns, then the posting,
   // then everything derived from it.
@@ -831,6 +861,58 @@ function renderCalendar() {
   if (!previous.length)
     prev.append(el("div", { className: "empty" }, "No interviews completed yet."));
   for (const iv of previous) prev.append(interviewCard(iv));
+}
+
+// Involvement titles are free text ("Priority Dispatch Corp | Software
+// Developer III"); the brief's company may differ in punctuation. Compare on
+// letters and digits only.
+const normName = (s) => String(s || "").toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
+
+function involvementMatches(involvement, app) {
+  const title = normName(involvement.application);
+  return title.includes(normName(app.company)) && title.includes(normName(app.position));
+}
+
+function peopleFor(app) {
+  return DATA.people.filter(p =>
+    (p.applications || []).some(a => involvementMatches(a, app)));
+}
+
+function linkPerson(app) {
+  const linked = new Set(peopleFor(app).map(p => p.path));
+  const candidates = DATA.people.filter(p => !linked.has(p.path));
+  modal(`Link a person to ${app.company}`, [
+    { key: "person", label: "Person",
+      choices: [{ value: "", label: "— pick a person —" },
+                ...candidates.map(p => ({ value: p.path, label: p.name })),
+                { value: "__new__", label: "+ Create a new person" }] },
+    { key: "name", label: "New person's name (only when creating)" },
+    { key: "role", label: "Role in this application",
+      options: SCHEMA.contact_relationship },
+    { key: "notes", label: "Notes", multiline: true },
+  ], async (values) => {
+    if (!values.role) throw new Error("Pick their role in this application.");
+    let path = values.person;
+    if (path === "__new__" || (!path && values.name)) {
+      if (!values.name) throw new Error("A name is required to create a person.");
+      const created = await api("/api/person", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: values.name }),
+      });
+      path = created.path;
+    }
+    if (!path) throw new Error("Pick a person, or create a new one.");
+    const fields = { roles: values.role };
+    if (values.notes) fields.notes = values.notes;
+    await api("/api/entry", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        path, heading: "## Applications",
+        title: `${app.company} | ${app.position}`, fields,
+      }),
+    });
+    toast("Linked");
+  }, "Link");
 }
 
 function referencePill(status) {

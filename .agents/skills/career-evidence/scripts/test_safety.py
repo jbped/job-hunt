@@ -103,6 +103,22 @@ class SafetyTest(unittest.TestCase):
         with self.assertRaises(SystemExit):
             new_application.create(self.vault, ".", "Role")
 
+    def test_create_person_is_bounded(self):
+        with self.assertRaises(serve.RequestError):
+            serve.create_person(self.vault, {"name": ""})
+        with self.assertRaises(serve.RequestError):
+            serve.create_person(self.vault, {"name": "."})
+        with self.assertRaises(serve.RequestError):
+            serve.create_person(self.vault, {"name": "X", "relationship": "bogus"})
+        result = serve.create_person(self.vault, {"name": "Sam Test",
+                                                  "relationship": "recruiter"})
+        self.assertEqual(result["path"], "People/Sam Test.md")
+        with self.assertRaises(serve.RequestError):  # one note per person
+            serve.create_person(self.vault, {"name": "Sam Test"})
+        fm, _ = v.read_note(self.vault / "People" / "Sam Test.md")
+        self.assertEqual(fm.get("type"), "person")
+        self.assertEqual(fm.get("relationships"), ["recruiter"])
+
     def test_posts_require_session_token(self):
         serve.Handler.vault = self.vault
         serve.Handler.token = "test-token-value"

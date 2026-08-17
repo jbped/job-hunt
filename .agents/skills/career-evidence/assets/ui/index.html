@@ -141,6 +141,28 @@
   .pick .dot.good { background: var(--good); }
   .pick .dot.brand { background: var(--brand); }
 
+  /* The application list is unbounded; the picker is not. It scrolls inside a
+     capped box so fifty applications never push the actions off-screen. */
+  .pick-list { max-height: 38vh; overflow-y: auto; }
+  .pick-filter { margin-bottom: 6px; }
+  .pick-filter input { font-size: 13px; padding: 5px 8px; }
+  .group-label { font-size: 11px; color: var(--muted); text-transform: uppercase;
+                 letter-spacing: .06em; font-weight: 650; margin: 8px 0 2px; padding: 0 9px; }
+  .actionbar { display: flex; gap: 8px; align-items: center; flex-wrap: wrap;
+               margin-bottom: 14px; }
+  .actionbar .hint { color: var(--muted); font-size: 13px; }
+  .kv { display: grid; grid-template-columns: 140px 1fr; gap: 4px 10px;
+        font-size: 13px; padding: 4px 0; }
+  .kv dt { color: var(--muted); margin: 0; }
+  .kv dd { margin: 0; }
+  details.editor { margin-top: 8px; }
+  details.editor > summary { cursor: pointer; font-size: 12.5px; color: var(--brand);
+                             user-select: none; list-style: none; }
+  details.editor > summary::-webkit-details-marker { display: none; }
+  details.editor > summary::before { content: "▸ "; font-size: 11px; }
+  details.editor[open] > summary::before { content: "▾ "; }
+  details.editor .field-row { grid-template-columns: 170px 1fr; }
+
   .viewer { min-height: 65vh; }
   .viewer-head {
     display: flex; gap: 12px; align-items: center; flex-wrap: wrap;
@@ -213,7 +235,7 @@
   <nav>
     <button data-view="now" aria-current="true">Now</button>
     <button data-view="applications">Applications</button>
-    <button data-view="calendar">Calendar</button>
+    <button data-view="calendar">Interviews</button>
     <button data-view="people">People</button>
     <button data-view="evidence">Evidence</button>
     <button class="btn-primary" id="newApp">New application</button>
@@ -240,15 +262,29 @@
   </section>
 
   <section data-view="calendar">
-    <h2>Interviews</h2>
-    <div id="calendar"></div>
+    <div class="actionbar">
+      <button class="btn btn-primary" id="scheduleInterview">Schedule interview</button>
+      <span class="hint">Interviews belong to an application; completing one moves it
+        to Previous and records the outcome.</span>
+    </div>
+    <h2>Upcoming</h2>
+    <div id="calendarUpcoming"></div>
+    <h2>Previous</h2>
+    <div id="calendarPrevious"></div>
   </section>
 
   <section data-view="people">
-    <h2>Contacts and referrals</h2>
-    <div id="contacts"></div>
+    <div class="actionbar">
+      <button class="btn btn-primary" id="addPerson">Add person</button>
+      <span class="hint">One note per person — referral and reference are relationships
+        on that note, never a second file.</span>
+    </div>
     <h2>People</h2>
     <div id="people"></div>
+    <h2>Application contacts</h2>
+    <p class="muted">Per-application involvement, recorded in each application's
+      Contacts note. The person's own details live on their People note.</p>
+    <div id="contacts"></div>
   </section>
 
   <section data-view="evidence">
@@ -449,9 +485,11 @@ function obsidian(path) {
 }
 
 /** A frontmatter field the schema allows editing. Saves on change, not on keypress,
- *  so a half-typed value is never written. */
-function editable(app, field, options) {
-  const value = app[field] ?? "";
+ *  so a half-typed value is never written. The holder carries the fingerprint;
+ *  the note written to is the holder's brief (applications) or its own path. */
+function editable(holder, field, options) {
+  const target = holder.brief || holder.path;
+  const value = holder[field] ?? "";
   const allowed = (SCHEMA[options?.enumKey] || options?.values);
   const input = allowed
     ? el("select", {}, ...["", ...allowed].map(v =>
@@ -461,9 +499,9 @@ function editable(app, field, options) {
 
   input.addEventListener("change", async () => {
     try {
-      const result = await save(app.brief, field, input.value, app.fingerprint);
-      app.fingerprint = result.fingerprint;
-      app[field] = input.value;
+      const result = await save(target, field, input.value, holder.fingerprint);
+      holder.fingerprint = result.fingerprint;
+      holder[field] = input.value;
       toast(result.changed ? "Saved" : "No change");
       if (result.changed) refresh();
     } catch (error) {
@@ -594,42 +632,60 @@ function renderApplications() {
   renderViewer();
 }
 
+// The picker filter survives re-renders so selecting a result doesn't clear it.
+let PICK_FILTER = "";
+
+function pickButton(item, selectedPath) {
+  const overdue = item.next_action_date && item.next_action_date < today();
+  const button = el("button", {
+      className: "pick",
+      onclick: () => { CURRENT = item; DOC = null; renderApplications(); },
+    },
+    el("span", { className: `dot ${item.active ? (overdue ? "bad" : "brand") : ""}` }),
+    el("span", {}, `${item.company} — ${item.position}`),
+    el("span", { className: "sub" }, item.status));
+  button.dataset.app = item.path;
+  button.setAttribute("aria-current", String(item.path === selectedPath));
+  return button;
+}
+
 function buildRail(rail) {
   const app = CURRENT;
 
-  // Applications
+  // Applications — active first, closed beneath their own label, the whole
+  // list scrolling inside a capped box.
   const picker = el("div", { className: "card" }, el("h3", {}, "Applications"));
-  for (const item of DATA.applications) {
-    const overdue = item.next_action_date && item.next_action_date < today();
-    const button = el("button", {
-        className: "pick",
-        onclick: () => { CURRENT = item; DOC = null; renderApplications(); },
-      },
-      el("span", { className: `dot ${item.active ? (overdue ? "bad" : "brand") : ""}` }),
-      el("span", {}, `${item.company} — ${item.position}`),
-      el("span", { className: "sub" }, item.status));
-    button.dataset.app = item.path;
-    button.setAttribute("aria-current", String(item.path === app.path));
-    picker.append(button);
+  const needle = PICK_FILTER.toLowerCase();
+  const match = (a) => !needle
+    || `${a.company} ${a.position} ${a.status}`.toLowerCase().includes(needle);
+  if (DATA.applications.length > 6) {
+    const filter = el("input", { type: "search", placeholder: "Filter…",
+                                 value: PICK_FILTER });
+    filter.addEventListener("input", () => {
+      PICK_FILTER = filter.value;
+      const fresh = el("div");
+      fillPickList(fresh, app.path, match);
+      list.replaceChildren(...fresh.childNodes);
+    });
+    picker.append(el("div", { className: "pick-filter" }, filter));
   }
+  const list = el("div", { className: "pick-list" });
+  fillPickList(list, app.path, match);
+  picker.append(list);
   rail.append(picker);
 
-  // Details — the editable frontmatter
+  // Actions — what can be done to this application, in one place at the top.
   rail.append(el("div", { className: "card" },
-    el("h3", {}, "Details"),
-    fieldRow("Status", editable(app, "status", { enumKey: "status" })),
-    fieldRow("Next action", editable(app, "next_action", { placeholder: "What happens next" })),
-    fieldRow("Due", editable(app, "next_action_date", { type: "date" })),
-    fieldRow("Applied", editable(app, "date_applied", { type: "date" })),
-    fieldRow("Job URL", editable(app, "job_url", { placeholder: "https://…" })),
-    fieldRow("Found via", editable(app, "discovery_method", { enumKey: "discovery_method" })),
-    fieldRow("Detail", editable(app, "discovery_detail", { placeholder: "Referrer, board, site" })),
-    fieldRow("Location", editable(app, "location")),
-    fieldRow("Work model", editable(app, "work_model", { enumKey: "work_model" })),
-    fieldRow("Comp status", editable(app, "compensation_status", { enumKey: "compensation_status" })),
-    fieldRow("Comp min", editable(app, "compensation_min")),
-    fieldRow("Comp max", editable(app, "compensation_max")),
-    fieldRow("Comp period", editable(app, "compensation_period", { enumKey: "compensation_period" }))));
+    el("h3", {}, "Actions"),
+    el("div", { className: "rail-actions" },
+      el("button", { className: "btn", onclick: () => addContact(app) }, "Add contact"),
+      el("button", { className: "btn", onclick: () => addInterview(app) }, "Schedule interview")),
+    el("div", { className: "rail-actions", style: "margin-top:6px" },
+      el("button", { className: "btn btn-primary",
+          onclick: () => renderPdf(app, "resume") }, "Generate resume"),
+      el("button", { className: "btn",
+          onclick: () => renderPdf(app, "cover-letter") }, "Generate cover letter")),
+    el("div", { id: "renderOut", style: "margin-top:8px" })));
 
   // Documents
   // Reading order, not alphabetical: the brief the user owns, then the posting,
@@ -639,30 +695,46 @@ function buildRail(rail) {
   const entries = Object.entries(app.notes || {})
     .sort((a, b) => (NOTE_ORDER.indexOf(a[0]) + 1 || 99) - (NOTE_ORDER.indexOf(b[0]) + 1 || 99));
   for (const [name, path] of entries) docs.append(docButton(name, path, "note"));
+  const pdfs = (app.artifacts || []).filter(a => a.name.endsWith(".pdf"));
+  if (pdfs.length) {
+    docs.append(el("div", { className: "group-label" }, "Rendered artifacts"));
+    for (const pdf of pdfs)
+      docs.append(docButton(pdf.name.replace(/\.pdf$/, ""), pdf.path, "pdf"));
+  }
   rail.append(docs);
 
-  // Artifacts
-  const pdfs = (app.artifacts || []).filter(a => a.name.endsWith(".pdf"));
-  const artifacts = el("div", { className: "card" }, el("h3", {}, "Artifacts"));
-  if (!pdfs.length)
-    artifacts.append(el("div", { className: "muted", style: "padding:2px 9px" },
-      "None rendered yet."));
-  for (const pdf of pdfs)
-    artifacts.append(docButton(pdf.name.replace(/\.pdf$/, ""), pdf.path, "pdf"));
-  artifacts.append(el("div", { className: "rail-actions", style: "margin-top:8px" },
-    el("button", { className: "btn btn-primary",
-        onclick: () => renderPdf(app, "resume") }, "Generate resume"),
-    el("button", { className: "btn",
-        onclick: () => renderPdf(app, "cover-letter") }, "Generate cover letter")));
-  artifacts.append(el("div", { id: "renderOut", style: "margin-top:8px" }));
-  rail.append(artifacts);
-
-  // Add
+  // Details — every field the schema marks editable, plus the read-only dates.
   rail.append(el("div", { className: "card" },
-    el("h3", {}, "Add"),
-    el("div", { className: "rail-actions" },
-      el("button", { className: "btn", onclick: () => addContact(app) }, "Contact"),
-      el("button", { className: "btn", onclick: () => addInterview(app) }, "Interview"))));
+    el("h3", {}, "Details"),
+    fieldRow("Status", editable(app, "status", { enumKey: "status" })),
+    fieldRow("Next action", editable(app, "next_action", { placeholder: "What happens next" })),
+    fieldRow("Due", editable(app, "next_action_date", { type: "date" })),
+    fieldRow("Applied", editable(app, "date_applied", { type: "date" })),
+    app.date_found ? fieldRow("Found",
+      el("span", { className: "muted" }, app.date_found)) : null,
+    fieldRow("Job URL", editable(app, "job_url", { placeholder: "https://…" })),
+    fieldRow("Source", editable(app, "posting_source", { placeholder: "Where the posting lives" })),
+    fieldRow("Found via", editable(app, "discovery_method", { enumKey: "discovery_method" })),
+    fieldRow("Detail", editable(app, "discovery_detail", { placeholder: "Referrer, board, site" })),
+    fieldRow("Location", editable(app, "location")),
+    fieldRow("Work model", editable(app, "work_model", { enumKey: "work_model" })),
+    fieldRow("Comp status", editable(app, "compensation_status", { enumKey: "compensation_status" })),
+    fieldRow("Currency", editable(app, "compensation_currency", { placeholder: "USD" })),
+    fieldRow("Comp min", editable(app, "compensation_min")),
+    fieldRow("Comp max", editable(app, "compensation_max")),
+    fieldRow("Comp period", editable(app, "compensation_period", { enumKey: "compensation_period" }))));
+}
+
+function fillPickList(host, selectedPath, match) {
+  const active = DATA.applications.filter(a => a.active && match(a));
+  const closed = DATA.applications.filter(a => !a.active && match(a));
+  for (const item of active) host.append(pickButton(item, selectedPath));
+  if (closed.length) {
+    host.append(el("div", { className: "group-label" }, "Closed"));
+    for (const item of closed) host.append(pickButton(item, selectedPath));
+  }
+  if (!active.length && !closed.length)
+    host.append(el("div", { className: "muted", style: "padding:4px 9px" }, "No matches."));
 }
 
 function docButton(label, path, kind) {
@@ -727,34 +799,86 @@ async function renderViewer() {
   }
 }
 
+function interviewCard(iv) {
+  return el("div", { className: "card row" },
+    el("span", { className: `pill ${iv.upcoming ? "" : "good"}` }, iv.when || "date unknown"),
+    el("span", { className: "grow" },
+      el("span", { className: "title" }, iv.company),
+      el("div", { className: "muted" },
+         [iv.stage, iv.method, iv.interviewers].filter(Boolean).join(" · "))),
+    iv.upcoming
+      ? el("button", { className: "btn", onclick: () => completeInterview(iv) }, "Mark complete")
+      : null,
+    obsidian(`${iv.application}/Interviews`));
+}
+
 function renderCalendar() {
-  const host = $("#calendar"); host.textContent = "";
-  const all = [...DATA.interviews].sort((a, b) =>
-    (b.date || "").localeCompare(a.date || ""));
-  if (!all.length) {
-    host.append(el("div", { className: "empty" },
-      "No interviews recorded. Add one from an application's page."));
-    return;
-  }
-  for (const iv of all) {
-    host.append(el("div", { className: "card row" },
-      el("span", { className: `pill ${iv.upcoming ? "" : "good"}` },
-         iv.upcoming ? "upcoming" : "done"),
-      el("span", { className: "grow" },
-        el("span", { className: "title" }, `${iv.when} — ${iv.company}`),
-        el("div", { className: "muted" },
-           [iv.stage, iv.method, iv.interviewers].filter(Boolean).join(" · "))),
-      iv.upcoming
-        ? el("button", { className: "btn", onclick: () => completeInterview(iv) }, "Mark complete")
-        : null,
-      obsidian(`${iv.application}/Interviews`)));
-  }
+  const upcoming = DATA.interviews.filter(i => i.upcoming)
+    .sort((a, b) => (a.date || "9").localeCompare(b.date || "9"));
+  const previous = DATA.interviews.filter(i => !i.upcoming)
+    .sort((a, b) => (b.date || "").localeCompare(a.date || ""));
+
+  const up = $("#calendarUpcoming"); up.textContent = "";
+  if (!upcoming.length)
+    up.append(el("div", { className: "empty" },
+      "Nothing scheduled. Use “Schedule interview” above when one lands."));
+  for (const iv of upcoming) up.append(interviewCard(iv));
+
+  const prev = $("#calendarPrevious"); prev.textContent = "";
+  if (!previous.length)
+    prev.append(el("div", { className: "empty" }, "No interviews completed yet."));
+  for (const iv of previous) prev.append(interviewCard(iv));
+}
+
+function referencePill(status) {
+  if (!status) return null;
+  const kind = status === "confirmed" ? "good" : status === "declined" ? "bad" : "warn";
+  return el("span", { className: `pill ${kind}` }, `reference: ${status}`);
 }
 
 function renderPeople() {
+  const people = $("#people"); people.textContent = "";
+  if (!DATA.people.length) {
+    people.append(el("div", { className: "empty" },
+      "No people yet. “Add person” creates their note; referral and reference "
+      + "are relationships recorded on it, and a referral is not automatically "
+      + "a reference."));
+  }
+  for (const person of DATA.people) {
+    const involvements = (person.applications || []).map(a =>
+      el("div", { className: "muted" },
+         `${a.application}${a.roles.length ? " — " + a.roles.join(", ") : ""}`));
+    // Contact details and consent are the structured, low-risk part; everything
+    // narrative stays in Obsidian. reference_status left blank means the person
+    // is not being considered as a reference — that is a real state, not a gap.
+    const editor = el("details", { className: "editor" },
+      el("summary", {}, "Edit details"),
+      fieldRow("Email", editable(person, "email")),
+      fieldRow("Phone", editable(person, "phone")),
+      fieldRow("Preferred contact", editable(person, "preferred_contact_method")),
+      fieldRow("Reference status", editable(person, "reference_status",
+                                            { enumKey: "reference_permission" })),
+      fieldRow("Consent confirmed", editable(person, "permission_confirmed",
+                                             { values: ["true", "false"] })),
+      fieldRow("Consent date", editable(person, "permission_confirmed_at",
+                                        { type: "date" })));
+    people.append(el("div", { className: "card" },
+      el("div", { className: "row" },
+        el("span", { className: "title grow" }, person.name),
+        ...(person.relationships || []).map(r => el("span", { className: "pill" }, r)),
+        referencePill(person.reference_status),
+        obsidian(person.path)),
+      el("div", { className: "muted" },
+         [person.company_context, person.email, person.phone,
+          person.preferred_contact_method].filter(Boolean).join(" · ")),
+      ...involvements,
+      editor));
+  }
+
   const contacts = $("#contacts"); contacts.textContent = "";
   if (!DATA.contacts.length) {
-    contacts.append(el("div", { className: "empty" }, "No contacts recorded."));
+    contacts.append(el("div", { className: "empty" },
+      "No application contacts yet. Add one from an application's Actions."));
   } else {
     contacts.append(el("div", { className: "card scroll" }, el("table", {},
       el("thead", {}, el("tr", {}, ...["Name", "Role", "Company", "Follow-up", ""]
@@ -766,42 +890,24 @@ function renderPeople() {
         el("td", {}, el("span", { className: "muted" }, c.next_follow_up || "—")),
         el("td", {}, obsidian(c.note))))))));
   }
+}
 
-  const people = $("#people"); people.textContent = "";
-  if (!DATA.people.length) {
-    people.append(el("div", { className: "empty" },
-      "No people yet. One note per person — referral and reference are relationships "
-      + "on that note, and a referral is not automatically a reference."));
-    return;
-  }
-  for (const person of DATA.people) {
-    // A person only gets the consent dropdown once they are being considered
-    // as a reference; everyone else shows their relationships read-only.
-    let select = null;
-    if (person.reference_status) {
-      select = el("select", {}, ...SCHEMA.reference_permission.map(v =>
-        el("option", { value: v, selected: v === person.reference_status }, v)));
-      select.addEventListener("change", async () => {
-        try {
-          const result = await save(person.path, "reference_status", select.value,
-                                    person.fingerprint);
-          person.fingerprint = result.fingerprint;
-          toast("Saved"); refresh();
-        } catch (error) { toast(error.message, "error"); refresh(); }
-      });
-    }
-    const involvements = (person.applications || []).map(a =>
-      el("div", { className: "muted" },
-         `${a.application}${a.roles.length ? " — " + a.roles.join(", ") : ""}`));
-    people.append(el("div", { className: "card row" },
-      el("span", { className: "grow" },
-        el("span", { className: "title" }, person.name),
-        el("div", { className: "muted" },
-           [(person.relationships || []).join(", "), person.email, person.phone]
-             .filter(Boolean).join(" · ")),
-        ...involvements),
-      select, obsidian(person.path)));
-  }
+function addPerson() {
+  modal("Add a person", [
+    { key: "name", label: "Full name" },
+    { key: "relationship", label: "Relationship", options: SCHEMA.contact_relationship },
+    { key: "company_context", label: "Company context",
+      placeholder: "Where you know them from" },
+    { key: "email", label: "Email" },
+    { key: "phone", label: "Phone" },
+  ], async (values) => {
+    if (!values.name) throw new Error("A name is required.");
+    const result = await api("/api/person", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(values),
+    });
+    toast(`Created ${result.path}`);
+  }, "Create");
 }
 
 function renderEvidence() {
@@ -814,7 +920,8 @@ function renderEvidence() {
     for (const item of group) {
       const viewer = noteViewer(item.path, item.title);
       $("summary", viewer).append(
-        el("span", { className: "pill", style: "margin-left:auto" }, item.status || "—"));
+        el("span", { className: "muted", style: "margin-left:auto" }, item.company || ""),
+        el("span", { className: "pill" }, item.status || "—"));
       card.append(viewer);
     }
     host.append(card);
@@ -855,7 +962,10 @@ function modal(title, fields, onSubmit, submitLabel) {
   form.append(el("h2", { style: "margin-top:0" }, title));
   const inputs = {};
   for (const field of fields) {
-    const input = field.options
+    const input = field.choices
+      ? el("select", {}, ...field.choices.map(c =>
+          el("option", { value: c.value }, c.label)))
+      : field.options
       ? el("select", {}, ...["", ...field.options].map(v =>
           el("option", { value: v }, v || "—")))
       : el(field.multiline ? "textarea" : "input",
@@ -921,7 +1031,15 @@ function addContact(app) {
 }
 
 function addInterview(app) {
+  // From the Interviews tab there is no current application, so the modal asks;
+  // active applications first, since that is almost always the answer.
+  const appField = app ? [] : [{
+    key: "application", label: "Application",
+    choices: [...DATA.applications].sort((a, b) => b.active - a.active)
+      .map(a => ({ value: a.path, label: `${a.company} — ${a.position}` })),
+  }];
   modal("Schedule an interview", [
+    ...appField,
     { key: "when", label: "Date and time", placeholder: "2026-09-02 14:00 MDT" },
     { key: "stage", label: "Stage", options: SCHEMA.stage },
     { key: "method", label: "Method", options: SCHEMA.method },
@@ -931,11 +1049,13 @@ function addInterview(app) {
     { key: "preparation_priorities", label: "Preparation priorities", multiline: true },
   ], async (values) => {
     if (!values.when) throw new Error("A date is required.");
-    const { when, stage, ...fields } = values;
+    const { when, stage, application, ...fields } = values;
+    const appPath = app ? app.path : application;
+    if (!appPath) throw new Error("Pick the application this interview belongs to.");
     await api("/api/entry", {
       method: "POST", headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        path: `${app.path}/Interviews.md`, heading: "## Upcoming",
+        path: `${appPath}/Interviews.md`, heading: "## Upcoming",
         title: `${when} | ${stage || "Interview"}`, fields,
       }),
     });
@@ -1024,6 +1144,8 @@ function render() {
 for (const button of document.querySelectorAll("nav button[data-view]"))
   button.addEventListener("click", () => show(button.dataset.view));
 $("#newApp").addEventListener("click", newApplication);
+$("#scheduleInterview").addEventListener("click", () => addInterview(null));
+$("#addPerson").addEventListener("click", addPerson);
 
 refresh().catch(error => {
   document.querySelector("main").prepend(

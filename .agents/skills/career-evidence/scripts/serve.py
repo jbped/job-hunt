@@ -6,11 +6,12 @@ The index is never written to — after any successful save it is rebuilt from
 disk, so the notes remain the only source of truth and a stale cache can never
 become the thing you are editing.
 
-Three write operations are allowed, and no others:
+Four write operations are allowed, and no others:
 
   1. Edit a frontmatter field the schema marks UI-editable (one line rewritten)
   2. Append a structured entry built from a template (contact, interview, reference)
   3. Create an application, by calling the same script the CLI calls
+  4. Create a person note (one per person, never overwriting)
 
 Everything else — prose, analysis, the verbatim posting — is read-only here and
 links out to Obsidian. That boundary is what keeps the notes hand-editable
@@ -326,6 +327,49 @@ def create_application(vault: Path, payload: dict) -> dict:
     return {"path": str(folder.relative_to(vault))}
 
 
+def create_person(vault: Path, payload: dict) -> dict:
+    """Create a People/<Name>.md note — the one-note-per-person entry point.
+
+    Deliberately minimal: it names the person and their vault-wide relationship.
+    Everything deeper — application involvements, reference consent — is either
+    an editable field or belongs in Obsidian.
+    """
+    name = str(payload.get("name", "")).strip()
+    if not name:
+        raise RequestError(400, "a name is required")
+    safe = new_application.safe_name(name)
+    if not safe:
+        raise RequestError(400, f"'{name}' does not reduce to a usable file name")
+
+    relationship = str(payload.get("relationship", "")).strip()
+    if relationship and relationship not in schema.CONTACT_RELATIONSHIP:
+        raise RequestError(
+            400, f"'{relationship}' is not one of: {', '.join(schema.CONTACT_RELATIONSHIP)}")
+
+    folder = vault / "People"
+    folder.mkdir(exist_ok=True)
+    target = (folder / f"{safe}.md").resolve()
+    try:
+        target.relative_to(vault.resolve())
+    except ValueError:
+        raise RequestError(403, "path is outside the vault")
+    if target.exists():
+        raise RequestError(409, f"People/{safe}.md already exists — one note per person; "
+                                "add to it instead of creating a second")
+
+    lines = ["---", "type: person", f"name: {name}"]
+    if relationship:
+        lines += ["relationships:", f"  - {relationship}"]
+    for key in ("company_context", "email", "phone"):
+        value = str(payload.get(key, "")).strip()
+        if value:
+            lines.append(f"{key}: {value}")
+    lines += ["---", "", f"# {name}", "", "## Applications", "", "## Notes", ""]
+
+    v.atomic_write(target, "\n".join(lines))
+    return {"path": str(target.relative_to(vault))}
+
+
 def start_render(vault: Path, payload: dict) -> dict:
     """Kick off a PDF render on a worker thread and return a job id to poll.
 
@@ -491,6 +535,7 @@ class Handler(BaseHTTPRequestHandler):
             "/api/entry": append_entry,
             "/api/interview/complete": complete_interview,
             "/api/application": create_application,
+            "/api/person": create_person,
             "/api/render": start_render,
         }
         try:

@@ -1147,6 +1147,34 @@ $("#newApp").addEventListener("click", newApplication);
 $("#scheduleInterview").addEventListener("click", () => addInterview(null));
 $("#addPerson").addEventListener("click", addPerson);
 
+// Live updates. The vault is edited outside this page — Obsidian, the agent,
+// the scripts — so poll a stat-only digest and refetch when it moves. Never
+// mid-edit: a rerender would eat a half-typed value or close the modal.
+let VAULT_STATE = null;
+
+function editingNow() {
+  if ($("#modal").open) return true;
+  const active = document.activeElement;
+  return active && ["INPUT", "SELECT", "TEXTAREA"].includes(active.tagName);
+}
+
+async function checkVaultState() {
+  if (document.hidden || editingNow()) return;
+  try {
+    const { state } = await api("/api/state");
+    if (VAULT_STATE !== state) {
+      const first = VAULT_STATE === null;
+      VAULT_STATE = state;
+      if (!first) await refresh();
+    }
+  } catch { /* server briefly gone (restart); the next tick recovers */ }
+}
+
+setInterval(checkVaultState, 3000);
+document.addEventListener("visibilitychange",
+  () => { if (!document.hidden) checkVaultState(); });
+window.addEventListener("focus", checkVaultState);
+
 refresh().catch(error => {
   document.querySelector("main").prepend(
     el("div", { className: "banner bad" }, "Could not load the vault: " + error.message));

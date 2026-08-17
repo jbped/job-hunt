@@ -644,6 +644,18 @@ def validate(pdf: Path, expected_pages: int, sample: str) -> tuple[list[str], li
     return problems, notes
 
 
+def ghostscript() -> str | None:
+    """The Ghostscript executable, wherever this OS puts it.
+
+    ps2pdf is a wrapper script that Windows installs do not ship; invoking gs
+    directly with the equivalent flags works identically on every platform.
+    """
+    for name in ("gs", "gswin64c", "gswin32c"):
+        if shutil.which(name):
+            return name
+    return None
+
+
 def render(vault: Path, folder: Path, kind: str, pages: int = 1,
            preview: bool = True) -> dict:
     source_name = "Resume Content.md" if kind == "resume" else "Cover Letter.md"
@@ -658,12 +670,19 @@ def render(vault: Path, folder: Path, kind: str, pages: int = 1,
     if not template.exists():
         raise SystemExit(f"Missing skill template: {template}")
 
-    for tool in ("ps2pdf", "pdfinfo", "pdftotext", "pdffonts"):
-        if shutil.which(tool) is None:
-            raise SystemExit(
-                f"'{tool}' is not installed. On Arch/CachyOS: "
-                "sudo pacman -S ghostscript poppler"
-            )
+    gs = ghostscript()
+    missing = [t for t in ("pdfinfo", "pdftotext", "pdffonts") if shutil.which(t) is None]
+    if gs is None or missing:
+        need = (["Ghostscript"] if gs is None else []) + \
+               (["Poppler utilities"] if missing else [])
+        raise SystemExit(
+            f"{' and '.join(need)} not found. Install:\n"
+            "  Arch:    sudo pacman -S ghostscript poppler\n"
+            "  Debian:  sudo apt install ghostscript poppler-utils\n"
+            "  macOS:   brew install ghostscript poppler\n"
+            "  Windows: winget install ArtifexSoftware.Ghostscript, and put the\n"
+            "           Poppler binaries (e.g. the poppler-windows release) on PATH"
+        )
 
     brief = folder / "Application Brief.md"
     fm, _ = v.read_note(brief) if brief.exists() else ({}, "")
@@ -705,12 +724,13 @@ def render(vault: Path, folder: Path, kind: str, pages: int = 1,
     ps_path.write_text(ps_text, encoding="utf-8")
 
     result = subprocess.run(
-        ["ps2pdf", "-dPDFSETTINGS=/prepress", str(ps_path), str(pdf_path)],
+        [gs, "-dSAFER", "-dBATCH", "-dNOPAUSE", "-sDEVICE=pdfwrite",
+         "-dPDFSETTINGS=/prepress", f"-sOutputFile={pdf_path}", str(ps_path)],
         capture_output=True, text=True,
     )
     if result.returncode != 0 or not pdf_path.exists():
         ps_path.unlink(missing_ok=True)
-        raise SystemExit(f"ps2pdf failed:\n{result.stderr.strip()}")
+        raise SystemExit(f"Ghostscript failed:\n{result.stderr.strip()}")
 
     probe = data["summary"] if kind == "resume" else (data["paragraphs"] or [""])[0]
     problems, notes = validate(pdf_path, page.page, probe)

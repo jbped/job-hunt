@@ -26,6 +26,7 @@ from __future__ import annotations
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 import argparse
+import hashlib
 import json
 import mimetypes
 import os
@@ -157,6 +158,23 @@ def _append_before_reference(text: str, entry: str) -> str:
         stop -= 1
     lines[stop:stop] = ["", *entry.rstrip("\n").split("\n")]
     return "\n".join(lines)
+
+
+def vault_state(vault: Path) -> str:
+    """A cheap digest of which notes exist and when they last changed.
+
+    Stat-only — no file is read — so the page can poll it every few seconds and
+    refetch the real index only when something on disk actually moved.
+    """
+    digest = hashlib.sha256()
+    for path in sorted(vault.rglob("*.md")):
+        if ".cache" in path.parts or ".obsidian" in path.parts:
+            continue
+        try:
+            digest.update(f"{path}:{path.stat().st_mtime_ns}\n".encode())
+        except OSError:
+            continue  # deleted between listing and stat — the next poll settles it
+    return digest.hexdigest()[:16]
 
 
 def read_note(vault: Path, relative: str) -> dict:
@@ -464,6 +482,8 @@ class Handler(BaseHTTPRequestHandler):
                 self._send(200, html.encode("utf-8"), "text/html; charset=utf-8")
             elif route == "/api/index":
                 self._json(export_index.build(self.vault))
+            elif route == "/api/state":
+                self._json({"state": vault_state(self.vault)})
             elif route == "/api/schema":
                 self._json({
                     "status": schema.APPLICATION_STATUS,

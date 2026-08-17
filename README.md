@@ -49,6 +49,12 @@ The skill lives at `.agents/skills/` (the cross-agent standard location);
 `.claude/skills/career-evidence` is a symlink to it, so opening this repo in
 Claude Code loads it automatically. Nothing needs installing.
 
+On Windows, git only recreates that symlink with Developer Mode (or an
+elevated shell) and `git config core.symlinks true` before cloning. If the
+symlink comes out as a plain text file, either re-clone with those set, or
+skip it entirely: unzip the release into `%USERPROFILE%\.claude\skills\`
+instead — everything works from there.
+
 ## Getting it
 
 Two ways in, same skill either way:
@@ -73,30 +79,31 @@ Then edit `.env` so `CAREER_EVIDENCE_VAULT` points at your vault. (Zip install:
 create the `.env` inside the unzipped `career-evidence/` folder, next to
 `SKILL.md` — the scripts look there first.) If you do not have a vault yet:
 
-```fish
+```sh
 python .agents/skills/career-evidence/scripts/init_vault.py ~/Documents/Obsidian/job-hunt
 ```
 
-There are no dependencies to install. `render_pdf.py` needs `ps2pdf`
-(Ghostscript) and the `poppler` utilities for validation; everything else is
-stdlib.
+Everything runs on stock Python 3 — Windows, macOS, or Linux, no packages to
+install. Only `render_pdf.py` needs external tools, Ghostscript and the Poppler
+utilities: `pacman -S ghostscript poppler` (Arch), `apt install ghostscript
+poppler-utils` (Debian/Ubuntu), `brew install ghostscript poppler` (macOS), or
+on Windows the Ghostscript installer plus Poppler binaries on `PATH`.
 
 ## Scripts
 
 Run from anywhere — they read `.env` for the vault path, and `--vault PATH`
-overrides it.
+overrides it. From the repo root, with `scripts/` being
+`.agents/skills/career-evidence/scripts/`:
 
-```fish
-set -l s .agents/skills/career-evidence/scripts
-
-python $s/serve.py                          # the dashboard, on 127.0.0.1
-python $s/status.py                         # same picture, in the terminal
-python $s/new_application.py "Company" "Role"
-python $s/capture_jd.py --app <folder> --file posting.txt
-python $s/render_pdf.py --app <folder> --kind resume
-python $s/audit_vault.py                    # must exit 0
-python $s/export_index.py                   # rebuild .cache/vault-index.json
-python $s/export_index.py --write-skill-matrix   # skills -> evidence map
+```sh
+python scripts/serve.py                    # the dashboard, on 127.0.0.1
+python scripts/status.py                   # same picture, in the terminal
+python scripts/new_application.py "Company" "Role"
+python scripts/capture_jd.py --app <folder> --file posting.txt
+python scripts/render_pdf.py --app <folder> --kind resume
+python scripts/audit_vault.py              # must exit 0
+python scripts/export_index.py             # rebuild .cache/vault-index.json
+python scripts/export_index.py --write-skill-matrix   # skills -> evidence map
 ```
 
 ## Rules that are not negotiable

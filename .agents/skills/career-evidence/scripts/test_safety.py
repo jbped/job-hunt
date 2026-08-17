@@ -124,7 +124,9 @@ class SafetyTest(unittest.TestCase):
         # must be signalled only if its recorded port answers as our dashboard.
         import json as jsonlib
         import subprocess
-        bystander = subprocess.Popen(["sleep", "30"])
+        import sys
+        bystander = subprocess.Popen(
+            [sys.executable, "-c", "import time; time.sleep(30)"])
         try:
             pidfile = self.vault / ".cache" / "serve.pid"
             pidfile.parent.mkdir(exist_ok=True)

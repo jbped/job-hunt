@@ -12,7 +12,7 @@ ordering are ever changed.
 
 Usage:
     python capture_jd.py --app "Applications/Co/Role" --file posting.txt
-    pbpaste | python capture_jd.py --app "Applications/Co/Role"
+    python capture_jd.py --app "Applications/Co/Role" < posting.txt
 """
 
 from __future__ import annotations

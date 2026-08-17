@@ -1,4 +1,4 @@
-# Resume Copy | Company | Position | Date
+# Resume Content | Company | Position | Date
 
 ## Header
 

@@ -51,7 +51,7 @@ exactly what made the earlier manual reflow workflow necessary.
 
 ## Source format
 
-The renderer reads the structure of `Resume Copy.md`: a `## Header` section with
+The renderer reads the structure of `Resume Content.md`: a `## Header` section with
 name, professional title, and a `·`-separated contact line; `## Summary`;
 `## Experience` with `### Title | Company | Dates` and `-` bullets; then
 optionally `## Additional Experience`, `## Education`, and `## Technical Skills`.

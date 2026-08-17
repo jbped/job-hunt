@@ -646,7 +646,7 @@ def validate(pdf: Path, expected_pages: int, sample: str) -> tuple[list[str], li
 
 def render(vault: Path, folder: Path, kind: str, pages: int = 1,
            preview: bool = True) -> dict:
-    source_name = "Resume Copy.md" if kind == "resume" else "Cover Letter.md"
+    source_name = "Resume Content.md" if kind == "resume" else "Cover Letter.md"
     template_name = ("PDF/Resume - Figma Inspired.ps" if kind == "resume"
                      else "PDF/Cover Letter - Figma Inspired.ps")
     stem = "Resume" if kind == "resume" else "Cover Letter"

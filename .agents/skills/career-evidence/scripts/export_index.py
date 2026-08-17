@@ -123,7 +123,7 @@ def build(vault: Path) -> dict:
         app["tags"] = fm.get("tags") or []
 
         for name in ("Analysis.md", "Job Description.md", "Contacts.md",
-                     "Interviews.md", "Resume Copy.md", "Cover Letter.md",
+                     "Interviews.md", "Resume Content.md", "Cover Letter.md",
                      "Submission Notes.md"):
             if (folder / name).exists():
                 app["notes"][name[:-3]] = str((folder / name).relative_to(vault))

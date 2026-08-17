@@ -57,7 +57,7 @@ claim. Rewriting the analysis is always safe; it is derived, not recorded.
 1. `new_application.py "<Company>" "<Role>"` scaffolds the folder.
 2. `capture_jd.py` stores the posting verbatim and stamps its checksum.
 3. Ask the agent to write `Analysis.md` from the posting and your evidence.
-4. Draft `Resume Copy.md` and `Cover Letter.md` from linked evidence only.
+4. Draft `Resume Content.md` and `Cover Letter.md` from linked evidence only.
 5. `render_pdf.py` produces validated PDFs into `Artifacts/`.
 6. Record what was sent in `Submission Notes.md` and update the status.
 

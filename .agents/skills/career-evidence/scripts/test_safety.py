@@ -119,6 +119,23 @@ class SafetyTest(unittest.TestCase):
         self.assertEqual(fm.get("type"), "person")
         self.assertEqual(fm.get("relationships"), ["recruiter"])
 
+    def test_stop_previous_never_kills_unverified_pids(self):
+        # PIDs get recycled: a stale pidfile may name an innocent process. It
+        # must be signalled only if its recorded port answers as our dashboard.
+        import json as jsonlib
+        import subprocess
+        bystander = subprocess.Popen(["sleep", "30"])
+        try:
+            pidfile = self.vault / ".cache" / "serve.pid"
+            pidfile.parent.mkdir(exist_ok=True)
+            pidfile.write_text(jsonlib.dumps({"pid": bystander.pid, "port": 1}))
+            serve.stop_previous(self.vault)
+            self.assertIsNone(bystander.poll())  # still alive
+            self.assertFalse(pidfile.exists())   # stale record cleaned up
+        finally:
+            bystander.kill()
+            bystander.wait()
+
     def test_posts_require_session_token(self):
         serve.Handler.vault = self.vault
         serve.Handler.token = "test-token-value"

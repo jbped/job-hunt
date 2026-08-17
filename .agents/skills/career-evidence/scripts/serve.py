@@ -31,11 +31,14 @@ import mimetypes
 import os
 import re
 import secrets
+import signal
 import subprocess
 import sys
 import threading
+import time
 import traceback
 import urllib.parse
+import urllib.request
 import uuid
 import webbrowser
 
@@ -556,6 +559,65 @@ class Handler(BaseHTTPRequestHandler):
             self._json({"error": "internal error; see the terminal"}, 500)
 
 
+# --------------------------------------------------------------------------
+# Single instance
+# --------------------------------------------------------------------------
+# A dashboard left running with old code answers with old rules, which reads as
+# vault corruption. Each server records itself in the vault's .cache; the next
+# start stops the previous one before taking over.
+
+def _pidfile(vault: Path) -> Path:
+    return vault / ".cache" / "serve.pid"
+
+
+def _is_dashboard(port: int) -> bool:
+    """Whether something on this local port identifies as this dashboard."""
+    try:
+        with urllib.request.urlopen(f"http://127.0.0.1:{port}/api/schema",
+                                    timeout=1) as response:
+            return response.headers.get("Server", "").startswith(Handler.server_version)
+    except OSError:
+        return False
+
+
+def stop_previous(vault: Path) -> None:
+    """Stop the dashboard the pidfile names, if it is still one of ours.
+
+    The PID alone is not trusted — PIDs get recycled, and killing whatever now
+    holds the number would be worse than the stale server. The process is only
+    signalled after the port it recorded answers as a career-evidence dashboard.
+    """
+    pidfile = _pidfile(vault)
+    if not pidfile.is_file():
+        return
+    try:
+        info = json.loads(pidfile.read_text(encoding="utf-8"))
+        pid, port = int(info["pid"]), int(info["port"])
+    except (ValueError, KeyError, json.JSONDecodeError):
+        pidfile.unlink(missing_ok=True)
+        return
+
+    if pid != os.getpid() and _is_dashboard(port):
+        print(f"Stopping the previous dashboard (pid {pid}, port {port})…")
+        try:
+            os.kill(pid, signal.SIGTERM)
+        except (ProcessLookupError, PermissionError):
+            pass
+        else:
+            for _ in range(30):
+                if not _is_dashboard(port):
+                    break
+                time.sleep(0.1)
+    pidfile.unlink(missing_ok=True)
+
+
+def write_pidfile(vault: Path, port: int) -> None:
+    pidfile = _pidfile(vault)
+    pidfile.parent.mkdir(parents=True, exist_ok=True)
+    pidfile.write_text(json.dumps({"pid": os.getpid(), "port": port}),
+                       encoding="utf-8")
+
+
 def default_port() -> int:
     raw = os.environ.get("CAREER_EVIDENCE_PORT") or v.load_env().get("CAREER_EVIDENCE_PORT")
     try:
@@ -574,12 +636,21 @@ def main() -> int:
     vault = v.require_vault(args.vault)
     Handler.vault = vault
     Handler.token = secrets.token_hex(16)
+    stop_previous(vault)
     export_index.write(vault)
 
     # 127.0.0.1 rather than 0.0.0.0: this server can write to personal data, so
     # it must not be reachable from the network. Writes additionally require the
     # per-session token injected into the served page.
-    server = ThreadingHTTPServer(("127.0.0.1", args.port), Handler)
+    try:
+        server = ThreadingHTTPServer(("127.0.0.1", args.port), Handler)
+    except OSError as error:
+        raise SystemExit(
+            f"Could not bind 127.0.0.1:{args.port} ({error.strerror}).\n"
+            "Something else holds the port — an untracked older dashboard, or "
+            "another program. Stop it, or pass --port to use a different one."
+        )
+    write_pidfile(vault, args.port)
     url = f"http://127.0.0.1:{args.port}/"
     print(f"Vault:     {vault}")
     print(f"Dashboard: {url}")
@@ -592,6 +663,13 @@ def main() -> int:
         server.serve_forever()
     except KeyboardInterrupt:
         print("\nStopped.")
+    finally:
+        pidfile = _pidfile(vault)
+        try:
+            if json.loads(pidfile.read_text(encoding="utf-8")).get("pid") == os.getpid():
+                pidfile.unlink()
+        except (OSError, ValueError, json.JSONDecodeError):
+            pass
     return 0
 
 

@@ -23,7 +23,7 @@ the two, and nothing personal is ever committed here.
 ## Layout
 
 ```
-.claude/skills/career-evidence/
+.agents/skills/career-evidence/
   SKILL.md            what the agent reads
   scripts/            the deterministic parts (Python 3 stdlib only)
   references/         schema, tracking rules, writing standards
@@ -45,8 +45,9 @@ Working Notes/          open questions, generated skill matrix and field referen
 Templates/              the scaffolds everything is created from
 ```
 
-Because the skill sits at `.claude/skills/`, opening this repo in Claude Code
-loads it automatically. Nothing needs installing and nothing is symlinked.
+The skill lives at `.agents/skills/` (the cross-agent standard location);
+`.claude/skills/career-evidence` is a symlink to it, so opening this repo in
+Claude Code loads it automatically. Nothing needs installing.
 
 ## Setup
 
@@ -58,7 +59,7 @@ Then edit `.env` so `CAREER_EVIDENCE_VAULT` points at your vault. If you do not
 have one yet:
 
 ```fish
-python .claude/skills/career-evidence/scripts/init_vault.py ~/Documents/Obsidian/job-hunt
+python .agents/skills/career-evidence/scripts/init_vault.py ~/Documents/Obsidian/job-hunt
 ```
 
 There are no dependencies to install. `render_pdf.py` needs `ps2pdf`
@@ -71,7 +72,7 @@ Run from anywhere — they read `.env` for the vault path, and `--vault PATH`
 overrides it.
 
 ```fish
-set -l s .claude/skills/career-evidence/scripts
+set -l s .agents/skills/career-evidence/scripts
 
 python $s/serve.py                          # the dashboard, on 127.0.0.1
 python $s/status.py                         # same picture, in the terminal

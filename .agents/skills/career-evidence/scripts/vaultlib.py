@@ -37,7 +37,7 @@ ENV_VAR = "CAREER_EVIDENCE_VAULT"
 def _repo_root() -> Path:
     """The checkout this skill lives in — where .env sits.
 
-    The skill nests at <repo>/.claude/skills/career-evidence, so the depth is
+    The skill nests at <repo>/.agents/skills/career-evidence, so the depth is
     fixed, but search for the marker anyway: someone may vendor the skill at a
     different depth, and a wrong guess would silently ignore their .env.
     """

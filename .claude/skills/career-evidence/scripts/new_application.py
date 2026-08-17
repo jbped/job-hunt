@@ -47,7 +47,13 @@ def create(vault: Path, company: str, position: str, *, url: str = "",
            discovery: str = "", detail: str = "", source: str = "",
            today: str | None = None) -> Path:
     templates = vault / "Templates"
-    folder = vault / "Applications" / safe_name(company) / safe_name(position)
+    company_dir, position_dir = safe_name(company), safe_name(position)
+    if not company_dir or not position_dir:
+        raise SystemExit(
+            f"'{company}' / '{position}' sanitize to an empty folder name.\n"
+            "The index only sees Applications/<Company>/<Role>/ — pick real names."
+        )
+    folder = vault / "Applications" / company_dir / position_dir
     if folder.exists():
         raise SystemExit(f"Already exists: {folder.relative_to(vault)}\nNothing was changed.")
 

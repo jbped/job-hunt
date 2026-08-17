@@ -59,4 +59,4 @@ optionally `## Additional Experience`, `## Education`, and `## Technical Skills`
 A cover letter needs no special structure — write it as a letter. Everything above
 its first `## ` heading is rendered, and the letterhead comes from
 `Personal Information/Contact.md`, so contact details live in exactly one
-place; only entries whose audience is not `self` appear on it.
+place; only entries whose audience is `application` or `public` appear on it.

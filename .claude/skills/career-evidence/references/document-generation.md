@@ -47,7 +47,8 @@ The resume working copy needs `## Header` (name, professional title, and a
 A cover letter is written as a letter — date, recipient block, salutation,
 paragraphs, sign-off. Everything above its first `## ` heading is rendered, and the
 letterhead comes from `Personal Information/Contact.md`, so contact details live
-in one place; only entries whose audience is not `self` are printed.
+in one place; only entries whose audience is `application` or `public` are
+printed — `recruiter` details are for conversation, never for artifacts.
 
 To change the visual design, edit the definitions at the top of
 `Templates/PDF/*.ps`. Avoid adding fixed-position drawing commands after them;

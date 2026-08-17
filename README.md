@@ -95,8 +95,9 @@ python $s/export_index.py --write-skill-matrix   # skills -> evidence map
   public`); anything marked `self` never leaves the vault.
 - Every script has a hand-editable fallback. Copy a template and the whole
   workflow still works.
-- The dashboard binds `127.0.0.1` only. It can write to personal data and has no
-  authentication.
+- The dashboard binds `127.0.0.1` only, and writes additionally require the
+  per-session token the served page carries — a browser tab on another site
+  cannot reach the write API.
 
 ## License
 

@@ -6,7 +6,9 @@ someone has to remember into something the vault audit can verify — so if a
 posting is ever edited, reflowed, or spell-corrected after capture, it shows up
 as an error instead of silently becoming the evidence for a resume claim.
 
-The posting text is written byte-for-byte as supplied. Nothing is normalized.
+The posting text is preserved after newline normalization only — CRLF becomes
+LF and trailing newlines are trimmed. No words, spelling, punctuation, or
+ordering are ever changed.
 
 Usage:
     python capture_jd.py --app "Applications/Co/Role" --file posting.txt

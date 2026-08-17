@@ -29,6 +29,7 @@ import json
 import mimetypes
 import os
 import re
+import secrets
 import subprocess
 import sys
 import threading
@@ -102,6 +103,7 @@ def set_field(vault: Path, payload: dict) -> dict:
     value = payload.get("value")
     value = "" if value is None else str(value).strip()
 
+    expect = payload.get("fingerprint") or v.fingerprint(target)
     fm, text = v.read_note(target)
     check_field(fm.get("type", ""), field, value)
 
@@ -110,8 +112,7 @@ def set_field(vault: Path, payload: dict) -> dict:
         return {"changed": False, "fingerprint": v.fingerprint(target)}
 
     try:
-        fingerprint = v.atomic_write(target, updated,
-                                     expect=payload.get("fingerprint"), vault=vault)
+        fingerprint = v.atomic_write(target, updated, expect=expect, vault=vault)
     except v.ConflictError as error:
         raise RequestError(409, str(error))
     return {"changed": True, "fingerprint": fingerprint}
@@ -213,7 +214,13 @@ def append_entry(vault: Path, payload: dict) -> dict:
     if not isinstance(fields, dict):
         raise RequestError(400, "fields must be an object")
 
-    _, text = v.read_note(target)
+    fm, text = v.read_note(target)
+    # Entries belong in entry-shaped notes. Anything else — the brief, an
+    # evidence note — is hand-structured and not this API's to grow.
+    if target.name not in ("Contacts.md", "Interviews.md") and fm.get("type") != "person":
+        raise RequestError(403, "entries may be appended only to Contacts.md, "
+                                "Interviews.md, or a person note")
+    expect = payload.get("fingerprint") or v.fingerprint(target)
     level = "###" if heading else "##"
     lines = [f"{level} {title}"]
     for key, value in fields.items():
@@ -234,8 +241,7 @@ def append_entry(vault: Path, payload: dict) -> dict:
         raise RequestError(400, str(error))
 
     try:
-        fingerprint = v.atomic_write(target, updated,
-                                     expect=payload.get("fingerprint"), vault=vault)
+        fingerprint = v.atomic_write(target, updated, expect=expect, vault=vault)
     except v.ConflictError as error:
         raise RequestError(409, str(error))
     return {"changed": True, "fingerprint": fingerprint}
@@ -252,6 +258,9 @@ def complete_interview(vault: Path, payload: dict) -> dict:
     title = str(payload.get("title", "")).strip()
     outcome = payload.get("fields") or {}
 
+    if target.name != "Interviews.md":
+        raise RequestError(403, "interview completion applies only to Interviews.md")
+    expect = payload.get("fingerprint") or v.fingerprint(target)
     _, text = v.read_note(target)
     lines = text.split("\n")
 
@@ -293,8 +302,7 @@ def complete_interview(vault: Path, payload: dict) -> dict:
                                          PLACEHOLDERS["## upcoming"])
 
     try:
-        fingerprint = v.atomic_write(target, updated,
-                                     expect=payload.get("fingerprint"), vault=vault)
+        fingerprint = v.atomic_write(target, updated, expect=expect, vault=vault)
     except v.ConflictError as error:
         raise RequestError(409, str(error))
     return {"changed": True, "fingerprint": fingerprint}
@@ -324,7 +332,7 @@ def start_render(vault: Path, payload: dict) -> dict:
     Rendering shells out to Ghostscript and takes seconds; doing it inline would
     block the whole server, so the page polls instead.
     """
-    folder = (vault / str(payload.get("path", ""))).resolve()
+    folder = resolve(vault, str(payload.get("path", "")))
     kind = str(payload.get("kind", "resume"))
     pages = int(payload.get("pages", 1) or 1)
     if kind not in ("resume", "cover-letter"):
@@ -404,7 +412,9 @@ class Handler(BaseHTTPRequestHandler):
                 page = UI_DIR / "index.html"
                 if not page.exists():
                     raise RequestError(500, f"UI template missing: {page}")
-                self._send(200, page.read_bytes(), "text/html; charset=utf-8")
+                html = page.read_text(encoding="utf-8").replace(
+                    "__SESSION_TOKEN__", self.token)
+                self._send(200, html.encode("utf-8"), "text/html; charset=utf-8")
             elif route == "/api/index":
                 self._json(export_index.build(self.vault))
             elif route == "/api/schema":
@@ -461,6 +471,21 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_POST(self) -> None:
         route = urllib.parse.urlparse(self.path).path
+        # 127.0.0.1 keeps the network out, but not a browser tab: any webpage
+        # can fire POSTs at localhost. Writes therefore require the per-session
+        # token the served page carries, a JSON content type, and — when a
+        # browser sends one — a local Origin.
+        origin = self.headers.get("Origin")
+        if origin and urllib.parse.urlparse(origin).hostname not in ("127.0.0.1", "localhost"):
+            self._json({"error": "cross-origin writes are not allowed"}, 403)
+            return
+        content_type = (self.headers.get("Content-Type") or "").split(";")[0].strip()
+        if content_type != "application/json":
+            self._json({"error": "writes must be application/json"}, 403)
+            return
+        if not secrets.compare_digest(self.headers.get("X-Session-Token", ""), self.token):
+            self._json({"error": "missing or invalid session token; reload the page"}, 403)
+            return
         handlers = {
             "/api/field": set_field,
             "/api/entry": append_entry,
@@ -503,10 +528,12 @@ def main() -> int:
 
     vault = v.require_vault(args.vault)
     Handler.vault = vault
+    Handler.token = secrets.token_hex(16)
     export_index.write(vault)
 
-    # 127.0.0.1 rather than 0.0.0.0: this server can write to personal data and
-    # has no authentication, so it must not be reachable from the network.
+    # 127.0.0.1 rather than 0.0.0.0: this server can write to personal data, so
+    # it must not be reachable from the network. Writes additionally require the
+    # per-session token injected into the served page.
     server = ThreadingHTTPServer(("127.0.0.1", args.port), Handler)
     url = f"http://127.0.0.1:{args.port}/"
     print(f"Vault:     {vault}")

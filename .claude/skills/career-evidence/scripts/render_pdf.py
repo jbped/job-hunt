@@ -197,8 +197,9 @@ def letterhead(vault: Path) -> dict:
             title = _clean(stripped.split(":", 1)[1]).rstrip(".")
             break
 
-    # Each contacts entry is {value, audience}; anything marked `self` stays in
-    # the vault, every other audience level may appear on application artifacts.
+    # Each contacts entry is {value, audience}. Application artifacts may carry
+    # only `application` and `public` details — `recruiter` is for conversation,
+    # not for a cover letter, and `self` never leaves the vault.
     entries = fm.get("contacts") or {}
     contact = []
     # The letterhead design has exactly four contact slots.
@@ -207,7 +208,7 @@ def letterhead(vault: Path) -> dict:
         if not isinstance(entry, dict):
             continue
         value = entry.get("value")
-        if value and entry.get("audience") != "self":
+        if value and entry.get("audience") in ("application", "public"):
             contact.append(str(value).replace("https://www.", "")
                            .replace("https://", "").rstrip("/"))
 
@@ -754,6 +755,11 @@ def main() -> int:
     folder = Path(args.app).expanduser()
     if not folder.is_absolute():
         folder = vault / args.app
+    folder = folder.resolve()
+    try:
+        folder.relative_to(vault.resolve())
+    except ValueError:
+        raise SystemExit(f"Not inside the vault: {folder}")
     if not folder.is_dir():
         raise SystemExit(f"Not a folder: {folder}")
 

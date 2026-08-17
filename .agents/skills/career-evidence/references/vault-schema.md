@@ -25,7 +25,7 @@ VAULT_ROOT/
 │           ├── Job Description.md      <- evidence, checksummed
 │           ├── Contacts.md
 │           ├── Interviews.md
-│           ├── Resume Copy.md
+│           ├── Resume Content.md
 │           ├── Cover Letter.md
 │           ├── Submission Notes.md
 │           └── Artifacts/              <- rendered PDFs, versioned
@@ -160,7 +160,8 @@ capture_status: verbatim
 verbatim_sha256:
 ```
 
-The fenced `## Verbatim posting` block is immutable source evidence. Preserve
+The `## Verbatim posting` section, between `<!-- verbatim-start -->` and
+`<!-- verbatim-end -->`, is immutable source evidence. Preserve
 exact words, spelling, bullet characters, order, and compensation text — including
 mistakes. `capture_jd.py` writes it and computes the checksum; `audit_vault.py`
 verifies the two still agree. A changed posting is a new dated capture, never an

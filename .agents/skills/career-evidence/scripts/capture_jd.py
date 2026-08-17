@@ -26,7 +26,16 @@ import sys
 
 import vaultlib as v
 
-POSTING_BLOCK = re.compile(r"(## Verbatim posting\s*\n\s*```text\n)(.*?)(\n```)", re.DOTALL)
+MARKED_BLOCK = re.compile(
+    r"(## Verbatim posting\s*\n\s*<!-- verbatim-start -->\n)(.*?)(\n<!-- verbatim-end -->)",
+    re.DOTALL,
+)
+# Pre-2026-08 captures fenced the posting in a ```text block; still readable.
+FENCED_BLOCK = re.compile(r"(## Verbatim posting\s*\n\s*```text\n)(.*?)(\n```)", re.DOTALL)
+
+
+def find_posting(text: str) -> re.Match | None:
+    return MARKED_BLOCK.search(text) or FENCED_BLOCK.search(text)
 
 
 def checksum(posting: str) -> str:
@@ -35,12 +44,13 @@ def checksum(posting: str) -> str:
 
 def capture(note: Path, posting: str, *, source_url: str = "", source_kind: str = "",
             today: str | None = None, force: bool = False) -> str:
-    """Replace the fenced block and stamp verbatim_sha256. Returns the checksum."""
+    """Replace the marked block and stamp verbatim_sha256. Returns the checksum."""
     text = note.read_text(encoding="utf-8")
-    match = POSTING_BLOCK.search(text)
+    match = find_posting(text)
     if match is None:
         raise SystemExit(
-            f"{note.name} has no '## Verbatim posting' fenced ```text block.\n"
+            f"{note.name} has no '## Verbatim posting' block delimited by "
+            "<!-- verbatim-start --> and <!-- verbatim-end -->.\n"
             "Recreate it from Templates/Job Description.md."
         )
 
@@ -56,9 +66,10 @@ def capture(note: Path, posting: str, *, source_url: str = "", source_kind: str 
     posting = posting.replace("\r\n", "\n").rstrip("\n")
     if not posting.strip():
         raise SystemExit("Refusing to capture an empty posting.")
-    if "```" in posting:
+    closer = "```" if match.group(3).lstrip() == "```" else "<!-- verbatim-end -->"
+    if closer in posting:
         raise SystemExit(
-            "The posting contains a ``` fence, which would break the block.\n"
+            f"The posting contains '{closer}', which would break the block.\n"
             "Paste it into the note by hand and compute the checksum with --recompute."
         )
 
@@ -79,7 +90,7 @@ def capture(note: Path, posting: str, *, source_url: str = "", source_kind: str 
 def recompute(note: Path) -> tuple[str, bool]:
     """Restamp the checksum from the current block. Returns (digest, changed)."""
     text = note.read_text(encoding="utf-8")
-    match = POSTING_BLOCK.search(text)
+    match = find_posting(text)
     if match is None:
         raise SystemExit(f"{note.name} has no verbatim posting block.")
     digest = checksum(match.group(2))
@@ -125,7 +136,8 @@ def main() -> int:
 
     posting = Path(args.file).read_text(encoding="utf-8") if args.file else sys.stdin.read()
     digest = capture(note, posting, source_url=args.url, source_kind=args.kind, force=args.force)
-    print(f"Captured {len(posting.splitlines())} lines into {note.relative_to(vault)}")
+    shown = note.relative_to(vault) if note.resolve().is_relative_to(vault) else note
+    print(f"Captured {len(posting.splitlines())} lines into {shown}")
     print(f"verbatim_sha256: {digest}")
     return 0
 

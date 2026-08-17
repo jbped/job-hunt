@@ -20,7 +20,7 @@ import sys
 
 import schema
 import vaultlib as v
-from capture_jd import POSTING_BLOCK, checksum
+from capture_jd import find_posting, checksum
 
 REQUIRED_ROOT = [
     "Job Hunt Dashboard.md",
@@ -51,7 +51,7 @@ TEMPLATES = [
     "Contacts.md",
     "Interviews.md",
     "Person.md",
-    "Resume Copy.md",
+    "Resume Content.md",
     "Cover Letter.md",
     "Submission Notes.md",
     "PDF/Resume - Figma Inspired.ps",
@@ -137,9 +137,9 @@ def check_contact_profile(report: Report, note: Path, vault: Path, fm: dict) -> 
 
 def check_job_description(report: Report, note: Path, vault: Path, fm: dict, text: str) -> None:
     rel = note.relative_to(vault)
-    match = POSTING_BLOCK.search(text)
+    match = find_posting(text)
     if match is None:
-        report.error(f"{rel}: no '## Verbatim posting' fenced text block")
+        report.error(f"{rel}: no delimited '## Verbatim posting' block")
         return
 
     posting = match.group(2)

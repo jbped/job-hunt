@@ -13,14 +13,16 @@ tags:
 
 # Company | Position | Verbatim Job Description
 
-Do not correct spelling, normalize bullets, summarize, or silently refresh this block. Add later versions as separately dated captures.
-After capturing the complete block, calculate its SHA-256 checksum and store it in `verbatim_sha256`.
+Do not correct spelling, normalize bullets, summarize, or silently refresh the
+posting below. Add later versions as separately dated captures. After capturing,
+compute the SHA-256 checksum of the text between the markers and store it in
+`verbatim_sha256` (`capture_jd.py` does both).
 
 ## Verbatim posting
 
-```text
+<!-- verbatim-start -->
 PASTE THE COMPLETE JOB DESCRIPTION EXACTLY AS PROVIDED
-```
+<!-- verbatim-end -->
 
 ## Capture notes
 

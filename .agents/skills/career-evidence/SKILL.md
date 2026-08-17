@@ -33,6 +33,7 @@ capture_jd.py --app <folder>      store a posting verbatim + checksum
 render_pdf.py --app <folder>      build and validate a PDF
 status.py                         where am I / coming up / to do
 serve.py                          the same as a local web dashboard
+serve.py --detach | --stop        run it in the background / stop it
 export_index.py                   rebuild .cache/vault-index.json
 audit_vault.py                    check structure, vocabulary, evidence
 ```

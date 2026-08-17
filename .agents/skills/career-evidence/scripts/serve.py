@@ -600,24 +600,27 @@ def _is_dashboard(port: int) -> bool:
         return False
 
 
-def stop_previous(vault: Path) -> None:
+def stop_previous(vault: Path) -> bool:
     """Stop the dashboard the pidfile names, if it is still one of ours.
 
     The PID alone is not trusted — PIDs get recycled, and killing whatever now
     holds the number would be worse than the stale server. The process is only
     signalled after the port it recorded answers as a career-evidence dashboard.
+    Returns whether a running dashboard was actually stopped.
     """
     pidfile = _pidfile(vault)
     if not pidfile.is_file():
-        return
+        return False
     try:
         info = json.loads(pidfile.read_text(encoding="utf-8"))
         pid, port = int(info["pid"]), int(info["port"])
     except (ValueError, KeyError, json.JSONDecodeError):
         pidfile.unlink(missing_ok=True)
-        return
+        return False
 
+    stopped = False
     if pid != os.getpid() and _is_dashboard(port):
+        stopped = True
         print(f"Stopping the previous dashboard (pid {pid}, port {port})…")
         try:
             os.kill(pid, signal.SIGTERM)
@@ -629,6 +632,7 @@ def stop_previous(vault: Path) -> None:
                     break
                 time.sleep(0.1)
     pidfile.unlink(missing_ok=True)
+    return stopped
 
 
 def write_pidfile(vault: Path, port: int) -> None:
@@ -646,14 +650,63 @@ def default_port() -> int:
         return 8765
 
 
+def detach(vault: Path, args) -> int:
+    """Relaunch the server as its own session and return once it answers.
+
+    For agent harnesses and scripts that kill their child process group when a
+    command finishes — the detached server escapes that group, so `--detach`
+    returns immediately while the dashboard keeps running.
+    """
+    log = vault / ".cache" / "serve.log"
+    log.parent.mkdir(parents=True, exist_ok=True)
+    cmd = [sys.executable, str(Path(__file__).resolve()),
+           "--port", str(args.port), "--no-browser"]
+    if args.vault:
+        cmd += ["--vault", args.vault]
+    kwargs: dict = {}
+    if os.name == "nt":
+        # DETACHED_PROCESS | CREATE_NEW_PROCESS_GROUP
+        kwargs["creationflags"] = 0x00000008 | 0x00000200
+    else:
+        kwargs["start_new_session"] = True
+    with open(log, "ab") as handle:
+        subprocess.Popen(cmd, stdout=handle, stderr=handle,
+                         stdin=subprocess.DEVNULL, **kwargs)
+
+    for _ in range(50):
+        if _is_dashboard(args.port):
+            break
+        time.sleep(0.1)
+    else:
+        raise SystemExit(f"The dashboard did not come up; see {log}")
+
+    url = f"http://127.0.0.1:{args.port}/"
+    print(f"Dashboard: {url} (running in the background)")
+    print(f"Log:       {log}")
+    print("Stop it with: python serve.py --stop")
+    if not args.no_browser:
+        webbrowser.open(url)
+    return 0
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--vault")
     ap.add_argument("--port", type=int, default=default_port())
     ap.add_argument("--no-browser", action="store_true")
+    ap.add_argument("--detach", action="store_true",
+                    help="start in the background and return immediately")
+    ap.add_argument("--stop", action="store_true",
+                    help="stop the running dashboard and exit")
     args = ap.parse_args()
 
     vault = v.require_vault(args.vault)
+    if args.stop:
+        print("Stopped." if stop_previous(vault) else "No dashboard was running.")
+        return 0
+    if args.detach:
+        return detach(vault, args)
+
     Handler.vault = vault
     Handler.token = secrets.token_hex(16)
     stop_previous(vault)

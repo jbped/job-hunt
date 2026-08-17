@@ -97,6 +97,7 @@ overrides it. From the repo root, with `scripts/` being
 
 ```sh
 python scripts/serve.py                    # the dashboard, on 127.0.0.1
+python scripts/serve.py --detach           # same, in the background (--stop ends it)
 python scripts/status.py                   # same picture, in the terminal
 python scripts/new_application.py "Company" "Role"
 python scripts/capture_jd.py --app <folder> --file posting.txt

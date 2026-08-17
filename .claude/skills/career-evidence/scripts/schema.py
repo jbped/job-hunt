@@ -82,6 +82,10 @@ INTERVIEW_METHOD = ["phone", "video", "onsite", "async", "unknown"]
 
 REFERENCE_PERMISSION = ["confirmed", "requested", "prospective", "declined"]
 
+# Trust-descending disclosure levels for contact details. `self` never leaves
+# the vault; everything else may appear on artifacts for that audience or wider.
+CONTACT_AUDIENCE = ["self", "application", "recruiter", "public"]
+
 # Increasing confidence. `source-verified` means the facts were carried over
 # from a prior artifact (an old resume, a Figma frame) rather than confirmed by
 # the user — usable, but weaker evidence than `documented`.
@@ -104,6 +108,7 @@ ENUMS = {
     "work_model": WORK_MODEL,
     "stage": INTERVIEW_STAGE,
     "method": INTERVIEW_METHOD,
+    "reference_status": REFERENCE_PERMISSION,
 }
 
 # `status` means something different per note type, so it is resolved here
@@ -112,7 +117,6 @@ STATUS_BY_TYPE = {
     "application": APPLICATION_STATUS,
     "role": ROLE_STATUS,
     "accomplishment": ACCOMPLISHMENT_STATUS,
-    "professional-reference": REFERENCE_PERMISSION,
     "submission": SUBMISSION_STATUS,
 }
 
@@ -155,18 +159,38 @@ NOTE_TYPES = {
         "required": ["type", "company", "status"],
         "optional": ["role", "ownership", "team", "technologies", "themes", "tags"],
     },
-    "professional-reference": {
-        "required": ["type", "name", "status"],
+    # One note per person. Referral and reference are relationships this person
+    # holds, not separate note types; `applications` records their involvement
+    # per application so the index can build the associative view.
+    "person": {
+        "required": ["type", "name"],
         "optional": [
-            "relationship",
+            "relationships",
             "company_context",
             "email",
             "phone",
             "preferred_contact_method",
+            "reference_status",
             "permission_confirmed",
             "permission_confirmed_at",
+            "applications",
             "tags",
         ],
+    },
+    "contact-profile": {
+        "file": "Contact.md",
+        "required": ["type", "full_name"],
+        "optional": ["preferred_name", "contacts", "tags"],
+    },
+    "about-me": {
+        "file": "About Me.md",
+        "required": ["type"],
+        "optional": ["tags"],
+    },
+    "education": {
+        "file": "Education.md",
+        "required": ["type"],
+        "optional": ["tags"],
     },
     "submission": {
         "required": ["type", "company", "position"],
@@ -211,12 +235,11 @@ UI_EDITABLE = {
         "compensation_period",
         "experience_level_stated",
     ],
-    "professional-reference": [
-        "status",
+    "person": [
+        "reference_status",
         "email",
         "phone",
         "preferred_contact_method",
-        "relationship",
         "permission_confirmed",
         "permission_confirmed_at",
     ],
@@ -257,7 +280,8 @@ def field_reference_markdown() -> str:
         block("work_model", WORK_MODEL),
         "## People\n\n",
         block("contact relationship", CONTACT_RELATIONSHIP),
-        block("reference permission", REFERENCE_PERMISSION),
+        block("reference permission (`reference_status`)", REFERENCE_PERMISSION),
+        block("contact audience", CONTACT_AUDIENCE),
         "## Interviews\n\n",
         block("stage", INTERVIEW_STAGE),
         block("method", INTERVIEW_METHOD),

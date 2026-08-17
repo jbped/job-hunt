@@ -419,6 +419,7 @@ class Handler(BaseHTTPRequestHandler):
                     "method": schema.INTERVIEW_METHOD,
                     "contact_relationship": schema.CONTACT_RELATIONSHIP,
                     "reference_permission": schema.REFERENCE_PERMISSION,
+                    "contact_audience": schema.CONTACT_AUDIENCE,
                     "editable": schema.UI_EDITABLE,
                     "vault_name": self.vault.name,
                 })

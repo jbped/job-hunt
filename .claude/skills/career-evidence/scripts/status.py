@@ -106,7 +106,8 @@ def main() -> int:
                 f"{a['company']}: {(today - applied).days} days since applying with no status change"
             )
 
-    unconfirmed = [r for r in data["references"] if r["status"] != "confirmed"]
+    unconfirmed = [p for p in data["people"]
+                   if p["reference_status"] and p["reference_status"] != "confirmed"]
     if unconfirmed:
         todo.append(f"{len(unconfirmed)} professional reference(s) not yet confirmed")
 

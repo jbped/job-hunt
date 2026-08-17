@@ -67,12 +67,19 @@ These are the values the tools accept in note frontmatter. Anything outside thes
 - `scheduler`
 - `other`
 
-### reference permission
+### reference permission (`reference_status`)
 
 - `confirmed`
 - `requested`
 - `prospective`
 - `declined`
+
+### contact audience
+
+- `self`
+- `application`
+- `recruiter`
+- `public`
 
 ## Interviews
 

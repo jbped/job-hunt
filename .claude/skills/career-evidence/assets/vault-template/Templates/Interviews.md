@@ -27,7 +27,7 @@ Upcoming entries carry:
 
 - Point of contact:
 - Interviewers:
-- Method: in-person | Zoom | Teams | phone | other
+- Method: phone | video | onsite | async | unknown
 - Location or link:
 - Expected duration:
 - Description:

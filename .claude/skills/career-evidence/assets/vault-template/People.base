@@ -1,0 +1,47 @@
+filters:
+  and:
+    - note.type == "person"
+properties:
+  note.name:
+    displayName: Name
+  note.reference_status:
+    displayName: Consent
+  note.relationships:
+    displayName: Relationships
+  note.company_context:
+    displayName: Company
+  note.email:
+    displayName: Email
+  note.phone:
+    displayName: Phone
+  note.preferred_contact_method:
+    displayName: Prefers
+views:
+  - type: table
+    name: Confirmed references
+    filters:
+      and:
+        - note.reference_status == "confirmed"
+    order:
+      - name
+      - company_context
+      - email
+      - preferred_contact_method
+  - type: table
+    name: Awaiting consent
+    filters:
+      and:
+        - note.reference_status != null
+        - note.reference_status != "confirmed"
+    order:
+      - name
+      - reference_status
+      - company_context
+  - type: table
+    name: All
+    order:
+      - name
+      - relationships
+      - reference_status
+      - company_context
+      - email

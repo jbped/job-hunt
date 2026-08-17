@@ -19,15 +19,18 @@ tags:
 No roles recorded yet. Ask your agent to interview you about your most recent job,
 or create a note from [[Templates/Accomplishment]].
 
-## About me
+- [[Career Evidence.base]]
 
-- [[About Me/Profile]]
-- [[About Me/Interview Queue]]
+## Personal information
 
-## References
+- [[Personal Information/Contact]]
+- [[Personal Information/About Me]]
+- [[Personal Information/Education]]
+- [[Personal Information/Interview Queue]]
 
-- [[References/Reference Index]]
-- [[References.base]]
+## People
+
+- [[People.base]]
 
 ## Working notes
 

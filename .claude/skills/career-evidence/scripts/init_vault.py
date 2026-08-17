@@ -24,11 +24,12 @@ TEMPLATE = SKILL_ROOT / "assets" / "vault-template"
 # Directories that must exist even though the template ships them empty; git and
 # zip archives both drop empty directories.
 DIRECTORIES = [
-    "About Me",
+    "Personal Information",
     "Applications",
     "Career Evidence/Roles",
     "Career Evidence/Accomplishments",
-    "References",
+    "People",
+    "Resources",
     "Templates/PDF",
     "Working Notes",
 ]

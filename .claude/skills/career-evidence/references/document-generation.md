@@ -5,7 +5,8 @@
 1. The exact job description
 2. `Analysis.md` — the position breakdown and evidence alignment
 3. Canonical role and accomplishment notes
-4. `About Me/Profile.md`, respecting its publication guidance
+4. `Personal Information/` — `Contact.md` (respecting each entry's audience
+   level), `About Me.md`, and `Education.md`
 5. Contacts and referral status
 
 Never treat a previously generated artifact as proof of a claim. If an old resume
@@ -45,7 +46,8 @@ The resume working copy needs `## Header` (name, professional title, and a
 
 A cover letter is written as a letter — date, recipient block, salutation,
 paragraphs, sign-off. Everything above its first `## ` heading is rendered, and the
-letterhead comes from `About Me/Profile.md`, so contact details live in one place.
+letterhead comes from `Personal Information/Contact.md`, so contact details live
+in one place; only entries whose audience is not `self` are printed.
 
 To change the visual design, edit the definitions at the top of
 `Templates/PDF/*.ps`. Avoid adding fixed-position drawing commands after them;

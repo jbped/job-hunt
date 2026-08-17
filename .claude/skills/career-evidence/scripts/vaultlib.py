@@ -135,12 +135,13 @@ def split_frontmatter(text: str) -> tuple[list[str], str]:
 
 
 def parse_frontmatter(text: str) -> dict:
-    """Parse the flat YAML subset this vault uses.
+    """Parse the near-flat YAML subset this vault uses.
 
-    Handles `key: value`, `key:` with an indented `- item` list, and quoted
-    scalars. Deliberately not a general YAML parser — the vault's frontmatter is
-    flat by design, and a real parser would invite nested structures that the
-    surgical writer below could not safely round-trip.
+    Handles `key: value`, `key:` with an indented `- item` list, quoted
+    scalars, and one read-only nesting level: `key:` followed by indented
+    `name: {inline: map}` lines (the contact-profile `contacts` shape).
+    Deliberately not a general YAML parser — anything deeper stays out of the
+    vault because the surgical writer below could not safely round-trip it.
     """
     fm_lines, _ = split_frontmatter(text)
     data: dict = {}
@@ -148,13 +149,20 @@ def parse_frontmatter(text: str) -> dict:
     for raw in fm_lines:
         if not raw.strip() or raw.lstrip().startswith("#"):
             continue
-        if raw.startswith((" ", "\t")) and raw.lstrip().startswith("- "):
-            if key is not None:
-                # The parent line was `key:` with no value, so it landed as None;
-                # the first list item is what reveals it is actually a list.
-                if not isinstance(data.get(key), list):
-                    data[key] = []
-                data[key].append(_scalar(raw.lstrip()[2:].strip()))
+        if raw.startswith((" ", "\t")):
+            stripped = raw.lstrip()
+            if stripped.startswith("- "):
+                if key is not None:
+                    # The parent line was `key:` with no value, so it landed as
+                    # None; the first list item reveals it is actually a list.
+                    if not isinstance(data.get(key), list):
+                        data[key] = []
+                    data[key].append(_scalar(stripped[2:].strip()))
+            elif ":" in stripped and key is not None:
+                if not isinstance(data.get(key), dict):
+                    data[key] = {}
+                sub, _, value = stripped.partition(":")
+                data[key][sub.strip()] = _scalar(value.strip()) if value.strip() else None
             continue
         if ":" not in raw:
             continue
@@ -165,12 +173,41 @@ def parse_frontmatter(text: str) -> dict:
     return data
 
 
+def _split_inline(inner: str) -> list[str]:
+    """Split an inline `[...]`/`{...}` body on commas outside quotes."""
+    parts, buf, quote = [], "", ""
+    for ch in inner:
+        if quote:
+            buf += ch
+            if ch == quote:
+                quote = ""
+        elif ch in "\"'":
+            quote = ch
+            buf += ch
+        elif ch == ",":
+            parts.append(buf)
+            buf = ""
+        else:
+            buf += ch
+    if buf.strip():
+        parts.append(buf)
+    return parts
+
+
 def _scalar(value: str):
     if len(value) >= 2 and value[0] == value[-1] and value[0] in "\"'":
         return value[1:-1]
     if value.startswith("[") and value.endswith("]"):
         inner = value[1:-1].strip()
-        return [_scalar(v.strip()) for v in inner.split(",")] if inner else []
+        return [_scalar(v.strip()) for v in _split_inline(inner)] if inner else []
+    if value.startswith("{") and value.endswith("}"):
+        out = {}
+        for part in _split_inline(value[1:-1].strip()):
+            if ":" not in part:
+                continue
+            k, _, v = part.partition(":")
+            out[k.strip()] = _scalar(v.strip())
+        return out
     return value
 
 

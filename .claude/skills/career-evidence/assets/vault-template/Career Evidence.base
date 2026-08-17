@@ -1,0 +1,46 @@
+filters:
+  or:
+    - note.type == "role"
+    - note.type == "accomplishment"
+properties:
+  file.name:
+    displayName: Title
+  note.type:
+    displayName: Kind
+  note.company:
+    displayName: Company
+  note.status:
+    displayName: Status
+  note.themes:
+    displayName: Themes
+views:
+  - type: table
+    name: All
+    order:
+      - file.name
+      - type
+      - company
+      - status
+      - themes
+    sort:
+      - property: type
+        direction: ASC
+  - type: table
+    name: Roles
+    filters:
+      and:
+        - note.type == "role"
+    order:
+      - file.name
+      - company
+      - status
+  - type: table
+    name: Accomplishments
+    filters:
+      and:
+        - note.type == "accomplishment"
+    order:
+      - file.name
+      - company
+      - status
+      - themes

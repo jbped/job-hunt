@@ -2,7 +2,7 @@
 type: interview-queue
 status: open
 tags:
-  - about-me
+  - personal-information
 ---
 
 # Interview Queue

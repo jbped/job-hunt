@@ -24,10 +24,11 @@ from capture_jd import POSTING_BLOCK, checksum
 
 REQUIRED_ROOT = [
     "Job Hunt Dashboard.md",
-    "About Me",
+    "Personal Information",
     "Career Evidence",
     "Applications",
-    "References",
+    "People",
+    "Resources",
     "Working Notes",
     "Templates",
 ]
@@ -44,11 +45,12 @@ APPLICATION_FILES = [
 TEMPLATES = [
     "Application Brief.md",
     "Analysis.md",
+    "Accomplishment.md",
+    "Role.md",
     "Job Description.md",
     "Contacts.md",
     "Interviews.md",
-    "Reference.md",
-    "About Me Profile.md",
+    "Person.md",
     "Resume Copy.md",
     "Cover Letter.md",
     "Submission Notes.md",
@@ -97,6 +99,40 @@ def check_enums(report: Report, note: Path, vault: Path, fm: dict) -> None:
         for field in spec["required"]:
             if not fm.get(field):
                 report.warn(f"{rel}: missing required field '{field}'")
+
+
+def check_person(report: Report, note: Path, vault: Path, fm: dict, text: str) -> None:
+    rel = note.relative_to(vault)
+    for value in fm.get("relationships") or []:
+        if value not in schema.CONTACT_RELATIONSHIP:
+            report.error(f"{rel}: relationship '{value}' is not one of "
+                         f"{', '.join(schema.CONTACT_RELATIONSHIP)}")
+    # Per-application roles live in the body's `## Applications` entries.
+    for match in re.finditer(r"^\s*-\s*Roles?:\s*(.+)$", text, re.MULTILINE):
+        for value in re.split(r"[,;]", match.group(1)):
+            value = value.strip()
+            if value and value not in schema.CONTACT_RELATIONSHIP:
+                report.error(f"{rel}: application role '{value}' is not one of "
+                             f"{', '.join(schema.CONTACT_RELATIONSHIP)}")
+
+
+def check_contact_profile(report: Report, note: Path, vault: Path, fm: dict) -> None:
+    rel = note.relative_to(vault)
+    entries = fm.get("contacts")
+    if entries is None:
+        report.warn(f"{rel}: no contacts map recorded")
+        return
+    if not isinstance(entries, dict):
+        report.error(f"{rel}: contacts must be a mapping of name -> {{value, audience}}")
+        return
+    for name, entry in entries.items():
+        if not isinstance(entry, dict) or "value" not in entry:
+            report.error(f"{rel}: contacts.{name} must be an inline map with a value")
+            continue
+        audience = entry.get("audience")
+        if audience not in schema.CONTACT_AUDIENCE:
+            report.error(f"{rel}: contacts.{name} audience '{audience}' is not one of "
+                         f"{', '.join(schema.CONTACT_AUDIENCE)}")
 
 
 def check_job_description(report: Report, note: Path, vault: Path, fm: dict, text: str) -> None:
@@ -178,6 +214,10 @@ def audit(vault: Path, check_wikilinks: bool = True) -> Report:
         check_enums(report, note, vault, fm)
         if fm.get("type") == "job-description":
             check_job_description(report, note, vault, fm, text)
+        if fm.get("type") == "person":
+            check_person(report, note, vault, fm, text)
+        if fm.get("type") == "contact-profile":
+            check_contact_profile(report, note, vault, fm)
         if check_wikilinks:
             check_links(report, note, vault, text)
 

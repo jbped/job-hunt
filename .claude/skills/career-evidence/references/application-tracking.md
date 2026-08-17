@@ -48,7 +48,7 @@ Capture:
 - Base, bonus, commission, equity, signing, and benefits separately
 - Whether the range came from the posting, recruiter, referral, or interview
 
-Use `not-listed-in-captured-posting` or `unknown` instead of guessing. Keep candidate expectations in About Me, not in the employer's compensation fields.
+Use `not-listed-in-captured-posting` or `unknown` instead of guessing. Keep candidate expectations in `Personal Information/About Me.md`, not in the employer's compensation fields.
 
 ## Contacts and referrals
 
@@ -62,7 +62,12 @@ Distinguish:
 - Interviewer
 - Scheduling contact
 
-Record follow-up dates and contact methods. Do not infer that a formal referral is also a professional reference.
+A person's own details (organisation, email, phone, relationship history) live on
+their single note in `People/`; the application's `Contacts.md` entry links that
+note and records only their role in this application. Record follow-up dates and
+contact methods. Do not infer that a formal referral is also a professional
+reference — reference consent is a separate fact on the person note
+(`reference_status`, `permission_confirmed`).
 
 ## Interview entries
 

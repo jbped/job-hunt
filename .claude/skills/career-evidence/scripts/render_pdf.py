@@ -176,17 +176,17 @@ SIGNOFF = ("sincerely", "regards", "best", "thank you", "respectfully", "cordial
 
 
 def letterhead(vault: Path) -> dict:
-    """Build the name/title/contact block from About Me — the canonical source.
+    """Build the name/title/contact block from Personal Information/Contact.md.
 
     A cover letter should read as a letter, not as a form with a duplicated
     contact block. Pulling the letterhead from the profile also means updating a
     phone number in one place updates every future artifact.
     """
-    profile = vault / "About Me" / "Profile.md"
+    profile = vault / "Personal Information" / "Contact.md"
     if not profile.exists():
         raise SystemExit(
-            "About Me/Profile.md is missing, and it supplies the letterhead.\n"
-            "Add a '## Header' section to the working copy instead, or restore the profile."
+            "Personal Information/Contact.md is missing, and it supplies the letterhead.\n"
+            "Add a '## Header' section to the working copy instead, or restore the contact note."
         )
     fm, text = v.read_note(profile)
 
@@ -197,9 +197,19 @@ def letterhead(vault: Path) -> dict:
             title = _clean(stripped.split(":", 1)[1]).rstrip(".")
             break
 
-    contact = [fm.get(k) for k in ("location", "phone", "email", "linkedin")]
-    contact = [str(c).replace("https://www.", "").replace("https://", "").rstrip("/")
-               for c in contact if c]
+    # Each contacts entry is {value, audience}; anything marked `self` stays in
+    # the vault, every other audience level may appear on application artifacts.
+    entries = fm.get("contacts") or {}
+    contact = []
+    # The letterhead design has exactly four contact slots.
+    for key in ("location", "phone", "email", "linkedin"):
+        entry = entries.get(key)
+        if not isinstance(entry, dict):
+            continue
+        value = entry.get("value")
+        if value and entry.get("audience") != "self":
+            contact.append(str(value).replace("https://www.", "")
+                           .replace("https://", "").rstrip("/"))
 
     name = fm.get("preferred_name") or fm.get("full_name") or "Unknown"
     if fm.get("full_name") and fm.get("preferred_name"):

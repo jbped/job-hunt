@@ -247,8 +247,8 @@
   <section data-view="people">
     <h2>Contacts and referrals</h2>
     <div id="contacts"></div>
-    <h2>Professional references</h2>
-    <div id="references"></div>
+    <h2>People</h2>
+    <div id="people"></div>
   </section>
 
   <section data-view="evidence">
@@ -532,7 +532,8 @@ function renderNow() {
       items.push([`${app.company} — ${app.position}`,
                   `${days(app.date_applied, today())} days since applying, no status change`, app]);
   }
-  const unconfirmed = DATA.references.filter(r => r.status !== "confirmed").length;
+  const unconfirmed = DATA.people.filter(p =>
+    p.reference_status && p.reference_status !== "confirmed").length;
   if (unconfirmed) items.push(["References", `${unconfirmed} not yet confirmed`, null]);
 
   if (!items.length) todo.append(el("div", { className: "empty" }, "Nothing outstanding."));
@@ -761,29 +762,40 @@ function renderPeople() {
         el("td", {}, obsidian(c.note))))))));
   }
 
-  const references = $("#references"); references.textContent = "";
-  if (!DATA.references.length) {
-    references.append(el("div", { className: "empty" },
-      "No references yet. A referral is not automatically a reference — add someone "
-      + "only after they have agreed."));
+  const people = $("#people"); people.textContent = "";
+  if (!DATA.people.length) {
+    people.append(el("div", { className: "empty" },
+      "No people yet. One note per person — referral and reference are relationships "
+      + "on that note, and a referral is not automatically a reference."));
     return;
   }
-  for (const ref of DATA.references) {
-    const select = el("select", {}, ...SCHEMA.reference_permission.map(v =>
-      el("option", { value: v, selected: v === ref.status }, v)));
-    select.addEventListener("change", async () => {
-      try {
-        const result = await save(ref.path, "status", select.value, ref.fingerprint);
-        ref.fingerprint = result.fingerprint;
-        toast("Saved"); refresh();
-      } catch (error) { toast(error.message, "error"); refresh(); }
-    });
-    references.append(el("div", { className: "card row" },
+  for (const person of DATA.people) {
+    // A person only gets the consent dropdown once they are being considered
+    // as a reference; everyone else shows their relationships read-only.
+    let select = null;
+    if (person.reference_status) {
+      select = el("select", {}, ...SCHEMA.reference_permission.map(v =>
+        el("option", { value: v, selected: v === person.reference_status }, v)));
+      select.addEventListener("change", async () => {
+        try {
+          const result = await save(person.path, "reference_status", select.value,
+                                    person.fingerprint);
+          person.fingerprint = result.fingerprint;
+          toast("Saved"); refresh();
+        } catch (error) { toast(error.message, "error"); refresh(); }
+      });
+    }
+    const involvements = (person.applications || []).map(a =>
+      el("div", { className: "muted" },
+         `${a.application}${a.roles.length ? " — " + a.roles.join(", ") : ""}`));
+    people.append(el("div", { className: "card row" },
       el("span", { className: "grow" },
-        el("span", { className: "title" }, ref.name),
+        el("span", { className: "title" }, person.name),
         el("div", { className: "muted" },
-           [ref.relationship, ref.email, ref.phone].filter(Boolean).join(" · "))),
-      select, obsidian(ref.path)));
+           [(person.relationships || []).join(", "), person.email, person.phone]
+             .filter(Boolean).join(" · ")),
+        ...involvements),
+      select, obsidian(person.path)));
   }
 }
 

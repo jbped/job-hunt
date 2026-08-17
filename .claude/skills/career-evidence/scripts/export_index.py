@@ -28,6 +28,14 @@ IGNORED_HEADINGS = {"entry format", "name", "full name", "company | position"}
 PLACEHOLDER = re.compile(r"^(YYYY|<|\{\{)", re.IGNORECASE)
 
 
+def _display_name(title: str) -> str:
+    """Strip wikilink syntax from an entry heading: `[[People/Ed]]` -> `Ed`."""
+    match = re.fullmatch(r"\[\[([^\]|#]+)(?:[#|][^\]]*)?\]\]", title.strip())
+    if match:
+        return match.group(1).rsplit("/", 1)[-1].strip()
+    return title
+
+
 def _entries(text: str, under: str | None = None) -> list[dict]:
     """Parse `## Name` / `### Name` blocks of `- Field: value` bullets.
 
@@ -91,7 +99,7 @@ def _interview(entry: dict, app: dict, upcoming: bool) -> dict:
 
 
 def build(vault: Path) -> dict:
-    applications, contacts, interviews, references, evidence = [], [], [], [], []
+    applications, contacts, interviews, people, evidence = [], [], [], [], []
 
     for brief in sorted((vault / "Applications").glob("*/*/Application Brief.md")):
         folder = brief.parent
@@ -140,7 +148,8 @@ def build(vault: Path) -> dict:
             _, ctext = v.read_note(contacts_note)
             for entry in _entries(ctext):
                 contacts.append({
-                    "name": entry["title"],
+                    # Entries may head with a [[People/Name]] link; index the name.
+                    "name": _display_name(entry["title"]),
                     "company": app["company"],
                     "position": app["position"],
                     "application": rel,
@@ -158,20 +167,31 @@ def build(vault: Path) -> dict:
 
         applications.append(app)
 
-    refs_dir = vault / "References"
-    if refs_dir.is_dir():
-        for note in sorted(refs_dir.glob("*.md")):
-            fm, _ = v.read_note(note)
-            if fm.get("type") != "professional-reference":
+    people_dir = vault / "People"
+    if people_dir.is_dir():
+        for note in sorted(people_dir.glob("*.md")):
+            fm, text = v.read_note(note)
+            if fm.get("type") != "person":
                 continue
-            references.append({
+            involvements = []
+            for entry in _entries(text, "## Applications"):
+                roles = [r.strip() for r in
+                         re.split(r"[,;]", entry["fields"].get("roles", "")) if r.strip()]
+                involvements.append({
+                    "application": entry["title"],
+                    "roles": roles,
+                    **{k: val for k, val in entry["fields"].items() if k != "roles"},
+                })
+            people.append({
                 "name": fm.get("name") or note.stem,
-                "status": fm.get("status") or "prospective",
-                "relationship": fm.get("relationship"),
+                "relationships": fm.get("relationships") or [],
+                "company_context": fm.get("company_context"),
+                "reference_status": fm.get("reference_status"),
                 "email": fm.get("email"),
                 "phone": fm.get("phone"),
                 "preferred_contact_method": fm.get("preferred_contact_method"),
                 "permission_confirmed": fm.get("permission_confirmed"),
+                "applications": involvements,
                 "path": str(note.relative_to(vault)),
                 "fingerprint": v.fingerprint(note),
             })
@@ -201,7 +221,7 @@ def build(vault: Path) -> dict:
         "applications": applications,
         "contacts": contacts,
         "interviews": interviews,
-        "references": references,
+        "people": people,
         "evidence": evidence,
     }
 
@@ -237,7 +257,7 @@ def main() -> int:
         print(
             f"wrote {target.relative_to(vault)}: "
             f"{len(data['applications'])} applications, {len(data['contacts'])} contacts, "
-            f"{len(data['interviews'])} interviews, {len(data['references'])} references, "
+            f"{len(data['interviews'])} interviews, {len(data['people'])} people, "
             f"{len(data['evidence'])} evidence notes"
         )
     return 0

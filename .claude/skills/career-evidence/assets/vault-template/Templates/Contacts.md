@@ -13,19 +13,15 @@ No contacts recorded.
 
 ## Entry format
 
-Reference only — the tools ignore this section. Add one `## Full Name` heading
-per person above this section, with these bullets:
+Reference only — the tools ignore this section. Person facts (organization,
+email, phone, relationship) live in the person's own note under `People/`; this
+note records only their role in this application. Add one heading per person
+above this section, linking their note:
 
-- Organization and title:
+## [[People/Full Name]]
+
 - Application role: referral | recruiter | hiring manager | interviewer | internal contact | other
-- Relationship:
-- Relationship context:
-- Email:
-- Phone:
-- Preferred contact method:
 - Referral status: none | informal | formal | unknown
-- Last contact:
 - Follow-up needed:
 - Next follow-up:
-- Associated applications:
 - Notes:

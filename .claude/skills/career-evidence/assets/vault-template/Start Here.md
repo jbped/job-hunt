@@ -30,20 +30,25 @@ brief is not, so the agent leaves it alone.
 | `Career Evidence/Roles` | One note per job you have held |
 | `Career Evidence/Accomplishments` | One note per thing you did that is worth citing |
 | `Applications/` | One folder per application: posting, analysis, artifacts |
-| `References/` | People who agreed to be a professional reference |
-| `About Me/` | Contact details, preferences, what is safe to publish |
+| `People/` | One note per person: contacts, referrals, references |
+| `Personal Information/` | Contact details and audiences, education, self-knowledge |
+| `Resources/` | Source documents: old resumes, diplomas, certificates |
 | `Working Notes/` | Scratch, open questions, field vocabulary |
 | `Templates/` | The scaffolds everything is created from |
 
 A referral is not a reference. Someone who forwards your resume is a contact;
-someone who agreed to vouch for you when asked is a reference. They are tracked
-separately on purpose, and consent is recorded explicitly.
+someone who agreed to vouch for you when asked is a reference. Both live on the
+same person note in `People/`, as separate relationships — and reference consent
+is recorded explicitly.
 
 ## First three things to do
 
-1. **Fill in `About Me/Profile.md`.** Contact details go on cover letters, so the
-   frontmatter there is the letterhead. `Unknown` is a legitimate answer to
-   anything you have not decided.
+1. **Fill in `Personal Information/Contact.md`.** Contact details go on cover
+   letters, so the frontmatter there is the letterhead; each entry carries an
+   audience level, and `self` entries never leave the vault. Drop an old resume
+   or diploma into `Resources/` and the agent can populate the rest —
+   `Personal Information/About Me.md` and `Education.md` — from it. `Unknown` is
+   a legitimate answer to anything you have not decided.
 
 2. **Write one role note and one accomplishment.** Ask your agent to interview
    you — it is much faster than filling in a template, and the questions it asks

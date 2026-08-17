@@ -89,17 +89,22 @@ The controlled vocabularies (statuses, discovery methods, stages) are defined in
 
 ## First-time setup
 
-If `About Me/Profile.md` is missing or still has empty contact fields, the user
-is starting out. Offer to walk them through it rather than filling forms silently.
+If `Personal Information/Contact.md` is missing or still has empty contact
+fields, the user is starting out. Offer to walk them through it rather than
+filling forms silently.
 
 1. Run `init_vault.py <path>` if there is no vault yet.
-2. Fill `About Me/Profile.md` — contact details, target roles, work model,
-   compensation thinking. The frontmatter there is the cover-letter letterhead.
-   `unknown` is a fine answer and better than a guess.
-3. Capture one role and its strongest accomplishment by interview (below). One
+2. Ask for an existing resume, diploma, or certificate to drop into `Resources/`
+   — source documents there are the fastest way to seed the vault, and
+   provenance lines can point back at them.
+3. Fill `Personal Information/` — `Contact.md` (contact details with per-entry
+   audience levels; the frontmatter is the cover-letter letterhead),
+   `About Me.md` (target roles, work model, compensation thinking), and
+   `Education.md`. `unknown` is a fine answer and better than a guess.
+4. Capture one role and its strongest accomplishment by interview (below). One
    good accomplishment note is worth more than five thin ones, and it shows the
    user what the vault is for.
-4. Create their first application and analyse it against that evidence.
+5. Create their first application and analyse it against that evidence.
 
 Ask in small batches. A long questionnaire gets abandoned.
 
@@ -132,7 +137,7 @@ Ask in small batches. A long questionnaire gets abandoned.
 
 ## Tailor a resume
 
-1. Read the posting, the analysis, the About Me profile, and the evidence.
+1. Read the posting, the analysis, the Personal Information notes, and the evidence.
 2. Rank evidence by relevance, strength, recency, ownership, and metric quality.
 3. Select a focused subset. Cramming every accomplishment in weakens all of them.
 4. Draft into `Resume Copy.md` with conventional headings and official titles.
@@ -145,7 +150,8 @@ Ask in small batches. A long questionnaire gets abandoned.
 ## Draft a cover letter
 
 1. Read the posting, analysis, referral status, and the selected evidence.
-2. Write it as a letter in `Cover Letter.md`; the letterhead comes from About Me.
+2. Write it as a letter in `Cover Letter.md`; the letterhead comes from
+   `Personal Information/Contact.md`, filtered by audience.
 3. Open with the role and a credible fit statement. State a verified formal
    referral when there is one, phrased exactly as the evidence supports.
 4. Connect two or three evidence-backed narratives to the employer's stated needs,
@@ -199,7 +205,8 @@ missing information and ask for the value — never invent one to clear a warnin
 - Source, discovery method, compensation, level, contacts, interviews, and next
   action are recorded, with `Unknown` where genuinely unknown.
 - External claims retain provenance, metric class, and ownership.
-- About Me details used are approved for that channel; reference consent explicit.
+- Personal Information details used are within their audience level for that
+  channel; reference consent explicit.
 - Artifacts are linked, versioned, and validated.
 - The user's `Application Brief.md` was updated, not restructured.
 - Updated files and unresolved gaps are summarised for the user.

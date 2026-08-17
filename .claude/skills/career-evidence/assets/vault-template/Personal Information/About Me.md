@@ -1,31 +1,15 @@
 ---
 type: about-me
-status: needs-interview
-full_name:
-preferred_name:
-location:
-phone:
-email:
-linkedin:
 tags:
-  - about-me
+  - personal-information
 ---
 
 # About Me
 
-The frontmatter above is the letterhead. `render_pdf.py` reads it when building a
-cover letter, so a phone number corrected here is corrected everywhere afterward.
-
-## Contact information
-
-- Full name:
-- Preferred name:
-- Location:
-- Phone:
-- Email:
-- LinkedIn:
-- Portfolio:
-- GitHub:
+Informal self-knowledge: preferences, identity, and cultural notes. Contact
+details live in [[Personal Information/Contact|Contact]]; education in
+[[Personal Information/Education|Education]]. `Unknown` is a legitimate answer
+to anything you have not decided.
 
 ## Work preferences
 
@@ -38,7 +22,6 @@ cover letter, so a phone number corrected here is corrected everywhere afterward
 
 ## Professional identity
 
-- Current resume title:
 - Short introduction:
 - Differentiators:
 - Values:
@@ -54,11 +37,6 @@ Nothing in this section reaches an application until you say where it may be use
 - Volunteer work:
 - Hobbies relevant to conversation:
 
-## Publication guidance
+## Related notes
 
-- Safe for resumes:
-- Safe for cover letters:
-- Safe for recruiter conversations:
-- Private or internal only:
-
-## Remaining questions
+- [[Personal Information/Interview Queue|Interview Queue]]

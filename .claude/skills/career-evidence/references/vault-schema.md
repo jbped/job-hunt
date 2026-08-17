@@ -7,9 +7,12 @@ VAULT_ROOT/
 ├── Job Hunt Dashboard.md
 ├── Start Here.md                  (new vaults; onboarding)
 ├── Applications.base              (live tables, Obsidian Bases)
-├── References.base
-├── About Me/
-│   ├── Profile.md                 (also the cover-letter letterhead)
+├── People.base
+├── Career Evidence.base
+├── Personal Information/
+│   ├── Contact.md                 (audience-tagged; also the letterhead)
+│   ├── About Me.md                (preferences, identity, cultural notes)
+│   ├── Education.md
 │   └── Interview Queue.md
 ├── Career Evidence/
 │   ├── Roles/
@@ -26,8 +29,10 @@ VAULT_ROOT/
 │           ├── Cover Letter.md
 │           ├── Submission Notes.md
 │           └── Artifacts/              <- rendered PDFs, versioned
-├── References/
-│   └── Reference Index.md
+├── People/
+│   └── <Full Name>.md             (one note per person)
+├── Resources/
+│   └── README.md                  (+ ingested source documents)
 ├── Working Notes/
 │   ├── Open Questions.md
 │   └── Field Reference.md         (generated from scripts/schema.py)
@@ -36,15 +41,22 @@ VAULT_ROOT/
 └── .cache/                        (derived; safe to delete)
 ```
 
-`References/` holds people who agreed to serve as a professional reference.
-`Working Notes/` holds scratch and open questions. They are different things, and
-the near-identical names they once had caused real confusion — keep them distinct.
+`People/` holds one note per person, whatever their roles — contact, referral,
+reference. Being a referral on one application and a reference for another are
+relationships recorded on that one note, never a second file. `Working Notes/`
+holds scratch and open questions; keep the two distinct.
+
+`Resources/` is the ingress point for source documents — old resumes, diplomas,
+certificates. A file there is a source, not evidence: extract facts into notes
+whose provenance lines point back at it, and never edit an ingested document.
 
 ## Ownership boundaries
 
 - Career facts live in `Career Evidence/`. Everything else interprets them.
 - Personal contact details, preferences, and publication boundaries live in
-  `About Me/`. `Profile.md` frontmatter supplies the PDF letterhead.
+  `Personal Information/`. `Contact.md` frontmatter supplies the PDF letterhead,
+  and each entry's `audience` (`self | application | recruiter | public`)
+  controls where it may appear; `self` never leaves the vault.
 - One employer's posting, analysis, contacts, interviews, and artifacts live in
   that application's folder.
 - `Application Brief.md` is hand-maintained: update fields, never restructure.
@@ -148,9 +160,11 @@ edit in place.
 
 ### Contacts and interviews
 
-These are sections within a note, not separate notes: `## Full Name` blocks in
-`Contacts.md`, and `### YYYY-MM-DD HH:mm TZ | Stage` blocks under `## Upcoming`
-or `## Previous` in `Interviews.md`, each followed by `- Field: value` bullets.
+These are sections within a note, not separate notes: `## [[People/Full Name]]`
+blocks in `Contacts.md` holding only application-specific facts (the person's
+own details live on their `People/` note), and `### YYYY-MM-DD HH:mm TZ | Stage`
+blocks under `## Upcoming` or `## Previous` in `Interviews.md`, each followed by
+`- Field: value` bullets.
 
 Both notes end with an `## Entry format` section documenting their own shape. The
 tools skip it, and new entries are inserted above it.
@@ -158,19 +172,37 @@ tools skip it, and new entries are inserted above it.
 Move a completed interview from Upcoming to Previous and add its outcome. Do not
 create a second entry — one conversation should read as one entry.
 
-### Professional reference
+### Person
 
 ```yaml
-type: professional-reference
+type: person
 name:
-status: confirmed | requested | prospective | declined
-relationship:
+relationships: []                  # contact-relationship values, vault-wide
+company_context:
 email / phone / preferred_contact_method:
+reference_status: confirmed | requested | prospective | declined
 permission_confirmed:
 permission_confirmed_at:
 ```
 
-`confirmed` only after explicit consent.
+The reference fields exist only once the person is being considered as a
+professional reference; `confirmed` only after explicit consent. Per-application
+involvement lives in the body's `## Applications` section as
+`### Company | Position` blocks with `- Roles:` and follow-up bullets — that is
+what the index reads to associate people with applications.
+
+### Contact profile
+
+```yaml
+type: contact-profile
+full_name:
+preferred_name:
+contacts:
+  email: {value: "...", audience: self | application | recruiter | public}
+```
+
+One inline-map entry per contact detail. This is the only sanctioned nested
+frontmatter in the vault; the tools read it but only ever write flat fields.
 
 ## Artifacts
 
@@ -183,7 +215,8 @@ submitted artifact is never overwritten and can always be reconstructed.
 - Link every accomplishment from its role note.
 - Link an application to its posting, analysis, contacts, interviews, artifacts,
   and submission record.
-- Link references to every associated application.
+- Link each application `Contacts.md` entry to its `People/` note, and list the
+  application under that person's `## Applications` section.
 - Keep `Working Notes/Open Questions.md` an index, not a second evidence store.
 - Inspect before editing; update the canonical note rather than creating a
   near-duplicate beside it.

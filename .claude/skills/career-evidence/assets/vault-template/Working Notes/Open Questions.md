@@ -4,9 +4,9 @@ An index of what is unresolved, so gaps stay visible instead of being quietly
 filled in with plausible guesses. Link to where the answer belongs rather than
 duplicating evidence here.
 
-## About Me
+## Personal information
 
-See [[About Me/Interview Queue]].
+See [[Personal Information/Interview Queue]].
 
 ## Career evidence
 

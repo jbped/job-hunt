@@ -305,6 +305,9 @@
 let DATA = null, SCHEMA = null, VIEW = "now";
 // CURRENT: the selected application. DOC: the document the right pane shows.
 let CURRENT = null, DOC = null;
+// Person editors left open survive re-renders, so a background refresh can
+// never collapse the accordion someone is working in.
+const OPEN_EDITORS = new Set();
 
 const $ = (sel, root = document) => root.querySelector(sel);
 const el = (tag, props = {}, ...kids) => {
@@ -503,7 +506,8 @@ function editable(holder, field, options) {
       holder.fingerprint = result.fingerprint;
       holder[field] = input.value;
       toast(result.changed ? "Saved" : "No change");
-      if (result.changed) refresh();
+      // No re-render here: it would collapse editors and steal focus while the
+      // user moves between fields. The vault poller redraws once they're idle.
     } catch (error) {
       toast(error.message, "error");
       if (String(error.message).includes("changed on disk")) refresh();
@@ -850,7 +854,8 @@ function renderPeople() {
     // Contact details and consent are the structured, low-risk part; everything
     // narrative stays in Obsidian. reference_status left blank means the person
     // is not being considered as a reference — that is a real state, not a gap.
-    const editor = el("details", { className: "editor" },
+    const editor = el("details", { className: "editor",
+                                   open: OPEN_EDITORS.has(person.path) },
       el("summary", {}, "Edit details"),
       fieldRow("Email", editable(person, "email")),
       fieldRow("Phone", editable(person, "phone")),
@@ -861,6 +866,8 @@ function renderPeople() {
                                              { values: ["true", "false"] })),
       fieldRow("Consent date", editable(person, "permission_confirmed_at",
                                         { type: "date" })));
+    editor.addEventListener("toggle", () => editor.open
+      ? OPEN_EDITORS.add(person.path) : OPEN_EDITORS.delete(person.path));
     people.append(el("div", { className: "card" },
       el("div", { className: "row" },
         el("span", { className: "title grow" }, person.name),

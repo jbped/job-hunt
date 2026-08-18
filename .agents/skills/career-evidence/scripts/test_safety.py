@@ -63,6 +63,32 @@ class SafetyTest(unittest.TestCase):
         contact = render_pdf.letterhead(self.vault)["contact"]
         self.assertEqual(contact, ["Testville", "test@example.com"])
 
+    def test_init_clears_only_the_stock_obsidian_welcome(self):
+        fresh = Path(self._tmp.name) / "obsidian-fresh"
+        fresh.mkdir()
+        (fresh / "Welcome.md").write_text(
+            init_vault.OBSIDIAN_WELCOME, encoding="utf-8")
+        init_vault.create(fresh)
+        self.assertFalse((fresh / "Welcome.md").exists())
+
+        edited = Path(self._tmp.name) / "obsidian-edited"
+        edited.mkdir()
+        (edited / "Welcome.md").write_text(
+            init_vault.OBSIDIAN_WELCOME + "\nMy own note.\n", encoding="utf-8")
+        with self.assertRaises(SystemExit):
+            init_vault.create(edited)
+        self.assertTrue((edited / "Welcome.md").exists())
+
+    def test_init_force_never_overwrites_a_populated_vault(self):
+        vault = Path(self._tmp.name) / "populated"
+        init_vault.create(vault)
+        contact = vault / "Personal Information" / "Contact.md"
+        contact.write_text("precious user data", encoding="utf-8")
+        _, skipped = init_vault.create(vault, force=True)
+        self.assertEqual(contact.read_text(encoding="utf-8"),
+                         "precious user data")
+        self.assertIn(Path("Personal Information/Contact.md"), skipped)
+
     def test_resolve_rejects_paths_outside_the_vault(self):
         with self.assertRaises(serve.RequestError):
             serve.resolve(self.vault, "../outside.md")

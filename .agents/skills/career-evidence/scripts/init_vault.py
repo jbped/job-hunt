@@ -21,6 +21,27 @@ import sys
 SKILL_ROOT = Path(__file__).resolve().parent.parent
 TEMPLATE = SKILL_ROOT / "assets" / "vault-template"
 
+# The note Obsidian seeds into every brand-new vault. Removed only on an exact
+# (whitespace-normalized) match — an edited or translated note is user content.
+OBSIDIAN_WELCOME = """\
+This is your new *vault*.
+
+Make a note of something, [[create a link]], or try [the Importer](https://help.obsidian.md/Plugins/Importer)!
+
+When you're ready, delete this note and make the vault your own.
+"""
+
+
+def is_stock_welcome(path: Path) -> bool:
+    if path.name != "Welcome.md" or not path.is_file():
+        return False
+    try:
+        text = path.read_text(encoding="utf-8")
+    except (OSError, UnicodeDecodeError):
+        return False
+    return " ".join(text.split()) == " ".join(OBSIDIAN_WELCOME.split())
+
+
 # Directories that must exist even though the template ships them empty; git and
 # zip archives both drop empty directories.
 DIRECTORIES = [
@@ -39,6 +60,9 @@ def create(target: Path, force: bool = False) -> Path:
         raise SystemExit(f"The skill's vault template is missing: {TEMPLATE}")
 
     if target.exists():
+        welcome = target / "Welcome.md"
+        if is_stock_welcome(welcome):
+            welcome.unlink()
         existing = [p for p in target.iterdir() if not p.name.startswith(".")]
         if existing and not force:
             raise SystemExit(
@@ -48,22 +72,38 @@ def create(target: Path, force: bool = False) -> Path:
             )
     target.mkdir(parents=True, exist_ok=True)
 
-    shutil.copytree(TEMPLATE, target, dirs_exist_ok=True)
+    # Never overwrite: a template file whose destination already exists is
+    # skipped, so even --force cannot clobber a populated vault.
+    skipped: list[Path] = []
+    for src in sorted(TEMPLATE.rglob("*")):
+        dst = target / src.relative_to(TEMPLATE)
+        if src.is_dir():
+            dst.mkdir(parents=True, exist_ok=True)
+        elif dst.exists():
+            skipped.append(dst.relative_to(target))
+        else:
+            dst.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(src, dst)
     for relative in DIRECTORIES:
         (target / relative).mkdir(parents=True, exist_ok=True)
 
-    return target
+    return target, skipped
 
 
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("path", help="where to create the vault")
     ap.add_argument("--force", action="store_true",
-                    help="write into a directory that already has content")
+                    help="add missing template files to a directory that already "
+                         "has content; existing files are never overwritten")
     args = ap.parse_args()
 
     target = Path(args.path).expanduser().resolve()
-    create(target, args.force)
+    _, skipped = create(target, args.force)
+    if skipped:
+        print(f"Left {len(skipped)} existing note(s) untouched:")
+        for rel in skipped:
+            print(f"  {rel}")
 
     notes = sum(1 for _ in target.rglob("*.md"))
     print(f"Created a job-hunt vault at {target}")

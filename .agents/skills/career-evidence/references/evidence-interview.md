@@ -67,6 +67,76 @@ rather than restating them.
    projection, or a rejected approach; it is the most credible thing in an
    interview answer and it vanishes if not captured now.
 
+## High-leverage data points
+
+Field-tested question targets, in rough order of value per question. The
+baseline applies to any profession; career-specific addenda follow it. When
+interviewing someone in a field without an addendum, translate the baseline
+into their vocabulary rather than skipping it.
+
+### Baseline (any career)
+
+- **The mechanism.** "What was hard here, and how did you actually do it?"
+  Resume bullets need impact; cover letters and interviews need mechanism. A
+  claim with no story under it ("improved efficiency", "reduced errors") dies
+  at the first follow-up question. Chase the method, the constraint, and the
+  workaround until a stranger could explain why the work was difficult.
+- **The approach rationale.** Why this method or tool, and what the rejected
+  alternative couldn't do. "Switched from X to Y" is a fact; "Y because X
+  couldn't do Z" is evidence of judgment.
+- **The origin incident.** What event caused this work to exist — a failure,
+  a complaint, a lost contract, a near-miss. Origin incidents causally link
+  accomplishment notes to each other, and the chain (incident → response →
+  lasting change) is often stronger evidence than any single note in it.
+- **Negative-space ownership.** Not just "what did you own" but "who else
+  touched this" — the adjacent work by a teammate or another team. Recording
+  what the person did *not* do is the only reliable guard against accidental
+  claiming later.
+- **Seniority signals.** Crises owned and written up afterward, mentoring,
+  responsibility for others' work, artifacts or practices adopted beyond the
+  person's own team, decisions defended and won. These rarely surface from
+  "what did you do" questions and are the difference between mid-level and
+  senior on paper — ask for them as their own pass across all roles.
+- **Timeline anchors.** Delivery dates and external deadlines ("before the
+  busy season", "before the audit") — they turn a duty list into a story with
+  stakes.
+- **Adoption reality, including failures.** Who used or followed the work,
+  who didn't, and why. A note that records poor uptake honestly is both
+  credible and a causal link to whatever came next.
+- **Familiarity versus authorship.** For every tool or system in a skills
+  list: did the person create with it, configure it, or only operate it?
+  A skill word that spans all three is a claim waiting to collapse in an
+  interview.
+- **Exact names, read back.** Spoken interviews mis-capture similar-sounding
+  tools, certifications, and methods. Read the name back before it lands in
+  frontmatter; a wrong name propagates to the Skill Matrix and then to a
+  resume.
+- **Domain vocabulary.** Org-specific terms (role names, team types, internal
+  product names) get defined once, canonically, in the role note — every
+  accomplishment then relies on that definition instead of re-explaining or
+  misusing it.
+- **Deliberate ambiguity.** Sometimes the user wants a detail left vague
+  (a root cause, a colleague's mistake). Record that the vagueness is
+  intentional, so a later session doesn't chase it as a gap.
+
+### Software engineering addendum
+
+- Mechanism means architecture: the data model, the constraint the design
+  worked around, the part a new developer would need explained. "Optimized
+  expensive queries" is not yet evidence; "collapsed N per-record lookups
+  into one join" is.
+- Approach rationale usually means stack rationale — why this framework or
+  library, and what the previous one's model couldn't support.
+- Seniority signals to ask for by name: production incidents owned and
+  postmortems written, on-call service, code-review responsibility, tooling
+  or libraries published beyond the team, migrations led.
+- Familiarity versus authorship shows up sharpest in infrastructure: using a
+  CI pipeline daily is not authoring one; deploying to a platform is not
+  administering it.
+- Name read-backs matter most for lookalike technologies (NGINX / NgRx /
+  NGXS, Java / JavaScript) and for internal tools whose public names need a
+  publication-boundary check.
+
 ## Filing answers
 
 An answered question moves; it is never answered inline:

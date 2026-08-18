@@ -115,6 +115,11 @@ into their vocabulary rather than skipping it.
   product names) get defined once, canonically, in the role note — every
   accomplishment then relies on that definition instead of re-explaining or
   misusing it.
+- **Awards and recognition.** Formal awards, honors, internal certifications,
+  employee-of-the-period recognition, public shout-outs from leadership.
+  People rarely volunteer these — ask directly. Recognition is verification
+  someone else already performed, and it earns resume space that a self-claim
+  never could.
 - **Deliberate ambiguity.** Sometimes the user wants a detail left vague
   (a root cause, a colleague's mistake). Record that the vagueness is
   intentional, so a later session doesn't chase it as a gap.

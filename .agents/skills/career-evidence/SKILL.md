@@ -41,6 +41,24 @@ audit_vault.py                    check structure, vocabulary, evidence
 Prefer these over doing the same work by hand: they produce identical results
 every time, and `audit_vault.py` is written against what they produce.
 
+## Workflow commands
+
+The step-by-step workflows live in sibling skills, each invocable as a slash
+command. Follow the matching one when doing that work; this note holds the
+rules they all share.
+
+- [/init-vault](../init-vault/SKILL.md) — first-time setup of a new vault
+- [/new-application](../new-application/SKILL.md) — scaffold the folder,
+  capture the posting verbatim, write the analysis
+- [/new-person](../new-person/SKILL.md) — one `People/` note per contact,
+  referral, recruiter, interviewer, or reference
+- [/draft-resume](../draft-resume/SKILL.md) and
+  [/draft-cover-letter](../draft-cover-letter/SKILL.md) — tailor the working
+  copies from verified evidence
+- [/resume-pdf](../resume-pdf/SKILL.md) and
+  [/cover-letter-pdf](../cover-letter-pdf/SKILL.md) — render and validate the
+  artifacts
+
 ## Who owns which note
 
 This split is the thing to get right. Inside an application folder:
@@ -95,23 +113,9 @@ The controlled vocabularies (statuses, discovery methods, stages) are defined in
 ## First-time setup
 
 If `Personal Information/Contact.md` is missing or still has empty contact
-fields, the user is starting out. Offer to walk them through it rather than
+fields, the user is starting out — switch to
+[/init-vault](../init-vault/SKILL.md) and walk them through setup rather than
 filling forms silently.
-
-1. Run `init_vault.py <path>` if there is no vault yet.
-2. Ask for an existing resume, diploma, or certificate to drop into `Resources/`
-   — source documents there are the fastest way to seed the vault, and
-   provenance lines can point back at them.
-3. Fill `Personal Information/` — `Contact.md` (contact details with per-entry
-   audience levels; the frontmatter is the cover-letter letterhead),
-   `About Me.md` (target roles, work model, compensation thinking), and
-   `Education.md`. `unknown` is a fine answer and better than a guess.
-4. Capture one role and its strongest accomplishment by interview (below). One
-   good accomplishment note is worth more than five thin ones, and it shows the
-   user what the vault is for.
-5. Create their first application and analyse it against that evidence.
-
-Ask in small batches. A long questionnaire gets abandoned.
 
 ## Capture career evidence
 
@@ -132,45 +136,12 @@ Evidence is captured by structured interview — the full protocol is
 7. Index anything still unresolved in `Working Notes/Open Questions.md` by
    linking the note's Questions section, not restating it.
 
-## Create or update an application
+## Applications, resumes, and cover letters
 
-1. `new_application.py "<Company>" "<Role>"` — scaffolds the folder and Artifacts/.
-2. `capture_jd.py` — stores the posting verbatim and stamps `verbatim_sha256`.
-   Capture before analysing, so the analysis cannot quietly reshape the source.
-3. Write `Analysis.md`, insight first: a three-sentence TL;DR, a compatibility
-   confidence verdict with its drivers, and the synthesised level with
-   reasoning. Do not restate the posting — it sits verbatim one file away.
-4. Classify every material job term as directly supported, adjacent or partial,
-   or unsupported, each with the evidence note that backs the verdict. The
-   unsupported list is the most useful thing in the note.
-5. Record compensation components exactly and identify their source. Never guess.
-6. Keep contacts, referrals, and interviews in their own notes.
-7. Keep `next_action` and `next_action_date` current while the application lives.
-
-## Tailor a resume
-
-1. Read the posting, the analysis, the Personal Information notes, and the evidence.
-2. Rank evidence by relevance, strength, recency, ownership, and metric quality.
-3. Select a focused subset. Cramming every accomplishment in weakens all of them.
-4. Draft into `Draft - Resume.md` with conventional headings and official titles.
-5. Preserve supported technologies, tenure, metric language, and ownership.
-6. `render_pdf.py --kind resume` renders and validates. If it reports the content
-   is too long, cut copy — do not reach for `--pages 2` unless a two-page resume
-   is what the user wants.
-7. Look at the proof image before calling it done.
-
-## Draft a cover letter
-
-1. Read the posting, analysis, referral status, and the selected evidence.
-2. Write it as a letter in `Draft - Cover Letter.md`; the letterhead comes from
-   `Personal Information/Contact.md`, filtered by audience.
-3. Open with the role and a credible fit statement. State a verified formal
-   referral when there is one, phrased exactly as the evidence supports.
-4. Connect two or three evidence-backed narratives to the employer's stated needs,
-   and say why each matters to them.
-5. Add reasoning that is not already obvious from the resume bullets.
-6. Explain equivalent experience directly rather than claiming the technology.
-7. `render_pdf.py --kind cover-letter`, then check the proof.
+Creating an application, drafting a resume or cover letter, and rendering the
+PDFs are the workflow commands above. The shared rule: capture and analysis
+come before drafting, drafting comes before rendering, and every external claim
+traces to evidence at each step.
 
 ## Track contacts, interviews, and references
 

@@ -8,11 +8,19 @@ Never commit personal data here.
 ## The skill
 
 The `career-evidence` skill is the heart of the repo and lives at
-`.agents/skills/career-evidence/` (`.claude/skills/career-evidence` is a
-compatibility symlink to it — edit the canonical copy). Read its `SKILL.md`
-before doing any job-hunt work: it defines who owns which note, the truth and
-privacy rules, and the workflows. Deeper references live beside it in
-`references/`.
+`.agents/skills/career-evidence/` (each entry in `.claude/skills/` is a
+compatibility symlink — edit the canonical copies under `.agents/skills/`).
+Read its `SKILL.md` before doing any job-hunt work: it defines who owns which
+note, the truth and privacy rules, and points to the workflow command skills.
+Deeper references live beside it in `references/`.
+
+The step-by-step workflows are thin sibling skills, invocable as slash
+commands: `init-vault`, `new-application`, `new-person`, `draft-resume`,
+`draft-cover-letter`, `resume-pdf`, and `cover-letter-pdf`. They reference the
+core skill's rules, scripts, and references by relative path
+(`../career-evidence/`), so the skills ship together — `package_skill.py` zips
+the whole set. Shared rules belong in the core skill; a command skill holds
+only its own workflow.
 
 ## Working on the tooling
 

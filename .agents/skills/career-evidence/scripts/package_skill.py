@@ -1,9 +1,11 @@
 #!/usr/bin/env python3
-"""Build a distributable zip of the skill for people who don't want the repo.
+"""Build a distributable zip of the skills for people who don't want the repo.
 
-The zip unpacks to a single `career-evidence/` folder, ready to drop into
-`~/.claude/skills/` (or any agent's skills directory). Only the skill's own
-files go in — never the vault, caches, or anything gitignored.
+The zip unpacks to one folder per skill — `career-evidence/` plus the workflow
+command skills beside it, which reference the core by relative path and must be
+installed side by side. Drop them all into `~/.claude/skills/` (or any agent's
+skills directory). Only the skills' own files go in — never the vault, caches,
+or anything gitignored.
 """
 
 from __future__ import annotations
@@ -14,16 +16,17 @@ from pathlib import Path
 
 from vaultlib import SKILL_ROOT, REPO_ROOT
 
+SKILLS_ROOT = SKILL_ROOT.parent
 EXCLUDED_DIRS = {"__pycache__", ".cache", ".git"}
 EXCLUDED_FILES = {".DS_Store", ".env"}
 
 
 def skill_files() -> list[Path]:
     files = []
-    for path in sorted(SKILL_ROOT.rglob("*")):
+    for path in sorted(SKILLS_ROOT.rglob("*")):
         if not path.is_file():
             continue
-        parts = path.relative_to(SKILL_ROOT).parts
+        parts = path.relative_to(SKILLS_ROOT).parts
         if any(part in EXCLUDED_DIRS for part in parts):
             continue
         if path.name in EXCLUDED_FILES or path.suffix == ".pyc":
@@ -36,8 +39,7 @@ def build(output: Path) -> Path:
     output.parent.mkdir(parents=True, exist_ok=True)
     with zipfile.ZipFile(output, "w", zipfile.ZIP_DEFLATED) as zf:
         for path in skill_files():
-            arcname = Path("career-evidence") / path.relative_to(SKILL_ROOT)
-            zf.write(path, arcname.as_posix())
+            zf.write(path, path.relative_to(SKILLS_ROOT).as_posix())
     return output
 
 

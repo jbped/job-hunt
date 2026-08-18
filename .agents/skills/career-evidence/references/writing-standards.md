@@ -12,6 +12,14 @@ Use these claim classes:
 
 Record the denominator and period for percentages. A percentage without its population or timeframe is incomplete evidence.
 
+## Punctuation
+
+**NO EM DASHES** in employer-facing copy — none in resumes, cover letters, or
+any rendered artifact. Where one is tempting, restructure: a separate sentence,
+a comma, a colon, or parentheses. Hyphens and en dashes remain fine for date
+and number ranges (`Aug 2025–Aug 2026`, `70–80 agents`). This is a user
+directive, not a style preference to weigh.
+
 ## Resume summary
 
 Every resume gets a 3-4 sentence `Summary`, structured as: who you are (title

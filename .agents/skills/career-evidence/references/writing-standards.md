@@ -40,15 +40,25 @@ roles get fewer bullets, a single line, or a bare listing with no bullets —
 dropping a role entirely is fine unless it creates an unexplained gap.
 
 Vary the opening verbs — a column of `Led… Led… Built… Built…` reads as
-padding. Choose the verb by ownership class first, then for variety:
+padding. Choose the verb by ownership class first, then for variety. The bank
+below is profession-neutral; pull equivalents from the user's own field when
+their vocabulary is stronger:
 
-- Sole or primary: led, owned, designed, architected, established, overhauled
-- Meaningful hands-on within a team: built, developed, implemented, engineered,
-  standardized, automated, migrated, optimized
-- Shared: co-led, delivered (with team size), collaborated
+- Sole or primary: led, owned, designed, established, founded, directed,
+  overhauled, authored
+- Meaningful hands-on within a team: built, developed, implemented, created,
+  produced, standardized, modernized, launched
+- Shared: co-led, delivered (with team size), collaborated, coordinated
 - Supporting: contributed, supported, assisted
-- Analysis and discovery: diagnosed, identified, investigated, evaluated
-- Outcomes: reduced, increased, eliminated, consolidated, streamlined, saved
+- Analysis and discovery: diagnosed, identified, investigated, evaluated,
+  audited, researched
+- People and communication: mentored, trained, coached, negotiated, presented,
+  recruited, facilitated
+- Outcomes: reduced, increased, eliminated, consolidated, streamlined, saved,
+  grew
+
+Software-engineering additions: architected, engineered, automated, migrated,
+optimized, refactored, instrumented, shipped.
 
 Never let a stronger verb upgrade the ownership class — verb variety is
 presentation, attribution is evidence.

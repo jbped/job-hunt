@@ -25,8 +25,8 @@ VAULT_ROOT/
 │           ├── Job Description.md      <- evidence, checksummed
 │           ├── Contacts.md
 │           ├── Interviews.md
-│           ├── Resume Content.md
-│           ├── Cover Letter.md
+│           ├── Draft - Resume.md
+│           ├── Draft - Cover Letter.md
 │           ├── Submission Notes.md
 │           └── Artifacts/              <- rendered PDFs, versioned
 ├── People/

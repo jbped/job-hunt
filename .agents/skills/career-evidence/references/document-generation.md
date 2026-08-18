@@ -16,7 +16,7 @@ crept in.
 
 ## Working copies
 
-- Draft into `Resume Content.md` and `Cover Letter.md` in the application folder.
+- Draft into `Draft - Resume.md` and `Draft - Cover Letter.md` in the application folder.
 - Link the evidence used, and record what was excluded and why. The exclusions
   are what make the next tailoring pass fast.
 - Once a version is submitted, it is history. Revisions become new versions.

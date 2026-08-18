@@ -21,7 +21,7 @@ import sys
 import schema
 import vaultlib as v
 
-# Template -> destination. Resume Content and Cover Letter are created up front so
+# Template -> destination. Draft - Resume and Draft - Cover Letter are created up front so
 # the folder shape is predictable, even before there is anything to write in them.
 FILES = {
     "Application Brief.md": "Application Brief.md",
@@ -29,8 +29,8 @@ FILES = {
     "Job Description.md": "Job Description.md",
     "Contacts.md": "Contacts.md",
     "Interviews.md": "Interviews.md",
-    "Resume Content.md": "Resume Content.md",
-    "Cover Letter.md": "Cover Letter.md",
+    "Draft - Resume.md": "Draft - Resume.md",
+    "Draft - Cover Letter.md": "Draft - Cover Letter.md",
     "Submission Notes.md": "Submission Notes.md",
 }
 

@@ -53,7 +53,7 @@ Facts you record. Interpretation lives in [[Analysis]].
 - Analysis and strategy: [[Analysis]]
 - Contacts and referral: [[Contacts]]
 - Interviews: [[Interviews]]
-- Resume working copy: [[Resume Content]]
-- Cover-letter working copy: [[Cover Letter]]
+- Resume working copy: [[Draft - Resume]]
+- Cover-letter working copy: [[Draft - Cover Letter]]
 - Submission record: [[Submission Notes]]
 - Rendered PDFs: `Artifacts/`

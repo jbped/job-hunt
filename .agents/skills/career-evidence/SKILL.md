@@ -152,7 +152,7 @@ Evidence is captured by structured interview — the full protocol is
 1. Read the posting, the analysis, the Personal Information notes, and the evidence.
 2. Rank evidence by relevance, strength, recency, ownership, and metric quality.
 3. Select a focused subset. Cramming every accomplishment in weakens all of them.
-4. Draft into `Resume Content.md` with conventional headings and official titles.
+4. Draft into `Draft - Resume.md` with conventional headings and official titles.
 5. Preserve supported technologies, tenure, metric language, and ownership.
 6. `render_pdf.py --kind resume` renders and validates. If it reports the content
    is too long, cut copy — do not reach for `--pages 2` unless a two-page resume
@@ -162,7 +162,7 @@ Evidence is captured by structured interview — the full protocol is
 ## Draft a cover letter
 
 1. Read the posting, analysis, referral status, and the selected evidence.
-2. Write it as a letter in `Cover Letter.md`; the letterhead comes from
+2. Write it as a letter in `Draft - Cover Letter.md`; the letterhead comes from
    `Personal Information/Contact.md`, filtered by audience.
 3. Open with the role and a credible fit statement. State a verified formal
    referral when there is one, phrased exactly as the evidence supports.

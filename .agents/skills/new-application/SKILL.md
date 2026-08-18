@@ -1,7 +1,6 @@
 ---
 name: new-application
 description: Start tracking a new job application in the job-hunt vault — scaffold the folder, capture the posting verbatim, and write the analysis. Use whenever the user has found a job posting, wants to apply somewhere, pastes a posting for a role they are considering, or asks to add, track, or analyse a job or application.
-argument-hint: '"<Company>" "<Role>"'
 ---
 
 # New application
@@ -22,8 +21,8 @@ note, and the truth and privacy rules. Scripts live in
    or unsupported, each with the evidence note that backs the verdict. The
    unsupported list is the most useful thing in the note.
 5. Record compensation components exactly and identify their source. Never guess.
-6. Keep contacts, referrals, and interviews in their own notes. Create the
-   person notes with `/new-person`.
+6. Keep contacts, referrals, and interviews in their own notes. Create person
+   notes with the [`new-person`](../new-person/SKILL.md) workflow.
 7. Keep `next_action` and `next_action_date` current while the application lives.
 
 What the fields mean — status flow, discovery, compensation, level synthesis —

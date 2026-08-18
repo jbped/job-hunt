@@ -1,5 +1,7 @@
 .env
 dist/
+# The default in-repo vault: personal data, never committed.
+/vault/
 __pycache__/
 *.pyc
 .cache/

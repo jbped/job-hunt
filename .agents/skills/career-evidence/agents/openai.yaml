@@ -1,4 +1,0 @@
-interface:
-  display_name: "Career Evidence & Applications"
-  short_description: "Evidence-backed job search and application tracking"
-  default_prompt: "Use $career-evidence to capture this job, match my verified experience, and prepare the application artifacts."

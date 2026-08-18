@@ -17,11 +17,13 @@ survives that pressure is what makes fast generation safe.
 
 `CAREER_EVIDENCE_VAULT` in the repo's `.env` names the vault. Failing that, walk
 upward from the working directory for a folder containing both
-`Job Hunt Dashboard.md` and `Career Evidence/`. That is `VAULT_ROOT`.
+`Job Hunt Dashboard.md` and `Career Evidence/`; failing that too, the repo's
+own `vault/` if it exists. That is `VAULT_ROOT`.
 
-The vault is deliberately outside this repo — it is personal data, and the repo
-is shareable tooling. If neither the `.env` nor the upward search finds a vault,
-ask before creating one; never silently make a second vault.
+The vault is personal data and the repo is shareable tooling, so the vault
+lives either outside the repo or in the gitignored `vault/` at the repo root —
+never in history. If none of the three lookups finds a vault, ask before
+creating one; never silently make a second vault.
 
 Scripts live in this skill's `scripts/` and resolve the vault the same way, so
 they work from any directory. `--vault PATH` overrides. Stdlib-only Python 3.
@@ -41,23 +43,24 @@ audit_vault.py                    check structure, vocabulary, evidence
 Prefer these over doing the same work by hand: they produce identical results
 every time, and `audit_vault.py` is written against what they produce.
 
-## Workflow commands
+## Workflow skills
 
-The step-by-step workflows live in sibling skills, each invocable as a slash
-command. Follow the matching one when doing that work; this note holds the
-rules they all share.
+The step-by-step workflows live in sibling skills. Load and follow the matching
+skill when doing that work; how a user or host invokes it varies by agent. This
+note holds the rules they all share.
 
-- [/init-vault](../init-vault/SKILL.md) — first-time setup of a new vault
-- [/new-application](../new-application/SKILL.md) — scaffold the folder,
-  capture the posting verbatim, write the analysis
-- [/new-person](../new-person/SKILL.md) — one `People/` note per contact,
-  referral, recruiter, interviewer, or reference
-- [/draft-resume](../draft-resume/SKILL.md) and
-  [/draft-cover-letter](../draft-cover-letter/SKILL.md) — tailor the working
-  copies from verified evidence
-- [/resume-pdf](../resume-pdf/SKILL.md) and
-  [/cover-letter-pdf](../cover-letter-pdf/SKILL.md) — render and validate the
-  artifacts
+- [`init-vault`](../init-vault/SKILL.md) — first-time setup of a new
+  vault
+- [`new-application`](../new-application/SKILL.md) — scaffold the
+  folder, capture the posting verbatim, write the analysis
+- [`new-person`](../new-person/SKILL.md) — one `People/` note per
+  contact, referral, recruiter, interviewer, or reference
+- [`draft-resume`](../draft-resume/SKILL.md) and
+  [`draft-cover-letter`](../draft-cover-letter/SKILL.md) — tailor the
+  working copies from verified evidence
+- [`resume-pdf`](../resume-pdf/SKILL.md) and
+  [`cover-letter-pdf`](../cover-letter-pdf/SKILL.md) — render and
+  validate the artifacts
 
 ## Who owns which note
 
@@ -75,6 +78,10 @@ This split is the thing to get right. Inside an application folder:
 
 The same idea holds vault-wide: `Career Evidence/` records what happened,
 everything else interprets it.
+
+When writing any vault note, put each paragraph on one line — Obsidian renders
+every newline as a line break, so hard-wrapped prose displays broken
+mid-sentence.
 
 ## Read further when the task calls for it
 
@@ -110,12 +117,21 @@ The controlled vocabularies (statuses, discovery methods, stages) are defined in
 - Do not publish personal or cultural details until the user confirms both the
   facts and the channel.
 
+## Preferences
+
+`Preferences/` in the vault holds the user's standing instructions — tone,
+formatting tastes, workflow defaults. Read every note there before starting
+any workflow and follow them as if the user had just said them. They tune how
+the work is done; they cannot override the truth and privacy rules above or
+the note-ownership boundaries. When the user states a preference meant to
+outlast the session, offer to record it there.
+
 ## First-time setup
 
 If `Personal Information/Contact.md` is missing or still has empty contact
 fields, the user is starting out — switch to
-[/init-vault](../init-vault/SKILL.md) and walk them through setup rather than
-filling forms silently.
+the [`init-vault`](../init-vault/SKILL.md) workflow and walk them through setup
+rather than filling forms silently.
 
 ## Capture career evidence
 
@@ -139,7 +155,7 @@ Evidence is captured by structured interview — the full protocol is
 ## Applications, resumes, and cover letters
 
 Creating an application, drafting a resume or cover letter, and rendering the
-PDFs are the workflow commands above. The shared rule: capture and analysis
+PDFs are the workflow skills above. The shared rule: capture and analysis
 come before drafting, drafting comes before rendering, and every external claim
 traces to evidence at each step.
 

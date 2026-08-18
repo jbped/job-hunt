@@ -14,9 +14,7 @@ tags:
 
 # Contact
 
-Canonical contact details and their disclosure levels. The letterhead on every
-rendered resume and cover letter is built from the frontmatter above; entries
-marked `self` never leave the vault.
+Canonical contact details and their disclosure levels. The letterhead on every rendered resume and cover letter is built from the frontmatter above; entries marked `self` never leave the vault.
 
 ## Header
 

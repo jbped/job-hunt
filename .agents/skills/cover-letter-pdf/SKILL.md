@@ -1,7 +1,6 @@
 ---
 name: cover-letter-pdf
 description: Render and validate the cover letter PDF for a job application from its Draft - Cover Letter.md working copy. Use whenever the user asks to generate, render, export, or re-render a cover letter PDF, or to produce the final cover letter artifact for a submission.
-argument-hint: <company or application folder>
 ---
 
 # Generate the cover letter PDF
@@ -11,8 +10,8 @@ skill is not already loaded. The rendering details are in the Rendering section
 of [document-generation.md](../career-evidence/references/document-generation.md).
 
 1. The source is the application's `Draft - Cover Letter.md`. If it is missing
-   or stale, draft it first with `/draft-cover-letter` — this command renders,
-   it does not write copy.
+   or stale, follow the [`draft-cover-letter`](../draft-cover-letter/SKILL.md)
+   workflow first — this skill renders; it does not write copy.
 2. Run `render_pdf.py --app <folder> --kind cover-letter` from
    `../career-evidence/scripts/`. The letterhead comes from
    `Personal Information/Contact.md`; only entries whose audience is

@@ -1,7 +1,7 @@
 # career-evidence
 
 A job-hunt system built on plain markdown: an Obsidian vault of verified career
-evidence, plus the scripts and Claude Code skill that turn it into tailored
+evidence, plus portable AI-agent skills and scripts that turn it into tailored
 resumes, cover letters, and an application tracker.
 
 The premise: resume writing under pressure always drifts the same way — numbers
@@ -16,9 +16,9 @@ is the author's field, but the vocabulary lives in one file
 (`scripts/schema.py`) and the vault holds roles, accomplishments, skills, and
 people, not code.
 
-**The vault is not in this repo.** This repo is the tooling; the vault is your
-personal data and lives wherever you keep your Obsidian vaults. `.env` connects
-the two, and nothing personal is ever committed here.
+The vault is personal data and never belongs in git history. It can live outside
+the checkout, connected through `.env`, or in the repo's gitignored `vault/`
+directory for zero-config setup.
 
 ## Layout
 
@@ -41,35 +41,61 @@ Personal Information/   contact details with audience levels, education, about-m
 Career Evidence/        one note per role, one per accomplishment — the source of truth
 Applications/           one folder per application: posting, analysis, artifacts
 People/                 one note per person: contacts, referrals, references
+Preferences/            standing instructions for any agent working in the vault
 Resources/              ingested source documents (old resumes, diplomas)
 Working Notes/          open questions, generated skill matrix and field reference
 ```
 
-The skill lives at `.agents/skills/` (the cross-agent standard location);
-`.claude/skills/career-evidence` is a symlink to it, so opening this repo in
-Claude Code loads it automatically. Nothing needs installing.
+The canonical skills live at `.agents/skills/`: the `career-evidence` core plus
+seven sibling workflows. They use only portable `SKILL.md` frontmatter, relative
+links, plain-language instructions, and executable scripts. They do not name a
+model provider, assume a command prefix, or depend on proprietary agent tools.
 
-On Windows, git only recreates that symlink with Developer Mode (or an
-elevated shell) and `git config core.symlinks true` before cloning. If the
-symlink comes out as a plain text file, either re-clone with those set, or
-skip it entirely: unzip the release into `%USERPROFILE%\.claude\skills\`
-instead — everything works from there.
+Host-specific discovery and invocation stay outside the canonical package. For
+Claude Code, each entry in `.claude/skills/` is a symlink to a canonical skill,
+so the commands load automatically in this checkout and stay scoped to it;
+other hosts can discover `.agents/skills/` directly, point their recognized
+skill directory at it, or load `career-evidence/SKILL.md` explicitly. Command
+names and prefixes may differ by host; the stable workflow identifiers are the
+folder names such as `new-application`, `draft-resume`, and `resume-pdf`.
+
+The checkout adapter uses symlinks. On Windows, git recreates symlinks only
+when Developer Mode (or an elevated shell) and `git config core.symlinks true`
+are enabled before cloning. This does not affect the canonical skills or the
+release archive, which contains real files.
 
 ## Getting it
 
-Two ways in, same skill either way:
+Two ways in, with the same provider-neutral skills either way:
 
-- **Clone the repo** (recommended). Open it in Claude Code and the skill loads
-  automatically; you also get the git history and can pull updates.
-- **Download the zip** from the [Releases page](../../releases) — unzip it into
-  your agent's skills directory (for Claude Code, `~/.claude/skills/`), which
-  makes the skill available in every project. It carries everything: scripts,
-  references, the vault template, and the dashboard.
+- **Clone the repo** (recommended). Configure your agent to discover
+  `.agents/skills/`, or tell it to read
+  `.agents/skills/career-evidence/SKILL.md`. You also get git history and easy
+  updates.
+- **Download the zip** from the [Releases page](../../releases) — extract all
+  sibling skill folders into a skill directory recognized by your agent. Keep
+  them side by side because workflow skills link to the core by relative path.
+  The archive carries the scripts, references, vault template, and dashboard.
 
 The zip is built by `scripts/package_skill.py`, so you can also produce one
-yourself from a checkout.
+yourself from a checkout. Consult the host's documentation for its discovery
+directory and invocation syntax; neither is baked into the archive.
 
 ## Setup
+
+The zero-config path — create the vault inside the checkout, where it is
+gitignored and found automatically:
+
+```sh
+python .agents/skills/career-evidence/scripts/init_vault.py
+```
+
+Then in Obsidian choose **Open folder as vault** and select the created
+folder. (Not *Create new vault* — that would nest a fresh, empty vault inside
+it.)
+
+To keep the vault elsewhere instead (say, alongside your other Obsidian
+vaults), pass `init_vault.py` that path and point the tooling at it:
 
 ```fish
 cp .env.example .env
@@ -77,11 +103,7 @@ cp .env.example .env
 
 Then edit `.env` so `CAREER_EVIDENCE_VAULT` points at your vault. (Zip install:
 create the `.env` inside the unzipped `career-evidence/` folder, next to
-`SKILL.md` — the scripts look there first.) If you do not have a vault yet:
-
-```sh
-python .agents/skills/career-evidence/scripts/init_vault.py ~/Documents/Obsidian/job-hunt
-```
+`SKILL.md` — the scripts look there first.)
 
 Everything runs on stock Python 3 — Windows, macOS, or Linux, no packages to
 install. Only `render_pdf.py` needs external tools, Ghostscript and the Poppler

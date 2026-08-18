@@ -31,6 +31,8 @@ VAULT_ROOT/
 │           └── Artifacts/              <- rendered PDFs, versioned
 ├── People/
 │   └── <Full Name>.md             (one note per person)
+├── Preferences/
+│   └── README.md                  (+ the user's standing instructions)
 ├── Resources/
 │   └── README.md                  (+ ingested source documents)
 ├── Working Notes/
@@ -44,9 +46,23 @@ reference. Being a referral on one application and a reference for another are
 relationships recorded on that one note, never a second file. `Working Notes/`
 holds scratch and open questions; keep the two distinct.
 
+`Preferences/` holds the user's standing instructions for how the agent works
+this vault — tone, formatting tastes, workflow defaults. Plain markdown notes,
+written by the user (or by the agent when asked to record a preference). They
+tune how work is done and cannot override the truth and privacy rules or the
+ownership boundaries below.
+
 `Resources/` is the ingress point for source documents — old resumes, diplomas,
 certificates. A file there is a source, not evidence: extract facts into notes
 whose provenance lines point back at it, and never edit an ingested document.
+
+## Formatting
+
+Vault notes are read in Obsidian, which renders every newline as a visible
+line break: write each paragraph (and each list item) as one long line, never
+hard-wrapped at a column width. Repo files — skill docs, references, code —
+stay conventionally wrapped; this rule is only for markdown that lands in the
+vault.
 
 ## Ownership boundaries
 

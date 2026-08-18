@@ -35,12 +35,21 @@ FILES = {
 }
 
 
+# Names Windows refuses as files or folders regardless of extension.
+WINDOWS_RESERVED = {"CON", "PRN", "AUX", "NUL",
+                    *(f"COM{n}" for n in range(1, 10)),
+                    *(f"LPT{n}" for n in range(1, 10))}
+
+
 def safe_name(value: str) -> str:
     """Keep folder names close to what the user typed but legal on disk."""
     cleaned = value.strip().rstrip(".")
     for char in '/\\:*?"<>|':
         cleaned = cleaned.replace(char, "-")
-    return " ".join(cleaned.split())
+    cleaned = " ".join(cleaned.split())
+    if cleaned.split(".")[0].upper() in WINDOWS_RESERVED:
+        cleaned += "-"
+    return cleaned
 
 
 def create(vault: Path, company: str, position: str, *, url: str = "",

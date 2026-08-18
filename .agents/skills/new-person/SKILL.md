@@ -1,7 +1,6 @@
 ---
 name: new-person
 description: Add a person to the job-hunt vault's People folder — a contact, recruiter, referrer, hiring manager, interviewer, or professional reference. Use whenever the user mentions a person relevant to their job search — someone offered a referral, a recruiter reached out, an interviewer was named, or someone agreed to be a reference.
-argument-hint: <Full Name>
 ---
 
 # New person

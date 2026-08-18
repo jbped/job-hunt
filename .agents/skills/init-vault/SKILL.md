@@ -1,7 +1,6 @@
 ---
 name: init-vault
 description: Create and seed a new job-hunt vault — first-time setup of Personal Information, a first role and accomplishment, and a first application. Use when the user wants to set up the job-hunt system from scratch, has no vault yet, or the vault's Contact.md is missing or still has empty contact fields.
-argument-hint: <path for the new vault>
 ---
 
 # Initialise the vault
@@ -15,8 +14,11 @@ If `Personal Information/Contact.md` is missing or still has empty contact
 fields, the user is starting out. Walk them through it rather than filling
 forms silently:
 
-1. Run `init_vault.py <path>` (in `../career-evidence/scripts/`) if there is no
-   vault yet. It works in a vault Obsidian just created too: it clears the
+1. Run `init_vault.py` (in `../career-evidence/scripts/`) if there is no vault
+   yet — without a path it creates the repo's own gitignored `vault/`; pass a
+   path to put it elsewhere. Tell the user to use Obsidian's "Open folder as
+   vault" on the created folder, not "Create new vault", which would nest a
+   fresh empty vault inside it. It works in a vault Obsidian just created too: it clears the
    stock `Welcome.md` Obsidian seeds, but only on an exact content match — a
    `Welcome.md` that was edited (or is in another language) is user content, so
    ask before deleting it.
@@ -31,7 +33,7 @@ forms silently:
    protocol is [evidence-interview.md](../career-evidence/references/evidence-interview.md).
    One good accomplishment note is worth more than five thin ones, and it shows
    the user what the vault is for.
-5. Create their first application with `/new-application` and analyse it
-   against that evidence.
+5. Follow the [`new-application`](../new-application/SKILL.md) workflow to create
+   their first application and analyse it against that evidence.
 
 Ask in small batches. A long questionnaire gets abandoned.

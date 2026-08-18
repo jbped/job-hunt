@@ -2,10 +2,10 @@
 """Build a distributable zip of the skills for people who don't want the repo.
 
 The zip unpacks to one folder per skill — `career-evidence/` plus the workflow
-command skills beside it, which reference the core by relative path and must be
-installed side by side. Drop them all into `~/.claude/skills/` (or any agent's
-skills directory). Only the skills' own files go in — never the vault, caches,
-or anything gitignored.
+skills beside it, which reference the core by relative path and must be
+installed side by side. Put them in the skill directory recognized by the host
+agent. Only the skills' own files go in — never the vault, caches, or anything
+gitignored.
 """
 
 from __future__ import annotations
@@ -17,7 +17,7 @@ from pathlib import Path
 from vaultlib import SKILL_ROOT, REPO_ROOT
 
 SKILLS_ROOT = SKILL_ROOT.parent
-EXCLUDED_DIRS = {"__pycache__", ".cache", ".git"}
+EXCLUDED_DIRS = {"__pycache__", ".cache", ".git", "vault"}
 EXCLUDED_FILES = {".DS_Store", ".env"}
 
 

@@ -50,6 +50,10 @@ def _repo_root() -> Path:
 
 REPO_ROOT = _repo_root()
 
+# The fallback when nothing is configured: a vault inside the checkout itself.
+# It is gitignored — personal data stays out of history even when it lives here.
+DEFAULT_VAULT = REPO_ROOT / "vault"
+
 
 def load_env(path: Path | None = None) -> dict[str, str]:
     """Read KEY=VALUE lines from the repo's .env. Real environment variables win."""
@@ -80,11 +84,12 @@ def configured_vault() -> Path | None:
 
 
 def find_vault(start: Path | str | None = None) -> Path | None:
-    """Resolve the vault: explicit path, then configuration, then upward search.
+    """Resolve the vault: explicit path, configuration, upward search, then
+    the repo's own gitignored `vault/`.
 
-    Upward search stays as the last resort so the scripts still work when run
-    from inside a vault that is not the configured one — a friend's checkout, or
-    a second vault used for testing.
+    Upward search outranks the repo default so the scripts still work when run
+    from inside a vault that is not the configured one — a friend's checkout,
+    or a second vault used for testing.
     """
     if start:
         candidate = Path(start).expanduser().resolve()
@@ -98,6 +103,9 @@ def find_vault(start: Path | str | None = None) -> Path | None:
     for candidate in [here, *here.parents]:
         if is_vault(candidate):
             return candidate
+
+    if is_vault(DEFAULT_VAULT):
+        return DEFAULT_VAULT
     return None
 
 
@@ -110,7 +118,8 @@ def require_vault(start: Path | str | None = None) -> Path:
         elif configured:
             detail = f"{ENV_VAR} points at '{configured}', which is not a vault."
         else:
-            detail = f"No {ENV_VAR} is set and no vault was found above {Path.cwd()}."
+            detail = (f"No {ENV_VAR} is set and no vault was found above "
+                      f"{Path.cwd()} or at {DEFAULT_VAULT}.")
         raise SystemExit(
             f"{detail}\n"
             "A vault is a directory containing both 'Job Hunt Dashboard.md' and 'Career Evidence/'.\n"

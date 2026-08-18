@@ -1,7 +1,6 @@
 ---
 name: draft-cover-letter
-description: Write a tailored cover letter draft for a specific application from the verified evidence in the job-hunt vault. Use whenever the user wants to write, tailor, rework, or update a cover letter for a role. This produces the markdown working copy; rendering the PDF afterwards is /cover-letter-pdf.
-argument-hint: <company or application folder>
+description: Write a tailored cover letter draft for a specific application from the verified evidence in the job-hunt vault. Use whenever the user wants to write, tailor, rework, or update a cover letter for a role. This produces the markdown working copy; the cover-letter-pdf skill renders it afterwards.
 ---
 
 # Draft a cover letter
@@ -30,4 +29,5 @@ any copy that will reach an employer.
 7. Ground motivation in the captured posting or verified research, not praise
    that could apply to any company.
 
-When the draft is settled, render and validate it with `/cover-letter-pdf`.
+When the draft is settled, render and validate it with the
+[`cover-letter-pdf`](../cover-letter-pdf/SKILL.md) workflow.

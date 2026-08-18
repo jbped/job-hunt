@@ -14,13 +14,17 @@ from __future__ import annotations
 from http.server import ThreadingHTTPServer
 from pathlib import Path
 import json
+import os
 import tempfile
 import threading
 import unittest
 import urllib.request
+import zipfile
 
+import capture_jd
 import init_vault
 import new_application
+import package_skill
 import render_pdf
 import serve
 import vaultlib as v
@@ -89,6 +93,20 @@ class SafetyTest(unittest.TestCase):
                          "precious user data")
         self.assertIn(Path("Personal Information/Contact.md"), skipped)
 
+    def test_default_vault_is_gitignored(self):
+        ignore = (v.REPO_ROOT / ".gitignore").read_text(encoding="utf-8")
+        self.assertIn("/vault/", ignore.split())
+
+    def test_find_vault_falls_back_to_repo_default(self):
+        original = v.DEFAULT_VAULT
+        v.DEFAULT_VAULT = self.vault
+        os.environ[v.ENV_VAR] = str(Path(self._tmp.name) / "not-a-vault")
+        try:
+            self.assertEqual(v.find_vault(), self.vault)
+        finally:
+            v.DEFAULT_VAULT = original
+            del os.environ[v.ENV_VAR]
+
     def test_resolve_rejects_paths_outside_the_vault(self):
         with self.assertRaises(serve.RequestError):
             serve.resolve(self.vault, "../outside.md")
@@ -128,6 +146,53 @@ class SafetyTest(unittest.TestCase):
     def test_empty_sanitized_names_are_rejected(self):
         with self.assertRaises(SystemExit):
             new_application.create(self.vault, ".", "Role")
+
+    def test_windows_reserved_names_are_defused(self):
+        self.assertEqual(new_application.safe_name("Nul"), "Nul-")
+        self.assertEqual(new_application.safe_name("com1.io"), "com1.io-")
+        self.assertEqual(new_application.safe_name("Console Corp"), "Console Corp")
+
+    def test_new_application_accepts_verbatim_capture(self):
+        folder = new_application.create(self.vault, "Capture Test", "Role")
+        note = folder / "Job Description.md"
+        digest = capture_jd.capture(note, "First line\nSecond line", today="2026-01-02")
+        fm, body = v.read_note(note)
+        self.assertEqual(fm["verbatim_sha256"], digest)
+        self.assertEqual(capture_jd.find_posting(body).group(2),
+                         "First line\nSecond line")
+
+    def test_skill_sources_are_host_neutral(self):
+        forbidden = (
+            "anthropic", "chatgpt", "claude", "codex", "cursor", "gemini", "openai",
+            ".claude/", ".codex/", ".cursor/", ".gemini/", "/job-hunt:",
+            "argument-hint:",
+        )
+        checked = []
+        for pattern in ("SKILL.md", "references/*.md", "scripts/*.py"):
+            checked.extend(package_skill.SKILLS_ROOT.rglob(pattern))
+        for path in sorted(set(checked)):
+            if path.resolve() == Path(__file__).resolve():
+                continue
+            text = path.read_text(encoding="utf-8").lower()
+            for marker in forbidden:
+                self.assertNotIn(marker, text, f"{path}: host-specific marker {marker}")
+
+    def test_release_archive_has_portable_skill_roots(self):
+        self.assertIn("vault", package_skill.EXCLUDED_DIRS)
+        output = Path(self._tmp.name) / "skills.zip"
+        package_skill.build(output)
+        with zipfile.ZipFile(output) as archive:
+            names = archive.namelist()
+        self.assertIn("career-evidence/SKILL.md", names)
+        self.assertIn("new-application/SKILL.md", names)
+        self.assertFalse(any(".claude-plugin" in name for name in names))
+        self.assertFalse(any(name.startswith("job-hunt/") for name in names))
+        self.assertFalse(any("vault" in Path(name).parts for name in names))
+        provider_names = {"anthropic", "claude", "codex", "cursor", "gemini", "openai"}
+        for name in names:
+            parts = {part.lower() for part in Path(name).parts}
+            self.assertTrue(parts.isdisjoint(provider_names),
+                            f"provider-specific archive path: {name}")
 
     def test_create_person_is_bounded(self):
         with self.assertRaises(serve.RequestError):

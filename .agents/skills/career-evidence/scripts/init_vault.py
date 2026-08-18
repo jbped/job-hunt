@@ -8,7 +8,9 @@ role note is a conversation with the agent, because that is where judgement is
 needed and a prompt does better than a form.
 
 Usage:
-    python init_vault.py ~/Documents/Obsidian/job-hunt
+    python init_vault.py [~/Documents/Obsidian/job-hunt]
+
+Without a path it creates the repo's own gitignored `vault/`.
 """
 
 from __future__ import annotations
@@ -17,6 +19,8 @@ from pathlib import Path
 import argparse
 import shutil
 import sys
+
+from vaultlib import DEFAULT_VAULT
 
 SKILL_ROOT = Path(__file__).resolve().parent.parent
 TEMPLATE = SKILL_ROOT / "assets" / "vault-template"
@@ -50,6 +54,7 @@ DIRECTORIES = [
     "Career Evidence/Roles",
     "Career Evidence/Accomplishments",
     "People",
+    "Preferences",
     "Resources",
     "Working Notes",
 ]
@@ -92,13 +97,16 @@ def create(target: Path, force: bool = False) -> Path:
 
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__)
-    ap.add_argument("path", help="where to create the vault")
+    ap.add_argument("path", nargs="?", default=None,
+                    help="where to create the vault "
+                         "(default: the repo's gitignored vault/)")
     ap.add_argument("--force", action="store_true",
                     help="add missing template files to a directory that already "
                          "has content; existing files are never overwritten")
     args = ap.parse_args()
 
-    target = Path(args.path).expanduser().resolve()
+    target = (Path(args.path).expanduser().resolve() if args.path
+              else DEFAULT_VAULT)
     _, skipped = create(target, args.force)
     if skipped:
         print(f"Left {len(skipped)} existing note(s) untouched:")
@@ -109,7 +117,8 @@ def main() -> int:
     print(f"Created a job-hunt vault at {target}")
     print(f"  {notes} notes, {len(DIRECTORIES)} directories\n")
     print("Next:")
-    print(f"  1. Open {target.name} as a vault in Obsidian.")
+    print(f"  1. In Obsidian, choose \"Open folder as vault\" and select {target}.")
+    print( "     (Not \"Create new vault\" — that would nest a new folder inside.)")
     print( "  2. Read 'Start Here.md'.")
     print( "  3. Ask your agent: \"set up my job hunt vault\" — it will interview you")
     print( "     for your profile and first role, which is the part worth doing carefully.")

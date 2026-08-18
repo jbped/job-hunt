@@ -41,15 +41,9 @@ No roles recorded yet. Ask your agent to interview you about your most recent jo
 
 Two ideas carry most of the weight:
 
-**Evidence is separate from applications.** `Career Evidence/` holds what is true
-about your career, written once. An application selects from it. A resume never
-introduces a claim that is not already in evidence — which is what makes it safe
-to generate quickly.
+**Evidence is separate from applications.** `Career Evidence/` holds what is true about your career, written once. An application selects from it. A resume never introduces a claim that is not already in evidence — which is what makes it safe to generate quickly.
 
-**Facts are separate from interpretation.** In each application folder,
-`Application Brief.md` is yours: status, URL, compensation, next action. `Analysis.md`
-is the agent's: what the posting wants, how your evidence maps to it, what not to
-claim. Rewriting the analysis is always safe; it is derived, not recorded.
+**Facts are separate from interpretation.** In each application folder, `Application Brief.md` is yours: status, URL, compensation, next action. `Analysis.md` is the agent's: what the posting wants, how your evidence maps to it, what not to claim. Rewriting the analysis is always safe; it is derived, not recorded.
 
 ## Application workflow
 
@@ -60,8 +54,7 @@ claim. Rewriting the analysis is always safe; it is derived, not recorded.
 5. `render_pdf.py` produces validated PDFs into `Artifacts/`.
 6. Record what was sent in `Submission Notes.md` and update the status.
 
-Run `status.py` for the same picture in a terminal, or `serve.py` for the local
-dashboard. `audit_vault.py` checks the vault after any structural change.
+Run `status.py` for the same picture in a terminal, or `serve.py` for the local dashboard. `audit_vault.py` checks the vault after any structural change.
 
 ## Evidence rules
 

@@ -19,9 +19,7 @@ No previous interviews recorded.
 
 ## Entry format
 
-Reference only — the tools ignore this section. Add real entries under Upcoming
-or Previous as `### YYYY-MM-DD HH:mm TZ | Stage`, then move the entry from
-Upcoming to Previous once it happens rather than creating a second one.
+Reference only — the tools ignore this section. Add real entries under Upcoming or Previous as `### YYYY-MM-DD HH:mm TZ | Stage`, then move the entry from Upcoming to Previous once it happens rather than creating a second one.
 
 Upcoming entries carry:
 

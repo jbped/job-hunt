@@ -1,7 +1,6 @@
 ---
 name: resume-pdf
 description: Render and validate the resume PDF for a job application from its Draft - Resume.md working copy. Use whenever the user asks to generate, render, export, or re-render a resume PDF, or to produce the final resume artifact for a submission.
-argument-hint: <company or application folder>
 ---
 
 # Generate the resume PDF
@@ -11,8 +10,8 @@ skill is not already loaded. The rendering details are in the Rendering section
 of [document-generation.md](../career-evidence/references/document-generation.md).
 
 1. The source is the application's `Draft - Resume.md`. If it is missing or
-   stale, draft it first with `/draft-resume` — this command renders, it does
-   not write copy.
+   stale, follow the [`draft-resume`](../draft-resume/SKILL.md) workflow first —
+   this skill renders; it does not write copy.
 2. Run `render_pdf.py --app <folder> --kind resume` from
    `../career-evidence/scripts/`. It measures the content against real font
    metrics, renders through `ps2pdf`, validates the result, and versions the

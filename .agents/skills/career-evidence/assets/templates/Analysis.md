@@ -10,10 +10,7 @@ tags:
 
 # Company | Position — Analysis
 
-Generated from the verbatim posting and canonical evidence. Record facts in
-[[Application Brief]]; this note holds interpretation. Rewriting it is safe —
-nothing here is a source of truth. Quote the posting only where a term is being
-judged; the verbatim capture lives in [[Job Description]] and is not restated here.
+Generated from the verbatim posting and canonical evidence. Record facts in [[Application Brief]]; this note holds interpretation. Rewriting it is safe — nothing here is a source of truth. Quote the posting only where a term is being judged; the verbatim capture lives in [[Job Description]] and is not restated here.
 
 ## Position TL;DR
 
@@ -32,8 +29,7 @@ judged; the verbatim capture lives in [[Job Description]] and is not restated he
 
 ## Fit by term
 
-One entry per material term in the posting: the term, then the evidence that
-backs the verdict.
+One entry per material term in the posting: the term, then the evidence that backs the verdict.
 
 ### Directly supported
 

@@ -1,8 +1,6 @@
 # Applications
 
-One folder per application, scaffolded by the skill's `new_application.py`
-(brief, analysis, job description, contacts, interviews, resume content, cover
-letter, submission notes).
+One folder per application, scaffolded by the skill's `new_application.py` (brief, analysis, job description, contacts, interviews, resume content, cover letter, submission notes).
 
 Keep the job posting verbatim in `Job Description.md`. Put summaries, experience-level synthesis, compensation, fit analysis, and strategy in `Application Brief.md`. Record referrals and points of contact in `Contacts.md`, and keep interview history in `Interviews.md`.
 

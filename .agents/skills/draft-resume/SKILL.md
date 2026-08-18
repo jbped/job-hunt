@@ -1,7 +1,6 @@
 ---
 name: draft-resume
-description: Tailor a resume draft for a specific application from the verified evidence in the job-hunt vault. Use whenever the user wants to write, tailor, rework, or update a resume or CV for a role. This produces the markdown working copy; rendering the PDF afterwards is /resume-pdf.
-argument-hint: <company or application folder>
+description: Tailor a resume draft for a specific application from the verified evidence in the job-hunt vault. Use whenever the user wants to write, tailor, rework, or update a resume or CV for a role. This produces the markdown working copy; the resume-pdf skill renders it afterwards.
 ---
 
 # Draft a resume
@@ -29,4 +28,5 @@ for any copy that will reach an employer.
 6. Link the evidence used and record what was excluded and why — the exclusions
    are what make the next tailoring pass fast.
 
-When the draft is settled, render and validate it with `/resume-pdf`.
+When the draft is settled, render and validate it with the
+[`resume-pdf`](../resume-pdf/SKILL.md) workflow.

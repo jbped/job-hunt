@@ -28,6 +28,7 @@ REQUIRED_ROOT = [
     "Career Evidence",
     "Applications",
     "People",
+    "Preferences",
     "Resources",
     "Working Notes",
 ]

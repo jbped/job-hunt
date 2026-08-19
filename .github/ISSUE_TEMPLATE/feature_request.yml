@@ -1,0 +1,25 @@
+name: Feature request
+description: An idea to make the system better
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: The problem
+      description: What part of running a job search is slow, error-prone, or missing?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed solution
+      description: What you'd like to happen. Sketches welcome.
+    validations:
+      required: true
+  - type: textarea
+    id: constraints
+    attributes:
+      label: Fit with the ground rules
+      description: >
+        Note anything that touches the hard rules: stdlib-only scripts,
+        host-neutral skills, evidence/truth rules, local-only dashboard.

@@ -97,6 +97,13 @@ python scripts/audit_vault.py              # check structure, vocabulary, eviden
 - The dashboard binds `127.0.0.1` only and requires a per-session token for
   writes.
 
+## Project
+
+Direction lives in [ROADMAP.md](ROADMAP.md); concrete work is tracked in
+[issues](https://github.com/jbped/job-hunt/issues). Changes are listed in
+[CHANGELOG.md](CHANGELOG.md), and [CONTRIBUTING.md](CONTRIBUTING.md) covers
+the ground rules for pull requests.
+
 ## License
 
 [MIT](LICENSE)

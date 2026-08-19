@@ -98,19 +98,59 @@ and approved in `About Me.md`.
 
 ## Cover letters
 
-- Open with the specific role and a credible fit statement.
-- Use two or three evidence-backed examples.
-- Explain why those examples matter to the employer.
-- Add information or narrative not already obvious from the resume.
-- Avoid generic praise, biography dumps, and claims about the company that have not been verified.
-- One page, three to five paragraphs including opening and close, skimmable —
-  a recruiter may give it seconds. Its job is motivating them to read the
-  resume, not restating it.
+A cover letter is a clear, honest conversation with the hiring manager: here
+is your problem, here is my evidence I can help with it. Its job is motivating
+them to read the resume, not restating it. One page, three to five paragraphs,
+skimmable — a recruiter may give it seconds. Clarity beats cleverness.
+
+**Voice: plainspoken and direct** (user directive). Short sentences, concrete
+verbs, no ceremony. Read the draft aloud before calling it done: any sentence
+that would sound stiff spoken across a table gets rewritten in words the user
+would actually say.
+
+**Aim at their pain points.** The top tasks in the posting's "what you'll do"
+section are the problems the team actually has. Choose the two or three
+evidence-backed stories that speak to those problems, frame each as a short
+story (situation, what the user did, why it mattered to them), and prefer the
+posting's own vocabulary where the evidence supports the term — that is
+speaking their dialect, not keyword stuffing.
+
+**Context over inventory.** The resume carries the numbers. The letter keeps
+at most one or two, chosen because they land, with the story around them. A
+paragraph that stacks metrics is a resume restated; cut it or narrate one.
+
+**Structure that works:** an opener that says who the user is and why this
+role, in one credible statement rather than a boilerplate announcement; the
+two or three matched stories; one "why this company" grounded in something
+verified and genuinely resonant (having used and liked the product is gold; a
+value or initiative confirmed from their own material works too); a short,
+confident close with a plain ask.
+
+Banned patterns — the tics that make a letter read machine-written:
+
+- Template openings (`I am writing to express my interest in...`, `I am
+  applying for the [title] position...`) and stock closers (`I would welcome
+  the opportunity to discuss how...`).
+- Self-narrating topic sentences (`Reliability is the thread through my
+  work`, `I want to be direct about one thing`). Just make the point.
+- Uniform paragraph shape. Vary length and density; one short paragraph that
+  makes a single point is a feature.
+- Generic praise (`Your company is a leader in the industry`) and unverified
+  claims about the company.
+
+Handle a stated requirement the user lacks honestly and as trajectory: name
+the gap plainly, then the nearest verified equivalent and how the user has
+crossed comparable gaps before. Meeting well over half the must-haves is a
+reason to apply, not to apologize; showing an understanding of the job counts
+for more than a checklist match.
+
+- State a verified referral early, phrased exactly as the evidence supports.
+- Add reasoning or narrative not already obvious from the resume.
 - Address a verified named contact when one is recorded; otherwise a role
   address (`Dear Hiring Team`, `Dear Head of Engineering`). Never guess a name,
   and never `To Whom It May Concern` — warm and specific beats robotic-formal.
-- Enthusiastic and active beats neutral and passive; articulate beats flowery.
 - Include the posting's reference number when the capture records one.
+- Voice never loosens evidence: every claim keeps its class and attribution.
 
 ## Attribution
 

@@ -28,6 +28,11 @@ any copy that will reach an employer.
    the posting asks for.
 7. Ground motivation in the captured posting or verified research, not praise
    that could apply to any company.
+8. Final voice pass: read the draft aloud against the cover-letter section of
+   writing-standards.md. Rewrite anything that hits a banned pattern (template
+   opening, stock closer, self-narrating topic sentence, metric stacking) or
+   would sound stiff spoken across a table. The letter keeps at most one or
+   two numbers; the resume carries the rest.
 
 When the draft is settled, render and validate it with the
 [`cover-letter-pdf`](../cover-letter-pdf/SKILL.md) workflow.

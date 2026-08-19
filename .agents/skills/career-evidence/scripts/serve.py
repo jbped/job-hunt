@@ -349,11 +349,12 @@ def create_application(vault: Path, payload: dict) -> dict:
 
 
 def create_person(vault: Path, payload: dict) -> dict:
-    """Create a People/<Name>.md note — the one-note-per-person entry point.
+    """Create a People/<Folder>/<Name>.md note — the one-note-per-person entry point.
 
-    Deliberately minimal: it names the person and their vault-wide relationship.
-    Everything deeper — application involvements, reference consent — is either
-    an editable field or belongs in Obsidian.
+    Deliberately minimal: it names the person, their job-search role, and how
+    they know the user professionally. Everything deeper — application
+    involvements, reference consent — is either an editable field or belongs in
+    Obsidian.
     """
     name = str(payload.get("name", "")).strip()
     if not name:
@@ -367,20 +368,46 @@ def create_person(vault: Path, payload: dict) -> dict:
         raise RequestError(
             400, f"'{relationship}' is not one of: {', '.join(schema.CONTACT_RELATIONSHIP)}")
 
-    folder = vault / "People"
-    folder.mkdir(exist_ok=True)
+    professional_relationship = str(payload.get("professional_relationship", "")).strip()
+    if (professional_relationship and
+            professional_relationship not in schema.PROFESSIONAL_RELATIONSHIP):
+        raise RequestError(
+            400, f"'{professional_relationship}' is not one of: "
+                 f"{', '.join(schema.PROFESSIONAL_RELATIONSHIP)}")
+
+    group = str(payload.get("folder", "")).strip()
+    if group and group not in schema.PEOPLE_FOLDERS:
+        raise RequestError(
+            400, f"'{group}' is not one of: {', '.join(schema.PEOPLE_FOLDERS)}")
+    if not group:
+        # Warmth is the folder axis: a known professional relationship means
+        # Network even for a recruiter, everyone else exists because of the
+        # search.
+        if professional_relationship:
+            group = "Network"
+        elif relationship == "recruiter":
+            group = "Recruiters"
+        else:
+            group = "Job Hunt"
+
+    people_dir = vault / "People"
+    existing = next(people_dir.rglob(f"{safe}.md"), None) if people_dir.is_dir() else None
+    if existing is not None:
+        raise RequestError(409, f"{existing.relative_to(vault)} already exists — one note "
+                                "per person; add to it instead of creating a second")
+    folder = people_dir / group
+    folder.mkdir(parents=True, exist_ok=True)
     target = (folder / f"{safe}.md").resolve()
     try:
         target.relative_to(vault.resolve())
     except ValueError:
         raise RequestError(403, "path is outside the vault")
-    if target.exists():
-        raise RequestError(409, f"People/{safe}.md already exists — one note per person; "
-                                "add to it instead of creating a second")
 
     lines = ["---", "type: person", f"name: {name}"]
     if relationship:
         lines += ["relationships:", f"  - {relationship}"]
+    if professional_relationship:
+        lines += ["professional_relationships:", f"  - {professional_relationship}"]
     for key in ("company_context", "email", "phone"):
         value = str(payload.get(key, "")).strip()
         if value:
@@ -495,6 +522,8 @@ class Handler(BaseHTTPRequestHandler):
                     "stage": schema.INTERVIEW_STAGE,
                     "method": schema.INTERVIEW_METHOD,
                     "contact_relationship": schema.CONTACT_RELATIONSHIP,
+                    "professional_relationship": schema.PROFESSIONAL_RELATIONSHIP,
+                    "people_folders": schema.PEOPLE_FOLDERS,
                     "reference_permission": schema.REFERENCE_PERMISSION,
                     "contact_audience": schema.CONTACT_AUDIENCE,
                     "editable": schema.UI_EDITABLE,

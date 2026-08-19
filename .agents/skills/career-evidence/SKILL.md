@@ -53,8 +53,8 @@ note holds the rules they all share.
   vault
 - [`new-application`](../new-application/SKILL.md) — scaffold the
   folder, capture the posting verbatim, write the analysis
-- [`new-person`](../new-person/SKILL.md) — one `People/` note per
-  contact, referral, recruiter, interviewer, or reference
+- [`new-person`](../new-person/SKILL.md) — one `People/` note per professional
+  connection, including coworkers, leaders, contacts, recruiters, and references
 - [`draft-resume`](../draft-resume/SKILL.md) and
   [`draft-cover-letter`](../draft-cover-letter/SKILL.md) — tailor the
   working copies from verified evidence
@@ -161,9 +161,11 @@ traces to evidence at each step.
 
 ## Track contacts, interviews, and references
 
-- Record a person's organisation, title, role in this application, relationship,
-  contact details, preferred method, referral status, last contact, and next
-  follow-up. Never imply an endorsement beyond what the user confirmed.
+- Record both how the person worked with the user (`professional_relationships`)
+  and any job-search role they hold (`relationships` or an application entry),
+  plus organisation, title, contact details, preferred method, referral status,
+  last contact, and next follow-up. Never imply an endorsement beyond what the
+  user confirmed.
 - For upcoming interviews capture date, time, time zone, stage, contacts,
   interviewers, method, link or location, duration, and preparation priorities.
 - Afterwards, move the entry from Upcoming to Previous — do not create a second

@@ -169,7 +169,7 @@ def build(vault: Path) -> dict:
 
     people_dir = vault / "People"
     if people_dir.is_dir():
-        for note in sorted(people_dir.glob("*.md")):
+        for note in sorted(people_dir.rglob("*.md")):
             fm, text = v.read_note(note)
             if fm.get("type") != "person":
                 continue
@@ -184,7 +184,11 @@ def build(vault: Path) -> dict:
                 })
             people.append({
                 "name": fm.get("name") or note.stem,
+                "folder": (note.parent.relative_to(people_dir).as_posix()
+                           if note.parent != people_dir else None),
+                "via": fm.get("via"),
                 "relationships": fm.get("relationships") or [],
+                "professional_relationships": fm.get("professional_relationships") or [],
                 "company_context": fm.get("company_context"),
                 "reference_status": fm.get("reference_status"),
                 "email": fm.get("email"),

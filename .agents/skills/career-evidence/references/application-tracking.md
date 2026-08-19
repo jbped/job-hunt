@@ -50,7 +50,13 @@ Capture:
 
 Use `not-listed-in-captured-posting` or `unknown` instead of guessing. Keep candidate expectations in `Personal Information/About Me.md`, not in the employer's compensation fields.
 
-## Contacts and referrals
+## People, contacts, and referrals
+
+Professional history and job-search involvement are separate axes. On the
+person note, `professional_relationships` records how they worked with the user
+(for example `former-coworker`, `former-team-lead`, `former-manager`, or
+`former-director`). `relationships` records vault-wide job-search roles. The
+application's `Contacts.md` records only their role in that application.
 
 Distinguish:
 

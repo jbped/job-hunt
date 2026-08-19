@@ -21,6 +21,7 @@ import unittest
 import urllib.request
 import zipfile
 
+import audit_vault
 import capture_jd
 import init_vault
 import new_application
@@ -201,14 +202,43 @@ class SafetyTest(unittest.TestCase):
             serve.create_person(self.vault, {"name": "."})
         with self.assertRaises(serve.RequestError):
             serve.create_person(self.vault, {"name": "X", "relationship": "bogus"})
+        with self.assertRaises(serve.RequestError):
+            serve.create_person(self.vault, {
+                "name": "X", "professional_relationship": "old-boss"})
+        with self.assertRaises(serve.RequestError):
+            serve.create_person(self.vault, {"name": "X", "folder": "Friends"})
         result = serve.create_person(self.vault, {"name": "Sam Test",
-                                                  "relationship": "recruiter"})
-        self.assertEqual(result["path"], "People/Sam Test.md")
-        with self.assertRaises(serve.RequestError):  # one note per person
-            serve.create_person(self.vault, {"name": "Sam Test"})
-        fm, _ = v.read_note(self.vault / "People" / "Sam Test.md")
+                                                  "relationship": "recruiter",
+                                                  "professional_relationship":
+                                                      "former-manager"})
+        # A known professional relationship outranks the recruiter role.
+        self.assertEqual(result["path"], "People/Network/Sam Test.md")
+        with self.assertRaises(serve.RequestError):  # one note per person, vault-wide
+            serve.create_person(self.vault, {"name": "Sam Test", "folder": "Job Hunt"})
+        fm, _ = v.read_note(self.vault / "People" / "Network" / "Sam Test.md")
         self.assertEqual(fm.get("type"), "person")
         self.assertEqual(fm.get("relationships"), ["recruiter"])
+        self.assertEqual(fm.get("professional_relationships"), ["former-manager"])
+        result = serve.create_person(self.vault, {"name": "Rae Recruiter",
+                                                  "relationship": "recruiter"})
+        self.assertEqual(result["path"], "People/Recruiters/Rae Recruiter.md")
+        result = serve.create_person(self.vault, {"name": "Tia Target",
+                                                  "relationship": "networking-target"})
+        self.assertEqual(result["path"], "People/Job Hunt/Tia Target.md")
+
+    def test_audit_rejects_unknown_professional_relationship(self):
+        note = self.vault / "People" / "Invalid Relationship.md"
+        note.write_text(
+            "---\ntype: person\nname: Invalid Relationship\n"
+            "professional_relationships:\n  - old-boss\n---\n",
+            encoding="utf-8",
+        )
+        try:
+            report = audit_vault.audit(self.vault)
+            self.assertTrue(any("professional relationship 'old-boss'" in error
+                                for error in report.errors))
+        finally:
+            note.unlink()
 
     def test_stop_previous_never_kills_unverified_pids(self):
         # PIDs get recycled: a stale pidfile may name an innocent process. It

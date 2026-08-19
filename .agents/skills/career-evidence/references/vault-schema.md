@@ -30,7 +30,10 @@ VAULT_ROOT/
 │           ├── Submission Notes.md
 │           └── Artifacts/              <- rendered PDFs, versioned
 ├── People/
-│   └── <Full Name>.md             (one note per person)
+│   ├── Network/                   (people the user has a real relationship with)
+│   │   └── <Full Name>.md         (one note per person, in exactly one folder)
+│   ├── Recruiters/                (agency and in-house recruiters)
+│   └── Job Hunt/                  (targets, interviewers, company contacts)
 ├── Preferences/
 │   └── README.md                  (+ the user's standing instructions)
 ├── Resources/
@@ -41,10 +44,22 @@ VAULT_ROOT/
 └── .cache/                        (derived; safe to delete)
 ```
 
-`People/` holds one note per person, whatever their roles — contact, referral,
-reference. Being a referral on one application and a reference for another are
-relationships recorded on that one note, never a second file. `Working Notes/`
-holds scratch and open questions; keep the two distinct.
+`People/` holds one note per person, filed in exactly one subfolder by
+relationship warmth: `Network/` for people the user has a real relationship
+with (coworkers past and present, managers, mentors, friends, family),
+`Recruiters/` for agency and in-house recruiters, and `Job Hunt/` for everyone
+who exists in the vault because of the search — networking targets,
+interviewers, hiring managers, company contacts. The folder answers "how well
+do I know them"; everything finer-grained stays in frontmatter, so a note moves
+folders only when the relationship itself changes (a cold contact becoming a
+real connection moves to `Network/`). `professional_relationships` records how
+they worked with the user; `relationships` records vault-wide job-search roles
+(including `networking-target` for someone the user is trying to reach and
+`connector` for someone bridging an introduction); `via` links the person who
+provides the introduction path; application entries record roles specific to
+one application. Being a former manager, a referral, and a reference can all be
+true on the same note. `Working Notes/` holds scratch and open questions; keep
+the two distinct.
 
 `Preferences/` holds the user's standing instructions for how the agent works
 this vault — tone, formatting tastes, workflow defaults. Plain markdown notes,
@@ -184,7 +199,8 @@ edit in place.
 
 ### Contacts and interviews
 
-These are sections within a note, not separate notes: `## [[People/Full Name]]`
+These are sections within a note, not separate notes:
+`## [[People/<Folder>/Full Name]]`
 blocks in `Contacts.md` holding only application-specific facts (the person's
 own details live on their `People/` note), and `### YYYY-MM-DD HH:mm TZ | Stage`
 blocks under `## Upcoming` or `## Previous` in `Interviews.md`, each followed by
@@ -201,17 +217,24 @@ create a second entry — one conversation should read as one entry.
 ```yaml
 type: person
 name:
-relationships: []                  # contact-relationship values, vault-wide
+professional_relationships: []     # how they worked with the user
+relationships: []                  # job-search roles, vault-wide
 company_context:
+via: "[[People/<Folder>/Full Name]]"   # who the introduction path runs through
 email / phone / preferred_contact_method:
 reference_status: confirmed | requested | prospective | declined
 permission_confirmed:
 permission_confirmed_at:
 ```
 
-The reference fields exist only once the person is being considered as a
-professional reference; `confirmed` only after explicit consent. Per-application
-involvement lives in the body's `## Applications` section as
+Professional relationships are directional relative to the user: `manager`
+means the person managed the user, while `direct-report` means the user managed
+the person. Current/former is explicit where it matters for outreach. The
+reference fields exist only once the person is being considered as a professional
+reference; `confirmed` only after explicit consent. `via` is optional and holds
+a wikilink to the person's note whose introduction makes this contact reachable
+— set it on the target, not the connector. Per-application involvement
+lives in the body's `## Applications` section as
 `### Company | Position` blocks with `- Roles:` and follow-up bullets — that is
 what the index reads to associate people with applications.
 

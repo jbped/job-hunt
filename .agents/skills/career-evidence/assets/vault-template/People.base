@@ -7,9 +7,13 @@ properties:
   note.reference_status:
     displayName: Consent
   note.relationships:
-    displayName: Relationships
+    displayName: Job-search roles
+  note.professional_relationships:
+    displayName: Professional relationships
   note.company_context:
     displayName: Company
+  note.via:
+    displayName: Via
   note.email:
     displayName: Email
   note.phone:
@@ -17,6 +21,38 @@ properties:
   note.preferred_contact_method:
     displayName: Prefers
 views:
+  - type: table
+    name: Network
+    filters:
+      and:
+        - file.inFolder("People/Network")
+    order:
+      - name
+      - professional_relationships
+      - company_context
+      - email
+      - preferred_contact_method
+  - type: table
+    name: Recruiters
+    filters:
+      and:
+        - file.inFolder("People/Recruiters")
+    order:
+      - name
+      - company_context
+      - email
+      - preferred_contact_method
+  - type: table
+    name: Job Hunt
+    filters:
+      and:
+        - file.inFolder("People/Job Hunt")
+    order:
+      - name
+      - relationships
+      - via
+      - company_context
+      - preferred_contact_method
   - type: table
     name: Confirmed references
     filters:
@@ -41,6 +77,7 @@ views:
     name: All
     order:
       - name
+      - professional_relationships
       - relationships
       - reference_status
       - company_context

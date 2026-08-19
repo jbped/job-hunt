@@ -276,8 +276,8 @@
   <section data-view="people">
     <div class="actionbar">
       <button class="btn btn-primary" id="addPerson">Add person</button>
-      <span class="hint">One note per person — referral and reference are relationships
-        on that note, never a second file.</span>
+      <span class="hint">One note per person — professional history, job-search roles,
+        and reference consent stay distinct on that note.</span>
     </div>
     <h2>People</h2>
     <div id="people"></div>
@@ -925,42 +925,26 @@ function renderPeople() {
   const people = $("#people"); people.textContent = "";
   if (!DATA.people.length) {
     people.append(el("div", { className: "empty" },
-      "No people yet. “Add person” creates their note; referral and reference "
-      + "are relationships recorded on it, and a referral is not automatically "
+      "No people yet. “Add person” records both how you worked together and "
+      + "any role they play in your job search. A referral is not automatically "
       + "a reference."));
   }
+  const byFolder = new Map();
   for (const person of DATA.people) {
-    const involvements = (person.applications || []).map(a =>
-      el("div", { className: "muted" },
-         `${a.application}${a.roles.length ? " — " + a.roles.join(", ") : ""}`));
-    // Contact details and consent are the structured, low-risk part; everything
-    // narrative stays in Obsidian. reference_status left blank means the person
-    // is not being considered as a reference — that is a real state, not a gap.
-    const editor = el("details", { className: "editor",
-                                   open: OPEN_EDITORS.has(person.path) },
-      el("summary", {}, "Edit details"),
-      fieldRow("Email", editable(person, "email")),
-      fieldRow("Phone", editable(person, "phone")),
-      fieldRow("Preferred contact", editable(person, "preferred_contact_method")),
-      fieldRow("Reference status", editable(person, "reference_status",
-                                            { enumKey: "reference_permission" })),
-      fieldRow("Consent confirmed", editable(person, "permission_confirmed",
-                                             { values: ["true", "false"] })),
-      fieldRow("Consent date", editable(person, "permission_confirmed_at",
-                                        { type: "date" })));
-    editor.addEventListener("toggle", () => editor.open
-      ? OPEN_EDITORS.add(person.path) : OPEN_EDITORS.delete(person.path));
-    people.append(el("div", { className: "card" },
-      el("div", { className: "row" },
-        el("span", { className: "title grow" }, person.name),
-        ...(person.relationships || []).map(r => el("span", { className: "pill" }, r)),
-        referencePill(person.reference_status),
-        obsidian(person.path)),
-      el("div", { className: "muted" },
-         [person.company_context, person.email, person.phone,
-          person.preferred_contact_method].filter(Boolean).join(" · ")),
-      ...involvements,
-      editor));
+    const key = person.folder || "Unfiled";
+    if (!byFolder.has(key)) byFolder.set(key, []);
+    byFolder.get(key).push(person);
+  }
+  const order = [...(SCHEMA.people_folders || []), "Unfiled"];
+  const folders = [...byFolder.keys()].sort((a, b) => {
+    const ia = order.indexOf(a), ib = order.indexOf(b);
+    return (ia < 0 ? order.length : ia) - (ib < 0 ? order.length : ib);
+  });
+  for (const folderName of folders) {
+    if (byFolder.size > 1 || folderName !== "Unfiled") {
+      people.append(el("h3", { className: "muted" }, folderName));
+    }
+    byFolder.get(folderName).forEach(person => people.append(personCard(person)));
   }
 
   const contacts = $("#contacts"); contacts.textContent = "";
@@ -980,10 +964,52 @@ function renderPeople() {
   }
 }
 
+function personCard(person) {
+  const involvements = (person.applications || []).map(a =>
+    el("div", { className: "muted" },
+       `${a.application}${a.roles.length ? " — " + a.roles.join(", ") : ""}`));
+  // Contact details and consent are the structured, low-risk part; everything
+  // narrative stays in Obsidian. reference_status left blank means the person
+  // is not being considered as a reference — that is a real state, not a gap.
+  const editor = el("details", { className: "editor",
+                                 open: OPEN_EDITORS.has(person.path) },
+    el("summary", {}, "Edit details"),
+    fieldRow("Email", editable(person, "email")),
+    fieldRow("Phone", editable(person, "phone")),
+    fieldRow("Preferred contact", editable(person, "preferred_contact_method")),
+    fieldRow("Reference status", editable(person, "reference_status",
+                                          { enumKey: "reference_permission" })),
+    fieldRow("Consent confirmed", editable(person, "permission_confirmed",
+                                           { values: ["true", "false"] })),
+    fieldRow("Consent date", editable(person, "permission_confirmed_at",
+                                      { type: "date" })));
+  editor.addEventListener("toggle", () => editor.open
+    ? OPEN_EDITORS.add(person.path) : OPEN_EDITORS.delete(person.path));
+  return el("div", { className: "card" },
+    el("div", { className: "row" },
+      el("span", { className: "title grow" }, person.name),
+      ...(person.professional_relationships || []).map(r =>
+        el("span", { className: "pill" }, r)),
+      ...(person.relationships || []).map(r =>
+        el("span", { className: "pill" }, `job search: ${r}`)),
+      referencePill(person.reference_status),
+      obsidian(person.path)),
+    el("div", { className: "muted" },
+       [person.company_context, person.email, person.phone,
+        person.preferred_contact_method].filter(Boolean).join(" · ")),
+    ...involvements,
+    editor);
+}
+
 function addPerson() {
   modal("Add a person", [
     { key: "name", label: "Full name" },
-    { key: "relationship", label: "Relationship", options: SCHEMA.contact_relationship },
+    { key: "folder", label: "Folder (blank = pick from the roles below)",
+      options: SCHEMA.people_folders },
+    { key: "professional_relationship", label: "Professional relationship",
+      options: SCHEMA.professional_relationship },
+    { key: "relationship", label: "Job-search role",
+      options: SCHEMA.contact_relationship },
     { key: "company_context", label: "Company context",
       placeholder: "Where you know them from" },
     { key: "email", label: "Email" },

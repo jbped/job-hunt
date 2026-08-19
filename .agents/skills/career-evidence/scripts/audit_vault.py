@@ -100,10 +100,21 @@ def check_enums(report: Report, note: Path, vault: Path, fm: dict) -> None:
 
 def check_person(report: Report, note: Path, vault: Path, fm: dict, text: str) -> None:
     rel = note.relative_to(vault)
+    if rel.parts[0] == "People":
+        if len(rel.parts) == 2:
+            report.warn(f"{rel}: unfiled — move into one of "
+                        f"People/{{{', '.join(schema.PEOPLE_FOLDERS)}}}")
+        elif rel.parts[1] not in schema.PEOPLE_FOLDERS:
+            report.error(f"{rel}: People subfolder '{rel.parts[1]}' is not one of "
+                         f"{', '.join(schema.PEOPLE_FOLDERS)}")
     for value in fm.get("relationships") or []:
         if value not in schema.CONTACT_RELATIONSHIP:
             report.error(f"{rel}: relationship '{value}' is not one of "
                          f"{', '.join(schema.CONTACT_RELATIONSHIP)}")
+    for value in fm.get("professional_relationships") or []:
+        if value not in schema.PROFESSIONAL_RELATIONSHIP:
+            report.error(f"{rel}: professional relationship '{value}' is not one of "
+                         f"{', '.join(schema.PROFESSIONAL_RELATIONSHIP)}")
     # Per-application roles live in the body's `## Applications` entries.
     for match in re.finditer(r"^\s*-\s*Roles?:\s*(.+)$", text, re.MULTILINE):
         for value in re.split(r"[,;]", match.group(1)):

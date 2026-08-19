@@ -50,7 +50,7 @@ the conversation calls for it:
 | --- | --- |
 | `init-vault` | First-time setup: profile, first role, first application |
 | `new-application` | Scaffold a folder, capture the posting verbatim, analyse fit |
-| `new-person` | One note per contact, recruiter, referral, or reference |
+| `new-person` | One note per professional connection and their job-search roles |
 | `draft-resume` | Tailor a resume draft from verified evidence |
 | `draft-cover-letter` | Write a cover letter draft from verified evidence |
 | `resume-pdf` | Render and validate the resume PDF |

@@ -21,13 +21,13 @@ This vault keeps the evidence behind your job search in plain markdown, so an AI
 | `Career Evidence/Roles` | One note per job you have held |
 | `Career Evidence/Accomplishments` | One note per thing you did that is worth citing |
 | `Applications/` | One folder per application: posting, analysis, artifacts |
-| `People/` | One note per person: contacts, referrals, references |
+| `People/` | One note per professional connection, filed by warmth: `Network/` (people you know), `Recruiters/`, and `Job Hunt/` (targets, interviewers, company contacts) |
 | `Personal Information/` | Contact details and audiences, education, self-knowledge |
 | `Preferences/` | Your standing instructions for how the agent works |
 | `Resources/` | Source documents: old resumes, diplomas, certificates |
 | `Working Notes/` | Scratch, open questions, field vocabulary |
 
-A referral is not a reference. Someone who forwards your resume is a contact; someone who agreed to vouch for you when asked is a reference. Both live on the same person note in `People/`, as separate relationships — and reference consent is recorded explicitly.
+A professional relationship is not a job-search role, and a referral is not a reference. A former manager may later be a referral or agree to act as a reference; those facts stay separate on the same person note, and reference consent is recorded explicitly.
 
 ## First three things to do
 

@@ -56,7 +56,7 @@ These are the values the tools accept in note frontmatter. Anything outside thes
 
 ## People
 
-### contact relationship
+### job-search role (`relationships`)
 
 - `formal-referral`
 - `informal-referral`
@@ -65,6 +65,25 @@ These are the values the tools accept in note frontmatter. Anything outside thes
 - `hiring-manager`
 - `interviewer`
 - `scheduler`
+- `other`
+
+### professional relationship
+
+- `current-coworker`
+- `former-coworker`
+- `current-team-lead`
+- `former-team-lead`
+- `current-manager`
+- `former-manager`
+- `current-director`
+- `former-director`
+- `current-direct-report`
+- `former-direct-report`
+- `mentor`
+- `mentee`
+- `client`
+- `vendor`
+- `professional-peer`
 - `other`
 
 ### reference permission (`reference_status`)

@@ -52,8 +52,8 @@ COMPENSATION_PERIOD = ["hourly", "monthly", "annual", "unknown"]
 
 WORK_MODEL = ["onsite", "hybrid", "remote", "unknown"]
 
-# A person can hold several of these at once; they are not mutually exclusive,
-# which is why contact notes carry a list rather than a single value.
+# Job-search roles. A person can hold several at once, and application-specific
+# roles are still recorded on the linked application entry.
 CONTACT_RELATIONSHIP = [
     "formal-referral",
     "informal-referral",
@@ -62,6 +62,41 @@ CONTACT_RELATIONSHIP = [
     "hiring-manager",
     "interviewer",
     "scheduler",
+    "networking-target",
+    "connector",
+    "other",
+]
+
+# Subfolders of People/, by relationship warmth rather than job-search role:
+# Network holds people the user has a real relationship with, Recruiters holds
+# agency and in-house recruiters, Job Hunt holds everyone who exists in the
+# vault because of the search (targets, interviewers, company contacts). One
+# folder per person; the frontmatter carries the full multi-role truth.
+PEOPLE_FOLDERS = [
+    "Network",
+    "Recruiters",
+    "Job Hunt",
+]
+
+# How the person has worked with the user, independently of any application.
+# Manager, team-lead, director, and direct-report are directional relative to
+# the user. Current/former is explicit because it materially affects outreach.
+PROFESSIONAL_RELATIONSHIP = [
+    "current-coworker",
+    "former-coworker",
+    "current-team-lead",
+    "former-team-lead",
+    "current-manager",
+    "former-manager",
+    "current-director",
+    "former-director",
+    "current-direct-report",
+    "former-direct-report",
+    "mentor",
+    "mentee",
+    "client",
+    "vendor",
+    "professional-peer",
     "other",
 ]
 
@@ -166,7 +201,9 @@ NOTE_TYPES = {
         "required": ["type", "name"],
         "optional": [
             "relationships",
+            "professional_relationships",
             "company_context",
+            "via",
             "email",
             "phone",
             "preferred_contact_method",
@@ -279,7 +316,9 @@ def field_reference_markdown() -> str:
         block("compensation_period", COMPENSATION_PERIOD),
         block("work_model", WORK_MODEL),
         "## People\n\n",
-        block("contact relationship", CONTACT_RELATIONSHIP),
+        block("folder (subfolder of `People/`)", PEOPLE_FOLDERS),
+        block("job-search role (`relationships`)", CONTACT_RELATIONSHIP),
+        block("professional relationship", PROFESSIONAL_RELATIONSHIP),
         block("reference permission (`reference_status`)", REFERENCE_PERMISSION),
         block("contact audience", CONTACT_AUDIENCE),
         "## Interviews\n\n",

@@ -181,6 +181,7 @@ NOTE_TYPES = {
             "compensation_min",
             "compensation_max",
             "compensation_period",
+            "compensation_requested",
             "experience_level_stated",
             "next_action",
             "next_action_date",
@@ -294,6 +295,7 @@ UI_EDITABLE = {
         "compensation_min",
         "compensation_max",
         "compensation_period",
+        "compensation_requested",
         "experience_level_stated",
     ],
     "person": [

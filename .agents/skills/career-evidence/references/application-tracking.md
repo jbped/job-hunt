@@ -50,6 +50,8 @@ Capture:
 
 Use `not-listed-in-captured-posting` or `unknown` instead of guessing. Keep candidate expectations in `Personal Information/About Me.md`, not in the employer's compensation fields.
 
+`compensation_requested` is the exception: it records what the user actually asked for in this application — the figure, when, and in which conversation — so a later interview never has to reconstruct it from memory. Record it only after the user states it; never suggest or infer a number.
+
 ## People, contacts, and referrals
 
 Professional history and job-search involvement are separate axes. On the

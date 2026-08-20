@@ -162,6 +162,7 @@ location:
 work_model:
 compensation_status:
 compensation_currency / _min / _max / _period:
+compensation_requested:            # what you asked for, when, and in which conversation
 experience_level_stated:
 next_action:
 next_action_date:

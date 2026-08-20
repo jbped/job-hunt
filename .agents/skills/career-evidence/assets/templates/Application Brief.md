@@ -16,6 +16,7 @@ compensation_currency: USD
 compensation_min:
 compensation_max:
 compensation_period:
+compensation_requested:
 experience_level_stated:
 next_action:
 next_action_date:

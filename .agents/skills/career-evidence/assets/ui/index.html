@@ -775,6 +775,8 @@ function buildRail(rail) {
     fieldRow("Comp min", editable(app, "compensation_min")),
     fieldRow("Comp max", editable(app, "compensation_max")),
     fieldRow("Comp period", editable(app, "compensation_period", { enumKey: "compensation_period" })),
+    fieldRow("Comp requested", editable(app, "compensation_requested",
+                                        { placeholder: "What you asked for, when, and where" })),
     fieldRow("Level stated", editable(app, "experience_level_stated",
                                       { placeholder: "As the posting states it" }))));
 }

@@ -51,6 +51,7 @@ def is_stock_welcome(path: Path) -> bool:
 DIRECTORIES = [
     "Personal Information",
     "Applications",
+    "Leads",
     "Career Evidence/Roles",
     "Career Evidence/Accomplishments",
     "People/Network",

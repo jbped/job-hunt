@@ -9,6 +9,7 @@ VAULT_ROOT/
 ├── Applications.base              (live tables, Obsidian Bases)
 ├── People.base
 ├── Career Evidence.base
+├── Leads.base
 ├── Personal Information/
 │   ├── Contact.md                 (audience-tagged; also the letterhead)
 │   ├── About Me.md                (preferences, identity, cultural notes)
@@ -17,6 +18,8 @@ VAULT_ROOT/
 ├── Career Evidence/
 │   ├── Roles/
 │   └── Accomplishments/
+├── Leads/
+│   └── <Company> - <Role>.md      (pre-application interest; company alone is enough)
 ├── Applications/
 │   └── <Company>/
 │       └── <Role>/
@@ -166,6 +169,29 @@ next_action_date:
 
 This frontmatter drives the Bases dashboard and the web UI, so keeping it current
 is what makes those views true.
+
+### Lead
+
+```yaml
+type: lead
+company:
+role: Unknown
+url:
+source: "[[People/<Folder>/Full Name]]"   # who the interest came through
+date_added:
+status: new | pursuing | promoted | passed
+next_follow_up:
+passed_reason:                     # required in spirit once passed
+application: "[[Applications/<Company>/<Role>/Application Brief]]"   # set on promotion
+```
+
+A lead is pre-application interest, one small note in `Leads/`. Company alone
+is a valid lead; the file is `<Company>.md` until the role is known, then
+`<Company> - <Role>.md`. `new_application.py --from-lead <path>` promotes it:
+the application is scaffolded with the lead's URL, the source contact becomes
+`discovery_detail` (the discovery method itself is never inferred), and the
+lead is marked `promoted` with the `application` link back. A passed lead
+keeps its `passed_reason` — that is funnel data, not garbage.
 
 ### Analysis
 

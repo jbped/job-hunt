@@ -47,6 +47,7 @@ import audit_vault
 import export_index
 import new_accomplishment
 import new_application
+import new_lead
 import new_role
 import schema
 import vaultlib as v
@@ -333,6 +334,17 @@ def complete_interview(vault: Path, payload: dict) -> dict:
 
 
 def create_application(vault: Path, payload: dict) -> dict:
+    lead = str(payload.get("lead", "")).strip()
+    if lead:
+        resolve(vault, lead)  # same escape guard every write path gets
+        try:
+            folder = new_application.promote_lead(vault, lead)
+        except SystemExit as error:
+            raise RequestError(400, str(error))
+        except v.ConflictError as error:
+            raise RequestError(409, str(error))
+        return {"path": str(folder.relative_to(vault))}
+
     company = str(payload.get("company", "")).strip()
     position = str(payload.get("position", "")).strip()
     if not company or not position:
@@ -348,6 +360,23 @@ def create_application(vault: Path, payload: dict) -> dict:
     except SystemExit as error:
         raise RequestError(400, str(error))
     return {"path": str(folder.relative_to(vault))}
+
+
+def create_lead(vault: Path, payload: dict) -> dict:
+    company = str(payload.get("company", "")).strip()
+    if not company:
+        raise RequestError(400, "a company is required")
+    try:
+        target = new_lead.create(
+            vault, company,
+            role=str(payload.get("role", "")).strip(),
+            url=str(payload.get("url", "")).strip(),
+            source=str(payload.get("source", "")).strip(),
+            follow_up=str(payload.get("next_follow_up", "")).strip(),
+        )
+    except SystemExit as error:
+        raise RequestError(400, str(error))
+    return {"path": str(target.relative_to(vault))}
 
 
 def create_person(vault: Path, payload: dict) -> dict:
@@ -505,6 +534,7 @@ HANDLERS = {
     "/api/person": create_person,
     "/api/role": create_role,
     "/api/accomplishment": create_accomplishment,
+    "/api/lead": create_lead,
     "/api/render": start_render,
 }
 
@@ -515,6 +545,7 @@ def api_schema(vault: Path) -> dict:
     return {
         "status": schema.APPLICATION_STATUS,
         "terminal": sorted(schema.TERMINAL_STATUS),
+        "lead_status": schema.LEAD_STATUS,
         "discovery_method": schema.DISCOVERY_METHOD,
         "compensation_status": schema.COMPENSATION_STATUS,
         "compensation_period": schema.COMPENSATION_PERIOD,

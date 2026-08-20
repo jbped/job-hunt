@@ -27,6 +27,7 @@ REQUIRED_ROOT = [
     "Personal Information",
     "Career Evidence",
     "Applications",
+    "Leads",
     "People",
     "Preferences",
     "Resources",
@@ -54,6 +55,7 @@ TEMPLATES = [
     "Submission Notes.md",
     "Role.md",
     "Accomplishment.md",
+    "Lead.md",
     "PDF/Resume - Figma Inspired.ps",
     "PDF/Cover Letter - Figma Inspired.ps",
 ]
@@ -124,6 +126,19 @@ def check_person(report: Report, note: Path, vault: Path, fm: dict, text: str) -
             if value and value not in schema.CONTACT_RELATIONSHIP:
                 report.error(f"{rel}: application role '{value}' is not one of "
                              f"{', '.join(schema.CONTACT_RELATIONSHIP)}")
+
+
+def check_lead(report: Report, note: Path, vault: Path, fm: dict) -> None:
+    rel = note.relative_to(vault)
+    if rel.parts[0] != "Leads":
+        report.warn(f"{rel}: lead notes belong in Leads/ at the vault root")
+    status = fm.get("status")
+    # These are the two transitions that carry information; losing it silently
+    # would make the funnel unreadable later.
+    if status == "passed" and not fm.get("passed_reason"):
+        report.warn(f"{rel}: passed without a passed_reason — the reason is funnel data")
+    if status == "promoted" and not fm.get("application"):
+        report.warn(f"{rel}: promoted without an application link back")
 
 
 def check_contact_profile(report: Report, note: Path, vault: Path, fm: dict) -> None:
@@ -240,6 +255,8 @@ def audit(vault: Path, check_wikilinks: bool = True) -> Report:
             check_job_description(report, note, vault, fm, text)
         if fm.get("type") == "person":
             check_person(report, note, vault, fm, text)
+        if fm.get("type") == "lead":
+            check_lead(report, note, vault, fm)
         if fm.get("type") == "contact-profile":
             check_contact_profile(report, note, vault, fm)
         if check_wikilinks:

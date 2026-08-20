@@ -25,6 +25,11 @@ APPLICATION_STATUS = [
 TERMINAL_STATUS = {"rejected", "withdrawn", "closed"}
 ACTIVE_STATUS = [s for s in APPLICATION_STATUS if s not in TERMINAL_STATUS]
 
+# Pre-application interest. A lead needs only a company; promotion scaffolds
+# the real application and links back, and a passed lead keeps its reason —
+# that is funnel data, not garbage.
+LEAD_STATUS = ["new", "pursuing", "promoted", "passed"]
+
 # How the candidate learned about the role. Kept distinct from posting_source,
 # which records where the posting itself lives.
 DISCOVERY_METHOD = [
@@ -150,6 +155,7 @@ ENUMS = {
 # rather than in ENUMS.
 STATUS_BY_TYPE = {
     "application": APPLICATION_STATUS,
+    "lead": LEAD_STATUS,
     "role": ROLE_STATUS,
     "accomplishment": ACCOMPLISHMENT_STATUS,
     "submission": SUBMISSION_STATUS,
@@ -185,6 +191,22 @@ NOTE_TYPES = {
         "file": "Analysis.md",
         "required": ["type", "company", "position"],
         "optional": ["experience_level_synthesized", "tags"],
+    },
+    # One small note per lead in Leads/. Company alone is a valid lead; role
+    # and url may be Unknown. `source` links the person the interest came
+    # through; `application` links back once promoted.
+    "lead": {
+        "required": ["type", "company", "status"],
+        "optional": [
+            "role",
+            "url",
+            "source",
+            "date_added",
+            "next_follow_up",
+            "passed_reason",
+            "application",
+            "tags",
+        ],
     },
     "role": {
         "required": ["type", "company", "title", "status"],
@@ -286,6 +308,14 @@ UI_EDITABLE = {
         "permission_confirmed",
         "permission_confirmed_at",
     ],
+    "lead": [
+        "status",
+        "role",
+        "url",
+        "source",
+        "next_follow_up",
+        "passed_reason",
+    ],
 }
 
 # Scaffold forms the dashboard renders, so a human can create any scaffold
@@ -351,6 +381,22 @@ FORMS = {
              "placeholder": "Acme 2024-2025"},
         ],
     },
+    "lead": {
+        "title": "New lead",
+        "submit": "Create",
+        "endpoint": "/api/lead",
+        "fields": [
+            {"name": "company", "label": "Company", "required": True},
+            {"name": "role", "label": "Role",
+             "placeholder": "Blank while unknown"},
+            {"name": "url", "label": "Posting or careers URL",
+             "placeholder": "https://… (leave blank if unknown)"},
+            {"name": "source", "label": "Source contact",
+             "placeholder": "[[People/Network/Full Name]]"},
+            {"name": "next_follow_up", "label": "Next follow-up",
+             "widget": "date"},
+        ],
+    },
 }
 
 # Notes the UI must never write to, at any path. The verbatim posting and its
@@ -382,6 +428,8 @@ def field_reference_markdown() -> str:
         "Anything outside these lists is flagged by the vault audit.\n\n",
         "## Application\n\n",
         block("status", APPLICATION_STATUS),
+        "## Lead\n\n",
+        block("status", LEAD_STATUS),
         block("discovery_method", DISCOVERY_METHOD),
         block("compensation_status", COMPENSATION_STATUS),
         block("compensation_period", COMPENSATION_PERIOD),

@@ -19,6 +19,15 @@ These are the values the tools accept in note frontmatter. Anything outside thes
 - `withdrawn`
 - `closed`
 
+## Lead
+
+### status
+
+- `new`
+- `pursuing`
+- `promoted`
+- `passed`
+
 ### discovery_method
 
 - `formal-referral`
@@ -56,6 +65,12 @@ These are the values the tools accept in note frontmatter. Anything outside thes
 
 ## People
 
+### folder (subfolder of `People/`)
+
+- `Network`
+- `Recruiters`
+- `Job Hunt`
+
 ### job-search role (`relationships`)
 
 - `formal-referral`
@@ -65,6 +80,8 @@ These are the values the tools accept in note frontmatter. Anything outside thes
 - `hiring-manager`
 - `interviewer`
 - `scheduler`
+- `networking-target`
+- `connector`
 - `other`
 
 ### professional relationship
@@ -153,3 +170,5 @@ These are the values the tools accept in note frontmatter. Anything outside thes
 - `ready`
 - `submitted`
 - `confirmed`
+
+

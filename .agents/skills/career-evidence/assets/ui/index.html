@@ -234,6 +234,7 @@
   <span class="vault" id="vaultName"></span>
   <nav>
     <button data-view="now" aria-current="true">Now</button>
+    <button data-view="leads">Leads</button>
     <button data-view="applications">Applications</button>
     <button data-view="calendar">Interviews</button>
     <button data-view="people">People</button>
@@ -252,6 +253,20 @@
     <div id="todo"></div>
     <h2>Where I am</h2>
     <div id="pipeline" class="grid"></div>
+  </section>
+
+  <section data-view="leads">
+    <div class="actionbar">
+      <button class="btn btn-primary" id="addLead">Add lead</button>
+      <span class="hint">Interest before commitment — a company is enough. Promoting
+        a lead scaffolds the application and links back.</span>
+    </div>
+    <h2>Open</h2>
+    <div id="leadsOpen"></div>
+    <h2>Promoted</h2>
+    <div id="leadsPromoted"></div>
+    <h2>Passed</h2>
+    <div id="leadsPassed"></div>
   </section>
 
   <section data-view="applications">
@@ -838,6 +853,86 @@ async function renderViewer() {
   }
 }
 
+// -- Leads ----------------------------------------------------------------
+// Pre-application interest. Open leads carry their editors; promoted and
+// passed ones read as history.
+
+function promoteLead(lead) {
+  api("/api/application", {
+    method: "POST", headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ lead: lead.path }),
+  }).then(async (result) => {
+    toast(`Promoted to ${result.path}`);
+    await refresh();
+    openDetail(result.path);
+  }).catch(error => toast(error.message, "error"));
+}
+
+function leadCard(lead) {
+  const open = ["new", "pursuing"].includes(lead.status);
+  const editor = el("details", { className: "editor",
+                                 open: OPEN_EDITORS.has(lead.path) },
+    el("summary", {}, "Edit details"),
+    fieldRow("Status", editable(lead, "status", { enumKey: "lead_status" })),
+    fieldRow("Role", editable(lead, "role", { placeholder: "Unknown is honest" })),
+    fieldRow("URL", editable(lead, "url", { placeholder: "https://…" })),
+    fieldRow("Source", editable(lead, "source",
+                                { placeholder: "[[People/Network/Full Name]]" })),
+    fieldRow("Next follow-up", editable(lead, "next_follow_up", { type: "date" })),
+    fieldRow("Why passed", editable(lead, "passed_reason",
+                                    { placeholder: "Kept as funnel data" })));
+  editor.addEventListener("toggle", () => editor.open
+    ? OPEN_EDITORS.add(lead.path) : OPEN_EDITORS.delete(lead.path));
+
+  const roleKnown = lead.role && lead.role !== "Unknown";
+  const overdue = lead.next_follow_up && lead.next_follow_up < today();
+  const kind = lead.status === "promoted" ? "good" : lead.status === "passed" ? "bad" : "";
+  return el("div", { className: "card" },
+    el("div", { className: "row" },
+      el("span", { className: "title grow" },
+         roleKnown ? `${lead.company} — ${lead.role}` : lead.company),
+      lead.next_follow_up
+        ? el("span", { className: `pill ${overdue ? "bad" : "warn"}` },
+             `follow up ${lead.next_follow_up}`) : null,
+      el("span", { className: `pill ${kind}` }, lead.status),
+      open ? el("button", { className: "btn", onclick: () => promoteLead(lead),
+                            title: roleKnown ? "Scaffold the application"
+                                             : "Record the role first" }, "Promote") : null,
+      obsidian(lead.path)),
+    el("div", { className: "muted" },
+       [inlineText(lead.source), lead.date_added ? `added ${lead.date_added}` : null,
+        lead.status === "passed" ? lead.passed_reason : null]
+         .filter(Boolean).join(" · ")),
+    lead.url ? el("div", {},
+      el("a", { href: lead.url, target: "_blank", rel: "noreferrer",
+                className: "muted" }, lead.url)) : null,
+    open ? editor : null);
+}
+
+// Wikilink values ("[[People/Network/Jo Doe]]") display as their leaf name.
+function inlineText(value) {
+  const match = /^\[\[([^\]]+)\]\]$/.exec(String(value || "").trim());
+  return match ? match[1].split("|").pop().split("/").pop() : value;
+}
+
+function renderLeads() {
+  const leads = DATA.leads || [];
+  const byDate = (a, b) => String(a.date_added || "9").localeCompare(String(b.date_added || "9"));
+  const groups = [
+    ["#leadsOpen", leads.filter(l => ["new", "pursuing"].includes(l.status)).sort(byDate),
+     "No open leads. “Add lead” records a company worth looking into."],
+    ["#leadsPromoted", leads.filter(l => l.status === "promoted").sort(byDate),
+     "Nothing promoted yet."],
+    ["#leadsPassed", leads.filter(l => l.status === "passed").sort(byDate),
+     "Nothing passed on yet."],
+  ];
+  for (const [sel, group, emptyText] of groups) {
+    const host = $(sel); host.textContent = "";
+    if (!group.length) host.append(el("div", { className: "empty" }, emptyText));
+    for (const lead of group) host.append(leadCard(lead));
+  }
+}
+
 function interviewCard(iv) {
   return el("div", { className: "card row" },
     el("span", { className: `pill ${iv.upcoming ? "" : "good"}` }, iv.when || "date unknown"),
@@ -1250,6 +1345,7 @@ function show(view) {
 function render() {
   if (!DATA || !SCHEMA) return;
   if (VIEW === "now") renderNow();
+  else if (VIEW === "leads") renderLeads();
   else if (VIEW === "applications") renderApplications();
   else if (VIEW === "calendar") renderCalendar();
   else if (VIEW === "people") renderPeople();
@@ -1263,6 +1359,7 @@ $("#scheduleInterview").addEventListener("click", () => addInterview(null));
 $("#addPerson").addEventListener("click", addPerson);
 $("#addRole").addEventListener("click", () => formModal("role"));
 $("#addAccomplishment").addEventListener("click", () => formModal("accomplishment"));
+$("#addLead").addEventListener("click", () => formModal("lead"));
 
 // Live updates. The vault is edited outside this page — Obsidian, the agent,
 // the scripts — so poll a stat-only digest and refetch when it moves. Never

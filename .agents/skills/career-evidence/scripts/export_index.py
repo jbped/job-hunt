@@ -100,6 +100,27 @@ def _interview(entry: dict, app: dict, upcoming: bool) -> dict:
 
 def build(vault: Path) -> dict:
     applications, contacts, interviews, people, evidence = [], [], [], [], []
+    leads = []
+
+    leads_dir = vault / "Leads"
+    if leads_dir.is_dir():
+        for note in sorted(leads_dir.glob("*.md")):
+            fm, _ = v.read_note(note)
+            if fm.get("type") != "lead":
+                continue
+            leads.append({
+                "company": fm.get("company"),
+                "role": fm.get("role"),
+                "url": fm.get("url"),
+                "source": fm.get("source"),
+                "date_added": fm.get("date_added"),
+                "status": fm.get("status"),
+                "next_follow_up": fm.get("next_follow_up"),
+                "passed_reason": fm.get("passed_reason"),
+                "application": fm.get("application"),
+                "path": str(note.relative_to(vault)),
+                "fingerprint": v.fingerprint(note),
+            })
 
     for brief in sorted((vault / "Applications").glob("*/*/Application Brief.md")):
         folder = brief.parent
@@ -226,6 +247,7 @@ def build(vault: Path) -> dict:
         "vault_name": vault.name,
         "generated_note": "Derived from the markdown notes. Never edit; regenerate with export_index.py.",
         "applications": applications,
+        "leads": leads,
         "contacts": contacts,
         "interviews": interviews,
         "people": people,

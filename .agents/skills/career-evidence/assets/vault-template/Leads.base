@@ -1,0 +1,70 @@
+filters:
+  and:
+    - note.type == "lead"
+properties:
+  note.company:
+    displayName: Company
+  note.role:
+    displayName: Role
+  note.source:
+    displayName: Source
+  note.status:
+    displayName: Status
+  note.date_added:
+    displayName: Added
+  note.next_follow_up:
+    displayName: Follow-up
+  note.url:
+    displayName: Link
+  note.passed_reason:
+    displayName: Why passed
+  note.application:
+    displayName: Application
+views:
+  - type: table
+    name: Open
+    filters:
+      or:
+        - note.status == "new"
+        - note.status == "pursuing"
+    order:
+      - note.company
+      - note.role
+      - note.source
+      - note.status
+      - note.next_follow_up
+      - note.url
+    sort:
+      - property: note.date_added
+        direction: ASC
+  - type: table
+    name: Promoted
+    filters:
+      and:
+        - note.status == "promoted"
+    order:
+      - note.company
+      - note.role
+      - note.application
+      - note.date_added
+  - type: table
+    name: Passed
+    filters:
+      and:
+        - note.status == "passed"
+    order:
+      - note.company
+      - note.role
+      - note.passed_reason
+      - note.date_added
+  - type: table
+    name: All
+    order:
+      - note.company
+      - note.role
+      - note.source
+      - note.status
+      - note.date_added
+    sort:
+      - property: note.status
+        direction: ASC

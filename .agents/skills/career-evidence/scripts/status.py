@@ -106,6 +106,13 @@ def main() -> int:
                 f"{a['company']}: {(today - applied).days} days since applying with no status change"
             )
 
+    open_leads = [l for l in data.get("leads", [])
+                  if l.get("status") in ("new", "pursuing")]
+    if open_leads:
+        oldest = min(open_leads, key=lambda l: str(l.get("date_added") or "9"))
+        todo.append(f"{len(open_leads)} open lead(s); oldest is "
+                    f"{oldest['company']} (added {oldest.get('date_added') or 'Unknown'})")
+
     unconfirmed = [p for p in data["people"]
                    if p["reference_status"] and p["reference_status"] != "confirmed"]
     if unconfirmed:

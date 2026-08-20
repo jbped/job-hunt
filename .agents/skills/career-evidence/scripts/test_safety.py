@@ -276,6 +276,37 @@ class SafetyTest(unittest.TestCase):
                     self.assertIn(enum, payload,
                                   f"form '{name}.{field['name']}' names a missing enum")
 
+    def test_create_lead_is_bounded(self):
+        with self.assertRaises(serve.RequestError):
+            serve.create_lead(self.vault, {"company": ""})
+        result = serve.create_lead(self.vault, {"company": "Leadco",
+                                                "source": "Sam Test"})
+        self.assertEqual(result["path"], "Leads/Leadco.md")
+        fm, _ = v.read_note(self.vault / result["path"])
+        self.assertEqual(fm.get("type"), "lead")
+        self.assertEqual(fm.get("status"), "new")
+        self.assertEqual(fm.get("role"), "Unknown")
+        self.assertEqual(fm.get("source"), "[[Sam Test]]")
+        with self.assertRaises(serve.RequestError):  # one note per lead
+            serve.create_lead(self.vault, {"company": "Leadco"})
+
+    def test_lead_promotion_needs_a_real_role_and_links_back(self):
+        serve.create_lead(self.vault, {"company": "Promoco"})
+        with self.assertRaises(serve.RequestError):  # Unknown role cannot promote
+            serve.create_application(self.vault, {"lead": "Leads/Promoco.md"})
+        serve.set_field(self.vault, {"path": "Leads/Promoco.md",
+                                     "field": "role", "value": "Tester"})
+        result = serve.create_application(self.vault, {"lead": "Leads/Promoco.md"})
+        self.assertEqual(result["path"], "Applications/Promoco/Tester")
+        fm, _ = v.read_note(self.vault / "Leads/Promoco.md")
+        self.assertEqual(fm.get("status"), "promoted")
+        self.assertIn("Applications/Promoco/Tester", fm.get("application") or "")
+        with self.assertRaises(serve.RequestError):  # promoting twice is refused
+            serve.create_application(self.vault, {"lead": "Leads/Promoco.md"})
+        with self.assertRaises(serve.RequestError):  # only lead notes promote
+            serve.create_application(
+                self.vault, {"lead": "Applications/Promoco/Tester/Analysis.md"})
+
     def test_person_follow_up_fields_are_editable_but_name_is_not(self):
         result = serve.create_person(self.vault, {"name": "Cadence Check"})
         path = result["path"]

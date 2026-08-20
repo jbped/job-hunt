@@ -20,6 +20,7 @@ This vault keeps the evidence behind your job search in plain markdown, so an AI
 | --- | --- |
 | `Career Evidence/Roles` | One note per job you have held |
 | `Career Evidence/Accomplishments` | One note per thing you did that is worth citing |
+| `Leads/` | One small note per company or role worth looking into, before any application |
 | `Applications/` | One folder per application: posting, analysis, artifacts |
 | `People/` | One note per professional connection, filed by warmth: `Network/` (people you know), `Recruiters/`, and `Job Hunt/` (targets, interviewers, company contacts) |
 | `Personal Information/` | Contact details and audiences, education, self-knowledge |

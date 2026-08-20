@@ -119,10 +119,64 @@ def create(vault: Path, company: str, position: str, *, url: str = "",
     return folder
 
 
+def _wikilink_name(value: str) -> str:
+    """The display name inside a `[[...]]` link, or the value unchanged."""
+    value = str(value or "").strip()
+    if value.startswith("[[") and value.endswith("]]"):
+        inner = value[2:-2].split("|")[-1]
+        return inner.rsplit("/", 1)[-1].strip()
+    return value
+
+
+def promote_lead(vault: Path, lead_rel: str, *, today: str | None = None) -> Path:
+    """Scaffold the application a lead points at, and mark the lead promoted.
+
+    The lead's source contact becomes discovery_detail only — how the interest
+    arrived is a fact, but the discovery method is the user's call, never
+    inferred from a wikilink.
+    """
+    lead_path = (vault / lead_rel).resolve()
+    try:
+        lead_path.relative_to(vault.resolve())
+    except ValueError:
+        raise SystemExit(f"'{lead_rel}' is outside the vault.")
+    if not lead_path.is_file():
+        raise SystemExit(f"No such lead: {lead_rel}")
+
+    fm, text = v.read_note(lead_path)
+    if fm.get("type") != "lead":
+        raise SystemExit(f"{lead_rel} is not a lead note (type: {fm.get('type')}).")
+    if fm.get("status") == "promoted":
+        raise SystemExit(f"{lead_rel} is already promoted"
+                         f" (application: {fm.get('application') or 'unrecorded'}).")
+    company = str(fm.get("company") or "").strip()
+    role = str(fm.get("role") or "").strip()
+    if not company:
+        raise SystemExit(f"{lead_rel} has no company recorded.")
+    if not role or role.lower() == "unknown":
+        raise SystemExit(f"{lead_rel} still has role Unknown — record the actual "
+                         "role on the lead before promoting it.")
+
+    fingerprint = v.fingerprint(lead_path)
+    folder = create(vault, company, role,
+                    url=str(fm.get("url") or "").strip(),
+                    detail=_wikilink_name(fm.get("source")),
+                    today=today)
+
+    app_rel = folder.relative_to(vault)
+    text = v.set_frontmatter_field(text, "status", "promoted")
+    text = v.set_frontmatter_field(
+        text, "application", f"[[{app_rel.as_posix()}/Application Brief]]")
+    v.atomic_write(lead_path, text, expect=fingerprint, vault=vault)
+    return folder
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__)
-    ap.add_argument("company")
-    ap.add_argument("position")
+    ap.add_argument("company", nargs="?", default="")
+    ap.add_argument("position", nargs="?", default="")
+    ap.add_argument("--from-lead", default="", dest="from_lead",
+                    help="vault-relative path of a lead note to promote")
     ap.add_argument("--url", default="")
     ap.add_argument("--discovery", default="", choices=schema.DISCOVERY_METHOD + [""])
     ap.add_argument("--detail", default="", help="referrer name, board, or site")
@@ -132,8 +186,13 @@ def main() -> int:
     args = ap.parse_args()
 
     vault = v.require_vault(args.vault)
-    folder = create(vault, args.company, args.position, url=args.url,
-                    discovery=args.discovery, detail=args.detail, source=args.source)
+    if args.from_lead:
+        folder = promote_lead(vault, args.from_lead)
+    elif args.company and args.position:
+        folder = create(vault, args.company, args.position, url=args.url,
+                        discovery=args.discovery, detail=args.detail, source=args.source)
+    else:
+        ap.error("give a company and position, or --from-lead <path>")
     rel = folder.relative_to(vault)
 
     if args.json:

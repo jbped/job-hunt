@@ -1512,6 +1512,7 @@ async function renderPdf(app, kind) {
 
 function show(view) {
   VIEW = view;
+  history.replaceState(null, "", "#" + view);
   for (const node of document.querySelectorAll("section"))
     node.toggleAttribute("data-active", node.dataset.view === view);
   for (const button of document.querySelectorAll("nav button[data-view]"))
@@ -1532,6 +1533,10 @@ function render() {
 
 for (const button of document.querySelectorAll("nav button[data-view]"))
   button.addEventListener("click", () => show(button.dataset.view));
+
+// #board, #leads, … deep-link straight to a view.
+const HASH_VIEW = location.hash.replace("#", "");
+if (document.querySelector(`nav button[data-view="${HASH_VIEW}"]`)) show(HASH_VIEW);
 $("#newApp").addEventListener("click", newApplication);
 $("#scheduleInterview").addEventListener("click", () => addInterview(null));
 $("#addPerson").addEventListener("click", addPerson);

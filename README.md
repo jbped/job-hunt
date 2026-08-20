@@ -21,6 +21,35 @@ verbatim and checksummed so analysis can't quietly reshape it.
   poppler-utils` (Debian/Ubuntu), `brew install ghostscript poppler` (macOS),
   or on Windows the Ghostscript installer plus Poppler binaries on `PATH`.
 
+## See it first
+
+Build the demo vault — a fictional job hunt, produced by the same scripts the
+real workflows use — and poke around before trusting the system with your own
+history:
+
+```sh
+python demo/build_demo.py
+python .agents/skills/career-evidence/scripts/serve.py --vault demo/vault
+```
+
+Or open `demo/vault` in Obsidian. Every name, employer, and number in it is
+fictional.
+
+The dashboard's home view answers "what's coming up, what do I need to do,
+where am I":
+
+![The now view: follow-up queue, to-dos, and pipeline summary](docs/images/dashboard-now.png)
+
+The board shows the pipeline as columns; dragging a card between columns
+changes the application's status:
+
+![The pipeline board](docs/images/dashboard-board.png)
+
+And rendered artifacts are versioned PDFs built from the markdown drafts,
+validated before anything is submitted:
+
+![A rendered resume for the demo's fictional candidate](docs/images/resume-page.png)
+
 ## Getting started
 
 1. **Clone the repo** and open a terminal in it.

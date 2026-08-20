@@ -78,17 +78,35 @@ def main() -> int:
         label = iv["when"] or "date unknown"
         print(f"  {label}  {iv['company']} | {iv['stage'] or 'interview'}")
 
+    # One queue for every dated commitment: application next actions, person
+    # and contact follow-ups, and lead follow-ups. Soonest first, overdue kept
+    # visible regardless of the window.
     due = []
     for a in shown:
         when = parse_date(a.get("next_action_date"))
         if when and a.get("next_action"):
-            due.append((when, a))
-    for when, a in sorted(due, key=lambda p: p[0]):
+            due.append((when, f"{a['company']}: {a['next_action']}"))
+    for p in data["people"]:
+        when = parse_date(p.get("next_follow_up"))
+        if when:
+            due.append((when, f"follow up with {p['name']}"))
+    for c in data["contacts"]:
+        when = parse_date(c.get("next_follow_up"))
+        if when:
+            due.append((when, f"follow up with {c['name']} ({c['company']})"))
+    for lead in data.get("leads", []):
+        when = parse_date(lead.get("next_follow_up"))
+        if when and lead.get("status") in ("new", "pursuing"):
+            due.append((when, f"follow up on lead: {lead['company']}"))
+
+    shown_due = 0
+    for when, label in sorted(due, key=lambda p: (p[0], p[1])):
         if when <= today + datetime.timedelta(days=args.days):
             flag = "OVERDUE" if when < today else "due"
-            print(f"  {when.isoformat()}  [{flag}] {a['company']}: {a['next_action']}")
+            print(f"  {when.isoformat()}  [{flag}] {label}")
+            shown_due += 1
 
-    if not upcoming and not due:
+    if not upcoming and not shown_due:
         print("  Nothing scheduled.")
 
     # What do I need to do

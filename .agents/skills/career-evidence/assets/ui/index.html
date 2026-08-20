@@ -560,12 +560,36 @@ function renderNow() {
 
   const upcoming = DATA.interviews.filter(i => i.upcoming)
     .sort((a, b) => (a.date || "9") .localeCompare(b.date || "9"));
-  const dueSoon = active
-    .filter(a => a.next_action && a.next_action_date)
-    .sort((a, b) => a.next_action_date.localeCompare(b.next_action_date));
+
+  // One queue for every dated commitment: application next actions, person and
+  // contact follow-ups, lead follow-ups. The notes stay the source of truth —
+  // this is pure aggregation, soonest first, overdue flagged.
+  const queue = [];
+  for (const app of active) {
+    if (app.next_action && app.next_action_date)
+      queue.push({ date: app.next_action_date, title: `${app.company} — ${app.position}`,
+                   detail: app.next_action, open: () => openDetail(app.path) });
+  }
+  for (const p of DATA.people) {
+    if (p.next_follow_up)
+      queue.push({ date: p.next_follow_up, title: `Follow up with ${p.name}`,
+                   detail: p.company_context || "", link: p.path });
+  }
+  for (const c of DATA.contacts) {
+    if (c.next_follow_up)
+      queue.push({ date: c.next_follow_up, title: `Follow up with ${c.name}`,
+                   detail: `${c.company} — ${c.position}`, link: c.note });
+  }
+  for (const lead of (DATA.leads || [])) {
+    if (lead.next_follow_up && ["new", "pursuing"].includes(lead.status))
+      queue.push({ date: lead.next_follow_up, title: `Lead: ${lead.company}`,
+                   detail: lead.role && lead.role !== "Unknown" ? lead.role : "",
+                   open: () => show("leads") });
+  }
+  queue.sort((a, b) => a.date.localeCompare(b.date) || a.title.localeCompare(b.title));
 
   const up = $("#upcoming"); up.textContent = "";
-  if (!upcoming.length && !dueSoon.length) {
+  if (!upcoming.length && !queue.length) {
     up.append(el("div", { className: "empty" }, "Nothing scheduled."));
   }
   for (const iv of upcoming) {
@@ -576,14 +600,16 @@ function renderNow() {
         el("div", { className: "muted" }, iv.method ? `${iv.method}` : "")),
       obsidian(`${iv.application}/Interviews`)));
   }
-  for (const app of dueSoon) {
-    const overdue = app.next_action_date < today();
+  for (const item of queue) {
+    const overdue = item.date < today();
     up.append(el("div", { className: "card row" },
       el("span", { className: `pill ${overdue ? "bad" : ""}` },
-         overdue ? `overdue ${app.next_action_date}` : app.next_action_date),
+         overdue ? `overdue ${item.date}` : item.date),
       el("span", { className: "grow" },
-        el("span", { className: "title" }, `${app.company} — ${app.position}`),
-        el("div", { className: "muted" }, app.next_action))));
+        el("span", { className: "title" }, item.title),
+        el("div", { className: "muted" }, item.detail)),
+      item.open ? el("button", { className: "btn", onclick: item.open }, "Open")
+                : obsidian(item.link)));
   }
 
   const todo = $("#todo"); todo.textContent = "";

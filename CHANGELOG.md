@@ -5,6 +5,23 @@ loosely; versions are git tags.
 
 ## Unreleased
 
+- Follow-up queue (#5): "What's coming up" now unifies application next
+  actions, person and contact follow-ups, and lead follow-ups into one
+  soonest-first queue with overdue flagged, in both `status.py` and the
+  dashboard.
+- Pipeline board (#6): applications as columns by status with drag-and-drop
+  status changes (select fallback on each card) and a show-terminal toggle.
+- Introduction chains (#7): the People view renders `via` chains
+  (target ← via ← connector) and lists dangling chains as missing connector
+  notes.
+- `cross-check` skill (#16): validates the drafted resume and cover letter
+  as a pair against the posting, the analysis, and the evidence — coverage,
+  redundancy, claim tracing, voice, contradictions — appending findings to
+  `Analysis.md` as a dated Draft review section. Reports, never edits.
+- Demo vault (#1): `demo/build_demo.py` builds a fictional, audit-clean
+  example vault with the real scripts; the README gains a "See it first"
+  walkthrough with screenshots (#2). Dashboard views are now deep-linkable
+  via `#view` hashes.
 - Leads (#15): a pre-application pipeline stage. One small note per lead in
   `Leads/` (company alone is enough), created from the dashboard's new Leads
   view or `new_lead.py`, with an Obsidian Base table view. Promotion

@@ -49,10 +49,16 @@ faults, not ugly ones.
 
 ### Source format
 
-The resume working copy needs `## Header` (name, professional title, and a
-`·`-separated contact line), `## Summary`, and `## Experience` with
-`### Title | Company | Dates` headings and `-` bullets. `## Additional Experience`,
-`## Education`, and `## Technical Skills` are optional.
+The resume working copy needs `## Header`, `## Summary`, and `## Experience`
+with `### Title | Company | Dates` headings and `-` bullets.
+`## Additional Experience`, `## Education`, and `## Technical Skills` are
+optional; when present, Technical Skills is a single `·`-separated line.
+
+The header's three lines come verbatim from `Personal Information/Contact.md`:
+`full_name`, the recorded current resume title, then a `·`-separated contact
+line of the `application` and `public` entries in their frontmatter order.
+Never retype them from memory or copy them from an earlier draft — that is how
+one application says `Jake, Lehi, Utah` and the next says `Jacob, Lehi, UT`.
 
 A cover letter is written as a letter — date, recipient block, salutation,
 paragraphs, sign-off. Everything above its first `## ` heading is rendered, and the
@@ -67,11 +73,14 @@ hardcoded coordinates are what made the old manual reflow necessary.
 ## Resume selection
 
 - Rank evidence by relevance, strength, recency, ownership, and metric quality.
-- Use conventional headings and official job titles.
 - Prefer a focused one-page resume; use two when strong relevant evidence would
   otherwise become unreadable.
 - Do not satisfy a keyword with an unsupported technology or inflated tenure.
 - Selection is the tailoring. Including everything is the same as choosing nothing.
+- Over a page? Cut in this order: bullets from the oldest role, then
+  Additional Experience detail, then the tail of the skills line. Recent-role
+  accomplishment bullets go last. Never pad in the other direction to fill a
+  short page.
 
 ## Cover-letter selection
 

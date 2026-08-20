@@ -22,13 +22,15 @@ directive, not a style preference to weigh.
 
 ## Resume summary
 
-Every resume gets a 3-4 sentence `Summary`, structured as: who you are (title
-and years), what you do professionally, who or what you support with that
-expertise, and optionally one standout highlight. First person is fine and
-reads warmer than third. Never an objective statement — the application already
-says what role is sought. Ban filler self-praise (`results-oriented`,
-`hardworking`, `proven track record`); every adjective should reveal working
-style, and every noun should be an evidence-backed keyword.
+Every resume gets a 3-4 sentence `Summary`: who you are (title and years),
+what you do professionally, who or what you support with it, and optionally
+one standout highlight. Open with the title and years directly
+(`Full-stack software engineer with four years...`) — no `I am a` wind-up;
+first person is fine in the sentences that follow. Years are computed from the
+evidence, never echoed from the posting's stated minimum. Never an objective
+statement — the application already says what role is sought. Ban filler
+self-praise (`results-oriented`, `proven track record`); every adjective
+should reveal working style, every noun should be an evidence-backed keyword.
 
 ## Resume bullets
 
@@ -42,10 +44,14 @@ Do not force every bullet into the same order. Put the strongest differentiator 
 
 Keep bullets independently understandable. Avoid pronouns, dense feature inventories, internal acronyms without context, and claims such as `significantly improved` without supporting evidence.
 
-Discipline per role: 5-7 bullets for recent relevant roles, each 1-2 rendered
-lines, the majority accomplishments rather than duties. Older or less relevant
-roles get fewer bullets, a single line, or a bare listing with no bullets —
-dropping a role entirely is fine unless it creates an unexplained gap.
+One claim per bullet, at most two rendered lines — check the proof PNG. A
+bullet that needs a semicolon to hold a second achievement is two bullets, or
+a cut.
+
+Discipline per role: 5-7 bullets for recent relevant roles, the majority
+accomplishments rather than duties. Older or less relevant roles get fewer
+bullets, a single line, or a bare listing with no bullets — dropping a role
+entirely is fine unless it creates an unexplained gap.
 
 Vary the opening verbs — a column of `Led… Led… Built… Built…` reads as
 padding. Choose the verb by ownership class first, then for variety. The bank
@@ -84,6 +90,9 @@ and approved in `About Me.md`.
 - Include exact technology and domain terms naturally when supported.
 - Prefer normal bullets and chronological role structure.
 - Avoid keyword stuffing, hidden text, fabricated synonyms, and skill lists unsupported by evidence.
+- The `Technical Skills` line is ordered by relevance to the posting and capped
+  around 15 entries — a longer list dilutes the terms that matter. Every entry
+  must be in the Skill Matrix.
 - Keep essential information in text rather than relying only on icons or visual grouping.
 - Tailor selection and emphasis per application; do not maintain one supposedly universal resume.
 - Hard skills carry the resume; soft skills are subjective and get at most one

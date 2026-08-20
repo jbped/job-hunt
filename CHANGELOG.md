@@ -5,6 +5,12 @@ loosely; versions are git tags.
 
 ## Unreleased
 
+- Resume directions tightened: each rule now lives in exactly one file, the
+  header is copied verbatim from `Contact.md` (no more per-application name
+  and location drift), the summary opens with title and computed years, one
+  claim per bullet at two rendered lines max, a `·`-separated skills line
+  capped near 15 posting-relevant entries, and an explicit cut order when a
+  draft runs over a page.
 - Follow-up queue (#5): "What's coming up" now unifies application next
   actions, person and contact follow-ups, and lead follow-ups into one
   soonest-first queue with overdue flagged, in both `status.py` and the

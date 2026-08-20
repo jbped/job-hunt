@@ -222,6 +222,8 @@ relationships: []                  # job-search roles, vault-wide
 company_context:
 via: "[[People/<Folder>/Full Name]]"   # who the introduction path runs through
 email / phone / preferred_contact_method:
+next_follow_up:                    # relationship cadence, independent of applications
+last_contact:
 reference_status: confirmed | requested | prospective | declined
 permission_confirmed:
 permission_confirmed_at:
@@ -233,7 +235,10 @@ the person. Current/former is explicit where it matters for outreach. The
 reference fields exist only once the person is being considered as a professional
 reference; `confirmed` only after explicit consent. `via` is optional and holds
 a wikilink to the person's note whose introduction makes this contact reachable
-— set it on the target, not the connector. Per-application involvement
+— set it on the target, not the connector. `next_follow_up` and `last_contact`
+are the person's own cadence — when to reach out next and when contact last
+happened — distinct from the per-application follow-up bullets on a
+`Contacts.md` entry. Per-application involvement
 lives in the body's `## Applications` section as
 `### Company | Position` blocks with `- Roles:` and follow-up bullets — that is
 what the index reads to associate people with applications.

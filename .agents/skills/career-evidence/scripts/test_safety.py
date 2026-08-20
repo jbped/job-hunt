@@ -276,6 +276,20 @@ class SafetyTest(unittest.TestCase):
                     self.assertIn(enum, payload,
                                   f"form '{name}.{field['name']}' names a missing enum")
 
+    def test_person_follow_up_fields_are_editable_but_name_is_not(self):
+        result = serve.create_person(self.vault, {"name": "Cadence Check"})
+        path = result["path"]
+        serve.set_field(self.vault, {"path": path, "field": "next_follow_up",
+                                     "value": "2026-09-01"})
+        serve.set_field(self.vault, {"path": path, "field": "last_contact",
+                                     "value": "2026-08-15"})
+        fm, _ = v.read_note(self.vault / path)
+        self.assertEqual(fm.get("next_follow_up"), "2026-09-01")
+        self.assertEqual(fm.get("last_contact"), "2026-08-15")
+        with self.assertRaises(serve.RequestError):  # identity is not UI-editable
+            serve.set_field(self.vault, {"path": path, "field": "name",
+                                         "value": "Someone Else"})
+
     def test_audit_rejects_unknown_professional_relationship(self):
         note = self.vault / "People" / "Invalid Relationship.md"
         note.write_text(

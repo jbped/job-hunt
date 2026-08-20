@@ -759,7 +759,9 @@ function buildRail(rail) {
     fieldRow("Currency", editable(app, "compensation_currency", { placeholder: "USD" })),
     fieldRow("Comp min", editable(app, "compensation_min")),
     fieldRow("Comp max", editable(app, "compensation_max")),
-    fieldRow("Comp period", editable(app, "compensation_period", { enumKey: "compensation_period" }))));
+    fieldRow("Comp period", editable(app, "compensation_period", { enumKey: "compensation_period" })),
+    fieldRow("Level stated", editable(app, "experience_level_stated",
+                                      { placeholder: "As the posting states it" }))));
 }
 
 function fillPickList(host, selectedPath, match) {
@@ -978,9 +980,15 @@ function personCard(person) {
   const editor = el("details", { className: "editor",
                                  open: OPEN_EDITORS.has(person.path) },
     el("summary", {}, "Edit details"),
+    fieldRow("Company context", editable(person, "company_context",
+                                         { placeholder: "Where you know them from" })),
+    fieldRow("Via", editable(person, "via",
+                             { placeholder: "[[People/Network/Full Name]]" })),
     fieldRow("Email", editable(person, "email")),
     fieldRow("Phone", editable(person, "phone")),
     fieldRow("Preferred contact", editable(person, "preferred_contact_method")),
+    fieldRow("Next follow-up", editable(person, "next_follow_up", { type: "date" })),
+    fieldRow("Last contact", editable(person, "last_contact", { type: "date" })),
     fieldRow("Reference status", editable(person, "reference_status",
                                           { enumKey: "reference_permission" })),
     fieldRow("Consent confirmed", editable(person, "permission_confirmed",

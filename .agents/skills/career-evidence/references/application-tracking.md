@@ -71,7 +71,10 @@ Distinguish:
 A person's own details (organisation, email, phone, relationship history) live on
 their single note in `People/`; the application's `Contacts.md` entry links that
 note and records only their role in this application. Record follow-up dates and
-contact methods. Do not infer that a formal referral is also a professional
+contact methods: per-application follow-ups belong on the `Contacts.md` entry,
+while the person note's `next_follow_up` and `last_contact` frontmatter carry
+the relationship's own cadence, independent of any application.
+Do not infer that a formal referral is also a professional
 reference — reference consent is a separate fact on the person note
 (`reference_status`, `permission_confirmed`).
 

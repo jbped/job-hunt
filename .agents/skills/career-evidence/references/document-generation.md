@@ -21,6 +21,16 @@ crept in.
   are what make the next tailoring pass fast.
 - Once a version is submitted, it is history. Revisions become new versions.
 
+## Validation before rendering
+
+Each draft workflow carries its own pass (the resume's keyword pass, the
+cover letter's read-aloud voice pass). Once both drafts exist, the
+`cross-check` workflow skill is the unified final gate: it checks the pair
+against the posting, the analysis, and the evidence — coverage, redundancy,
+claim tracing, voice, and cross-document contradictions — and appends its
+findings to `Analysis.md` as a dated Draft review section. It reports; it
+never edits a draft.
+
 ## Rendering
 
 `render_pdf.py --app <folder> --kind resume|cover-letter` reads the markdown,

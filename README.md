@@ -53,6 +53,7 @@ the conversation calls for it:
 | `new-person` | One note per professional connection and their job-search roles |
 | `draft-resume` | Tailor a resume draft from verified evidence |
 | `draft-cover-letter` | Write a cover letter draft from verified evidence |
+| `cross-check` | Validate the drafted resume and cover letter as a pair before rendering |
 | `resume-pdf` | Render and validate the resume PDF |
 | `cover-letter-pdf` | Render and validate the cover letter PDF |
 

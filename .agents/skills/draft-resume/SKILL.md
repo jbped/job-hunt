@@ -28,5 +28,6 @@ for any copy that will reach an employer.
 6. Link the evidence used and record what was excluded and why — the exclusions
    are what make the next tailoring pass fast.
 
-When the draft is settled, render and validate it with the
+When the draft is settled, run the [`cross-check`](../cross-check/SKILL.md)
+pass over the resume and letter as a pair, then render and validate with the
 [`resume-pdf`](../resume-pdf/SKILL.md) workflow.

@@ -62,6 +62,9 @@ note holds the rules they all share.
 - [`draft-resume`](../draft-resume/SKILL.md) and
   [`draft-cover-letter`](../draft-cover-letter/SKILL.md) — tailor the
   working copies from verified evidence
+- [`cross-check`](../cross-check/SKILL.md) — validate the drafted resume and
+  cover letter as a pair against the posting, the analysis, and the evidence;
+  the final gate before rendering
 - [`resume-pdf`](../resume-pdf/SKILL.md) and
   [`cover-letter-pdf`](../cover-letter-pdf/SKILL.md) — render and
   validate the artifacts

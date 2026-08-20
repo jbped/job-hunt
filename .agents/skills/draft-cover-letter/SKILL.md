@@ -34,5 +34,6 @@ any copy that will reach an employer.
    would sound stiff spoken across a table. The letter keeps at most one or
    two numbers; the resume carries the rest.
 
-When the draft is settled, render and validate it with the
+When the draft is settled, run the [`cross-check`](../cross-check/SKILL.md)
+pass over the resume and letter as a pair, then render and validate with the
 [`cover-letter-pdf`](../cover-letter-pdf/SKILL.md) workflow.

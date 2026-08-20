@@ -52,6 +52,8 @@ TEMPLATES = [
     "Draft - Resume.md",
     "Draft - Cover Letter.md",
     "Submission Notes.md",
+    "Role.md",
+    "Accomplishment.md",
     "PDF/Resume - Figma Inspired.ps",
     "PDF/Cover Letter - Figma Inspired.ps",
 ]

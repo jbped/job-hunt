@@ -27,6 +27,7 @@ import init_vault
 import new_application
 import package_skill
 import render_pdf
+import schema
 import serve
 import vaultlib as v
 
@@ -225,6 +226,55 @@ class SafetyTest(unittest.TestCase):
         result = serve.create_person(self.vault, {"name": "Tia Target",
                                                   "relationship": "networking-target"})
         self.assertEqual(result["path"], "People/Job Hunt/Tia Target.md")
+
+    def test_create_role_is_bounded(self):
+        with self.assertRaises(serve.RequestError):
+            serve.create_role(self.vault, {"company": "", "title": "X"})
+        with self.assertRaises(serve.RequestError):
+            serve.create_role(self.vault, {"company": "X", "title": ""})
+        result = serve.create_role(self.vault, {
+            "company": "Testco", "title": "Tester", "start": "2024-01"})
+        self.assertEqual(result["path"], "Career Evidence/Roles/Testco - Tester.md")
+        fm, text = v.read_note(self.vault / result["path"])
+        self.assertEqual(fm.get("type"), "role")
+        self.assertEqual(fm.get("status"), "needs-interview")
+        self.assertEqual(fm.get("company"), "Testco")
+        self.assertEqual(fm.get("start"), "2024-01")
+        self.assertIn("# Testco | Tester", text)
+        self.assertIn("## Questions", text)
+        with self.assertRaises(serve.RequestError):  # one canonical note per role
+            serve.create_role(self.vault, {"company": "Testco", "title": "Tester"})
+
+    def test_create_accomplishment_is_bounded(self):
+        with self.assertRaises(serve.RequestError):
+            serve.create_accomplishment(self.vault, {"company": "X", "title": ""})
+        result = serve.create_accomplishment(self.vault, {
+            "company": "Testco", "title": "Big Win", "folder": "Testco 2024"})
+        self.assertEqual(result["path"],
+                         "Career Evidence/Accomplishments/Testco 2024/Big Win.md")
+        fm, text = v.read_note(self.vault / result["path"])
+        self.assertEqual(fm.get("type"), "accomplishment")
+        self.assertEqual(fm.get("status"), "draft")
+        self.assertIn("# Big Win", text)
+        self.assertIn("## Questions", text)
+        # One canonical note vault-wide, even from a different subfolder.
+        with self.assertRaises(serve.RequestError):
+            serve.create_accomplishment(self.vault, {"company": "Testco",
+                                                     "title": "Big Win"})
+        report = audit_vault.audit(self.vault)
+        scaffold_errors = [e for e in report.errors if "Career Evidence" in e]
+        self.assertEqual(scaffold_errors, [])
+
+    def test_scaffold_forms_match_schema_and_routes(self):
+        payload = serve.api_schema(self.vault)
+        for name, spec in schema.FORMS.items():
+            self.assertIn(spec["endpoint"], serve.HANDLERS,
+                          f"form '{name}' posts to an unregistered route")
+            for field in spec["fields"]:
+                enum = field.get("enum")
+                if enum:
+                    self.assertIn(enum, payload,
+                                  f"form '{name}.{field['name']}' names a missing enum")
 
     def test_audit_rejects_unknown_professional_relationship(self):
         note = self.vault / "People" / "Invalid Relationship.md"

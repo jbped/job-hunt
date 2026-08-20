@@ -288,9 +288,13 @@
   </section>
 
   <section data-view="evidence">
+    <div class="actionbar">
+      <button class="btn btn-primary" id="addRole">Add role</button>
+      <button class="btn" id="addAccomplishment">Add accomplishment</button>
+      <span class="hint">These create scaffolds with open questions. The facts come
+        from evidence interviews with your agent, or by hand in Obsidian.</span>
+    </div>
     <h2>Career evidence</h2>
-    <p class="muted">Read-only here. Evidence is written in conversation with your
-      agent, or by hand in Obsidian — it is the part that deserves care.</p>
     <div id="evidence"></div>
   </section>
 
@@ -1002,26 +1006,7 @@ function personCard(person) {
 }
 
 function addPerson() {
-  modal("Add a person", [
-    { key: "name", label: "Full name" },
-    { key: "folder", label: "Folder (blank = pick from the roles below)",
-      options: SCHEMA.people_folders },
-    { key: "professional_relationship", label: "Professional relationship",
-      options: SCHEMA.professional_relationship },
-    { key: "relationship", label: "Job-search role",
-      options: SCHEMA.contact_relationship },
-    { key: "company_context", label: "Company context",
-      placeholder: "Where you know them from" },
-    { key: "email", label: "Email" },
-    { key: "phone", label: "Phone" },
-  ], async (values) => {
-    if (!values.name) throw new Error("A name is required.");
-    const result = await api("/api/person", {
-      method: "POST", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(values),
-    });
-    toast(`Created ${result.path}`);
-  }, "Create");
+  formModal("person");
 }
 
 function renderEvidence() {
@@ -1105,22 +1090,30 @@ function modal(title, fields, onSubmit, submitLabel) {
   dialog.showModal();
 }
 
-function newApplication() {
-  modal("New application", [
-    { key: "company", label: "Company" },
-    { key: "position", label: "Role" },
-    { key: "url", label: "Job posting URL", placeholder: "https://… (leave blank if unknown)" },
-    { key: "discovery", label: "How you found it", options: SCHEMA.discovery_method },
-    { key: "detail", label: "Referrer name, board, or site" },
-  ], async (values) => {
-    if (!values.company || !values.position) throw new Error("Company and role are required.");
-    const result = await api("/api/application", {
+/** Render a scaffold form from SCHEMA.forms, so the field lists and their
+ *  vocabulary live in schema.py rather than here. */
+function formModal(key, onDone) {
+  const spec = SCHEMA.forms[key];
+  modal(spec.title, spec.fields.map(f => ({
+    key: f.name, label: f.label,
+    options: f.enum ? SCHEMA[f.enum] : undefined,
+    type: f.widget === "date" ? "date" : undefined,
+    multiline: f.widget === "textarea",
+    placeholder: f.placeholder,
+  })), async (values) => {
+    for (const f of spec.fields)
+      if (f.required && !values[f.name]) throw new Error(`${f.label} is required.`);
+    const result = await api(spec.endpoint, {
       method: "POST", headers: { "Content-Type": "application/json" },
       body: JSON.stringify(values),
     });
     toast(`Created ${result.path}`);
-    setTimeout(() => openDetail(result.path), 150);
-  }, "Create");
+    if (onDone) onDone(result);
+  }, spec.submit);
+}
+
+function newApplication() {
+  formModal("application", result => setTimeout(() => openDetail(result.path), 150));
 }
 
 function addContact(app) {
@@ -1260,6 +1253,8 @@ for (const button of document.querySelectorAll("nav button[data-view]"))
 $("#newApp").addEventListener("click", newApplication);
 $("#scheduleInterview").addEventListener("click", () => addInterview(null));
 $("#addPerson").addEventListener("click", addPerson);
+$("#addRole").addEventListener("click", () => formModal("role"));
+$("#addAccomplishment").addEventListener("click", () => formModal("accomplishment"));
 
 // Live updates. The vault is edited outside this page — Obsidian, the agent,
 // the scripts — so poll a stat-only digest and refetch when it moves. Never

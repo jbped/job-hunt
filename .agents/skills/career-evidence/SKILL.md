@@ -31,6 +31,8 @@ they work from any directory. `--vault PATH` overrides. Stdlib-only Python 3.
 ```text
 init_vault.py <path>              create an empty vault
 new_application.py "Co" "Role"    scaffold an application folder
+new_role.py "Co" "Title"          scaffold a role note in Career Evidence
+new_accomplishment.py "Co" "Name" scaffold an accomplishment note
 capture_jd.py --app <folder>      store a posting verbatim + checksum
 render_pdf.py --app <folder>      build and validate a PDF
 status.py                         where am I / coming up / to do

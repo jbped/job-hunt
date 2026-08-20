@@ -282,6 +282,71 @@ UI_EDITABLE = {
     ],
 }
 
+# Scaffold forms the dashboard renders, so a human can create any scaffold
+# without an agent and without schema knowledge. The UI builds each form from
+# this spec; `enum` names a key in the /api/schema payload, so the controlled
+# vocabulary lives once. Widgets: text (default), select, date, textarea.
+FORMS = {
+    "application": {
+        "title": "New application",
+        "submit": "Create",
+        "endpoint": "/api/application",
+        "fields": [
+            {"name": "company", "label": "Company", "required": True},
+            {"name": "position", "label": "Role", "required": True},
+            {"name": "url", "label": "Job posting URL",
+             "placeholder": "https://… (leave blank if unknown)"},
+            {"name": "discovery", "label": "How you found it",
+             "widget": "select", "enum": "discovery_method"},
+            {"name": "detail", "label": "Referrer name, board, or site"},
+        ],
+    },
+    "person": {
+        "title": "Add a person",
+        "submit": "Create",
+        "endpoint": "/api/person",
+        "fields": [
+            {"name": "name", "label": "Full name", "required": True},
+            {"name": "folder", "label": "Folder (blank = pick from the roles below)",
+             "widget": "select", "enum": "people_folders"},
+            {"name": "professional_relationship", "label": "Professional relationship",
+             "widget": "select", "enum": "professional_relationship"},
+            {"name": "relationship", "label": "Job-search role",
+             "widget": "select", "enum": "contact_relationship"},
+            {"name": "company_context", "label": "Company context",
+             "placeholder": "Where you know them from"},
+            {"name": "email", "label": "Email"},
+            {"name": "phone", "label": "Phone"},
+        ],
+    },
+    "role": {
+        "title": "New role",
+        "submit": "Create",
+        "endpoint": "/api/role",
+        "fields": [
+            {"name": "company", "label": "Company", "required": True},
+            {"name": "title", "label": "Title", "required": True},
+            {"name": "start", "label": "Started", "placeholder": "2024-02"},
+            {"name": "end", "label": "Ended",
+             "placeholder": "2025-08 (blank while current)"},
+            {"name": "team", "label": "Team"},
+        ],
+    },
+    "accomplishment": {
+        "title": "New accomplishment",
+        "submit": "Create",
+        "endpoint": "/api/accomplishment",
+        "fields": [
+            {"name": "company", "label": "Company", "required": True},
+            {"name": "title", "label": "Accomplishment", "required": True,
+             "placeholder": "A short name for the work"},
+            {"name": "role", "label": "Role it happened in"},
+            {"name": "folder", "label": "Subfolder (optional)",
+             "placeholder": "Acme 2024-2025"},
+        ],
+    },
+}
+
 # Notes the UI must never write to, at any path. The verbatim posting and its
 # checksum are evidence; submitted artifacts are historical record.
 UI_READONLY_FILES = ["Job Description.md", "Submission Notes.md"]

@@ -6,12 +6,12 @@ The index is never written to — after any successful save it is rebuilt from
 disk, so the notes remain the only source of truth and a stale cache can never
 become the thing you are editing.
 
-Four write operations are allowed, and no others:
+A closed set of write operations is allowed, and no others:
 
   1. Edit a frontmatter field the schema marks UI-editable (one line rewritten)
   2. Append a structured entry built from a template (contact, interview, reference)
-  3. Create an application, by calling the same script the CLI calls
-  4. Create a person note (one per person, never overwriting)
+  3. Create a scaffold — application, person, role, accomplishment — by calling
+     the same code the CLI scripts call, so either path produces identical files
 
 Everything else — prose, analysis, the verbatim posting — is read-only here and
 links out to Obsidian. That boundary is what keeps the notes hand-editable
@@ -45,7 +45,9 @@ import webbrowser
 
 import audit_vault
 import export_index
+import new_accomplishment
 import new_application
+import new_role
 import schema
 import vaultlib as v
 
@@ -418,6 +420,39 @@ def create_person(vault: Path, payload: dict) -> dict:
     return {"path": str(target.relative_to(vault))}
 
 
+def create_role(vault: Path, payload: dict) -> dict:
+    company = str(payload.get("company", "")).strip()
+    title = str(payload.get("title", "")).strip()
+    if not company or not title:
+        raise RequestError(400, "company and title are both required")
+    try:
+        target = new_role.create(
+            vault, company, title,
+            start=str(payload.get("start", "")).strip(),
+            end=str(payload.get("end", "")).strip(),
+            team=str(payload.get("team", "")).strip(),
+        )
+    except SystemExit as error:
+        raise RequestError(400, str(error))
+    return {"path": str(target.relative_to(vault))}
+
+
+def create_accomplishment(vault: Path, payload: dict) -> dict:
+    company = str(payload.get("company", "")).strip()
+    title = str(payload.get("title", "")).strip()
+    if not company or not title:
+        raise RequestError(400, "company and title are both required")
+    try:
+        target = new_accomplishment.create(
+            vault, company, title,
+            role=str(payload.get("role", "")).strip(),
+            folder=str(payload.get("folder", "")).strip(),
+        )
+    except SystemExit as error:
+        raise RequestError(400, str(error))
+    return {"path": str(target.relative_to(vault))}
+
+
 def start_render(vault: Path, payload: dict) -> dict:
     """Kick off a PDF render on a worker thread and return a job id to poll.
 
@@ -458,6 +493,43 @@ def start_render(vault: Path, payload: dict) -> dict:
 
     threading.Thread(target=run, daemon=True).start()
     return {"job": job_id}
+
+
+# POST routes and their handlers. Module-level so the whole write surface is
+# auditable in one glance, and testable against the endpoints schema.FORMS names.
+HANDLERS = {
+    "/api/field": set_field,
+    "/api/entry": append_entry,
+    "/api/interview/complete": complete_interview,
+    "/api/application": create_application,
+    "/api/person": create_person,
+    "/api/role": create_role,
+    "/api/accomplishment": create_accomplishment,
+    "/api/render": start_render,
+}
+
+
+def api_schema(vault: Path) -> dict:
+    """The /api/schema payload: every vocabulary the UI needs, plus the form
+    and editable-field specs, so the page never hard-codes what schema.py owns."""
+    return {
+        "status": schema.APPLICATION_STATUS,
+        "terminal": sorted(schema.TERMINAL_STATUS),
+        "discovery_method": schema.DISCOVERY_METHOD,
+        "compensation_status": schema.COMPENSATION_STATUS,
+        "compensation_period": schema.COMPENSATION_PERIOD,
+        "work_model": schema.WORK_MODEL,
+        "stage": schema.INTERVIEW_STAGE,
+        "method": schema.INTERVIEW_METHOD,
+        "contact_relationship": schema.CONTACT_RELATIONSHIP,
+        "professional_relationship": schema.PROFESSIONAL_RELATIONSHIP,
+        "people_folders": schema.PEOPLE_FOLDERS,
+        "reference_permission": schema.REFERENCE_PERMISSION,
+        "contact_audience": schema.CONTACT_AUDIENCE,
+        "editable": schema.UI_EDITABLE,
+        "forms": schema.FORMS,
+        "vault_name": vault.name,
+    }
 
 
 # --------------------------------------------------------------------------
@@ -512,23 +584,7 @@ class Handler(BaseHTTPRequestHandler):
             elif route == "/api/state":
                 self._json({"state": vault_state(self.vault)})
             elif route == "/api/schema":
-                self._json({
-                    "status": schema.APPLICATION_STATUS,
-                    "terminal": sorted(schema.TERMINAL_STATUS),
-                    "discovery_method": schema.DISCOVERY_METHOD,
-                    "compensation_status": schema.COMPENSATION_STATUS,
-                    "compensation_period": schema.COMPENSATION_PERIOD,
-                    "work_model": schema.WORK_MODEL,
-                    "stage": schema.INTERVIEW_STAGE,
-                    "method": schema.INTERVIEW_METHOD,
-                    "contact_relationship": schema.CONTACT_RELATIONSHIP,
-                    "professional_relationship": schema.PROFESSIONAL_RELATIONSHIP,
-                    "people_folders": schema.PEOPLE_FOLDERS,
-                    "reference_permission": schema.REFERENCE_PERMISSION,
-                    "contact_audience": schema.CONTACT_AUDIENCE,
-                    "editable": schema.UI_EDITABLE,
-                    "vault_name": self.vault.name,
-                })
+                self._json(api_schema(self.vault))
             elif route == "/api/note":
                 query = urllib.parse.parse_qs(parsed.query)
                 self._json(read_note(self.vault, (query.get("path") or [""])[0]))
@@ -582,16 +638,8 @@ class Handler(BaseHTTPRequestHandler):
         if not secrets.compare_digest(self.headers.get("X-Session-Token", ""), self.token):
             self._json({"error": "missing or invalid session token; reload the page"}, 403)
             return
-        handlers = {
-            "/api/field": set_field,
-            "/api/entry": append_entry,
-            "/api/interview/complete": complete_interview,
-            "/api/application": create_application,
-            "/api/person": create_person,
-            "/api/render": start_render,
-        }
         try:
-            handler = handlers.get(route)
+            handler = HANDLERS.get(route)
             if handler is None:
                 raise RequestError(404, "no such route")
             payload = self._body()

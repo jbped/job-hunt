@@ -47,6 +47,10 @@ two-page document is intended.
 It also writes a proof PNG. Look at it. The automated checks catch structural
 faults, not ugly ones.
 
+The layout is single-column by design and stays that way: ATS parsers read
+top-to-bottom, and multi-column or graphic-heavy templates are how qualified
+resumes get dropped before a human sees them.
+
 ### Source format
 
 The resume working copy needs `## Header`, `## Summary`, and `## Experience`
@@ -72,6 +76,11 @@ hardcoded coordinates are what made the old manual reflow necessary.
 
 ## Resume selection
 
+- Identify the top three goals the role is graded on, from the posting's
+  what-you-will-do section and the analysis, and select the evidence that
+  moves those goals. The impact areas employers buy: revenue, cost reduction,
+  process efficiency, customer acquisition and retention, company growth,
+  team health, market awareness.
 - Rank evidence by relevance, strength, recency, ownership, and metric quality.
 - Prefer a focused one-page resume; use two when strong relevant evidence would
   otherwise become unreadable.

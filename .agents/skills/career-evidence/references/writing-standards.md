@@ -22,25 +22,42 @@ directive, not a style preference to weigh.
 
 ## Resume summary
 
-Every resume gets a 3-4 sentence `Summary`: who you are (title and years),
-what you do professionally, who or what you support with it, and optionally
-one standout highlight. Open with the title and years directly
-(`Full-stack software engineer with four years...`) — no `I am a` wind-up;
-first person is fine in the sentences that follow. Years are computed from the
-evidence, never echoed from the posting's stated minimum. Never an objective
-statement — the application already says what role is sought. Ban filler
-self-praise (`results-oriented`, `proven track record`); every adjective
-should reveal working style, every noun should be an evidence-backed keyword.
+Every resume gets a `Summary` of 3-4 sentences, roughly 60-100 words: an
+elevator pitch, not an objective statement — the application already says
+what role is sought. It carries who you are (title and years), what you do
+professionally, and the one or two most impressive posting-relevant proofs:
+a measured result, recognition, a problem solved. Open with the title and
+years directly (`Full-stack software engineer with four years...`) — no
+`I am a` wind-up; first person is fine in the sentences that follow. Years
+are computed from the evidence, never echoed from the posting's stated
+minimum. Ban filler self-praise (`results-oriented`, `proven track record`);
+every adjective should reveal working style, every noun should be an
+evidence-backed keyword.
 
 ## Resume bullets
 
-Prefer this flexible structure:
+The test every bullet must pass: **what happened as a result of what I did?**
+A bullet that cannot answer it is a duty, not an accomplishment — rewrite it
+around its result or remove it. `Managed a customer service team` tells the
+reader what the job was; `Led a 10-person customer service team, cutting
+escalation rates 30%` tells them why it mattered.
 
-```text
-Action and ownership + product or technical scope + verified result + relevant mechanism
-```
+Structure each bullet as **Action + How + Impact**: what you did with its
+honest ownership word, the mechanism or skill applied, and the verified
+result. Lead with the result instead when the number is the differentiator.
+Do not force every bullet into the same shape.
 
-Do not force every bullet into the same order. Put the strongest differentiator first.
+Impact is not only revenue. Three levels all count, and each maps onto an
+ownership class without upgrading it: **direct** (you moved the goal),
+**prerequisite** (your work enabled the result), **building block** (you
+built what others used to get the result). A supporting contribution framed
+as the building block it was reads stronger than one dressed up as ownership.
+
+Chase a number through four lenses before settling for a qualitative bullet:
+growth or increase, reduction, volume or scope, time saved. The evidence
+notes are where numbers live; when a note has none, that is an interview
+question for the note, never a resume-time estimate. Every number keeps its
+claim class and its denominator.
 
 Keep bullets independently understandable. Avoid pronouns, dense feature inventories, internal acronyms without context, and claims such as `significantly improved` without supporting evidence.
 
@@ -49,9 +66,13 @@ bullet that needs a semicolon to hold a second achievement is two bullets, or
 a cut.
 
 Discipline per role: 5-7 bullets for recent relevant roles, the majority
-accomplishments rather than duties. Older or less relevant roles get fewer
-bullets, a single line, or a bare listing with no bullets — dropping a role
-entirely is fine unless it creates an unexplained gap.
+accomplishments rather than duties, the most posting-relevant bullet first.
+Present tense for the current role, past tense everywhere else. Older or less
+relevant roles get fewer bullets, a single line, or a bare listing with no
+bullets — dropping a role entirely is fine unless it creates an unexplained
+gap. When the employer is not self-explanatory, give the role one clause of
+context (what the company does, for whom, at what scale) — the reader cannot
+weigh the work without knowing the arena.
 
 Vary the opening verbs — a column of `Led… Led… Built… Built…` reads as
 padding. Choose the verb by ownership class first, then for variety. The bank
@@ -83,6 +104,20 @@ phrase `References available upon request` — references are provided when
 asked, per their own consent records. Hobbies earn space only when distinctive
 and approved in `About Me.md`.
 
+## Titles, gaps, and history
+
+- Never list a title that was not held. Two positions at one company combine
+  under a single title when the scope is similar; otherwise list them
+  separately. An internal promotion is worth stating outright — it is
+  verification the employer already did.
+- Employment gaps are handled transparently: a plain line with dates
+  (`Personal leave of absence | 2023`) beats an unexplained hole.
+- No skill self-ratings (`advanced`, `expert`, `7/10`). Listing a skill
+  asserts working proficiency backed by the Skill Matrix; anything weaker
+  stays off.
+- Education sits below experience once there is experience worth more, and a
+  GPA appears only when recent and above 3.5.
+
 ## ATS readability
 
 - Use conventional section names such as `Summary`, `Experience`, `Education`, and `Technical Skills`.
@@ -99,7 +134,11 @@ and approved in `About Me.md`.
   or two words in the Summary — their real home is the cover letter, where an
   example can back them.
 - Name tools and technologies exactly (`Angular`, `Snowflake`) — recruiters
-  search keywords, not descriptions like `modern frontend frameworks`.
+  search keywords, not descriptions like `modern frontend frameworks`. List
+  certifications exactly as the posting spells them.
+- The recruiter test: for each requirement in the posting, time how long the
+  resume takes to answer it. Anything that takes digging moves up or gets
+  restated in the posting's own terms.
 - Final keyword pass: before rendering, re-read the posting's material terms
   against `Analysis.md`'s fit-by-term classification. Every directly supported
   term the draft omits is a finding; every unsupported term the draft contains

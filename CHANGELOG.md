@@ -5,6 +5,15 @@ loosely; versions are git tags.
 
 ## Unreleased
 
+- Resume standards rebuilt around collected professional advice (three
+  writer/recruiter guides, distilled into the vault's Resources): the
+  result test on every bullet, Action + How + Impact structure, the
+  top-three-goals selection lens and eight impact areas, three levels of
+  impact mapped onto ownership classes, four quantification lenses bounded
+  by the claim classes, tense rules, per-role context, the recruiter
+  find-it-fast test, and gap/title/self-rating rules. The `cross-check`
+  skill gains a four-persona review panel: resume and cover letter pro,
+  recruiter, hiring manager, and coach.
 - Resume directions tightened: each rule now lives in exactly one file, the
   header is copied verbatim from `Contact.md` (no more per-application name
   and location drift), the summary opens with title and computed years, one

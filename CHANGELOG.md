@@ -5,6 +5,14 @@ loosely; versions are git tags.
 
 ## Unreleased
 
+- Leads (#15): a pre-application pipeline stage. One small note per lead in
+  `Leads/` (company alone is enough), created from the dashboard's new Leads
+  view or `new_lead.py`, with an Obsidian Base table view. Promotion
+  (`new_application.py --from-lead` or the Promote button) scaffolds the
+  application and links back; passed leads keep their reason as funnel data.
+- New `compensation_requested` field on the application brief: what you
+  actually asked for, when, and where, so an interview never has to
+  reconstruct it from memory.
 - Schema-driven scaffold forms (#13): dashboard forms are now generated from
   `FORMS` in `schema.py` via `/api/schema`, and two new scaffolds join the
   API and CLI — `new_role.py` and `new_accomplishment.py` create evidence

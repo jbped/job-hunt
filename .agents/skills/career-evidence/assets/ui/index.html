@@ -103,6 +103,17 @@
   img.proof { width: 100%; border: 1px solid var(--line); border-radius: 8px; margin-top: 10px; }
   .stack > * + * { margin-top: 8px; }
 
+  /* Pipeline board: one column per status, scrolling sideways as one unit so a
+     long pipeline never reflows the page. */
+  .board { display: flex; gap: 12px; overflow-x: auto; align-items: flex-start;
+           padding-bottom: 10px; }
+  .board .col { flex: 0 0 250px; background: var(--panel); border: 1px solid var(--line);
+                border-radius: var(--radius); padding: 10px 12px; min-height: 80px; }
+  .board .col.drop { outline: 2px dashed var(--brand); outline-offset: -2px; }
+  .board .bcard { border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px;
+                  margin-top: 8px; background: var(--bg); cursor: grab; }
+  .board .bcard select { margin-top: 6px; font-size: 12px; padding: 3px 6px; }
+
   /* Split view: pickers and metadata on the left, one document on the right.
      The rail scrolls independently so a long document never pushes the
      navigation off-screen. */
@@ -236,6 +247,7 @@
     <button data-view="now" aria-current="true">Now</button>
     <button data-view="leads">Leads</button>
     <button data-view="applications">Applications</button>
+    <button data-view="board">Board</button>
     <button data-view="calendar">Interviews</button>
     <button data-view="people">People</button>
     <button data-view="evidence">Evidence</button>
@@ -274,6 +286,17 @@
       <aside class="rail" id="rail"></aside>
       <div class="viewer" id="viewer"></div>
     </div>
+  </section>
+
+  <section data-view="board">
+    <div class="actionbar">
+      <label class="hint" style="display:flex;gap:6px;align-items:center;margin:0;font-weight:400">
+        <input type="checkbox" id="boardTerminal" style="width:auto"> show terminal statuses
+      </label>
+      <span class="hint">Drag a card between columns to change status; the select on
+        each card does the same.</span>
+    </div>
+    <div id="board" class="board"></div>
   </section>
 
   <section data-view="calendar">
@@ -881,6 +904,69 @@ async function renderViewer() {
   }
 }
 
+// -- Board ----------------------------------------------------------------
+// Applications as columns by status. Dragging a card writes through the same
+// /api/field path as any other status edit; a fingerprint conflict toasts and
+// refreshes, exactly like field editing.
+
+let BOARD_TERMINAL = false;
+
+async function moveCard(app, status) {
+  if (!app || app.status === status) return;
+  try {
+    const result = await save(app.brief, "status", status, app.fingerprint);
+    app.fingerprint = result.fingerprint;
+    toast("Saved");
+  } catch (error) {
+    toast(error.message, "error");
+  }
+  await refresh();
+}
+
+function boardCard(app) {
+  const applied = app.date_applied ? days(app.date_applied, today()) : null;
+  const overdue = app.next_action_date && app.next_action_date < today();
+  const select = el("select", {}, ...SCHEMA.status.map(s =>
+    el("option", { value: s, selected: s === app.status }, s)));
+  select.addEventListener("change", () => moveCard(app, select.value));
+  const card = el("div", { className: "bcard", draggable: true },
+    el("div", {}, el("a", { href: "#", className: "title",
+        onclick: e => { e.preventDefault(); openDetail(app.path); } },
+      `${app.company} — ${app.position}`)),
+    el("div", { className: "muted" },
+       [applied != null ? `${applied}d since applied` : null, app.next_action]
+         .filter(Boolean).join(" · ")),
+    overdue ? el("div", {},
+      el("span", { className: "pill bad" }, `overdue ${app.next_action_date}`)) : null,
+    select);
+  card.addEventListener("dragstart",
+    e => e.dataTransfer.setData("text/app-path", app.path));
+  return card;
+}
+
+function renderBoard() {
+  const host = $("#board"); host.textContent = "";
+  const statuses = SCHEMA.status.filter(
+    s => BOARD_TERMINAL || !SCHEMA.terminal.includes(s));
+  for (const status of statuses) {
+    const group = DATA.applications.filter(a => a.status === status);
+    const col = el("div", { className: "col" },
+      el("div", { className: "row" }, statusPill(status),
+         el("span", { className: "muted" }, String(group.length))));
+    col.addEventListener("dragover", e => { e.preventDefault(); col.classList.add("drop"); });
+    col.addEventListener("dragleave", () => col.classList.remove("drop"));
+    col.addEventListener("drop", e => {
+      e.preventDefault();
+      col.classList.remove("drop");
+      const app = DATA.applications.find(
+        a => a.path === e.dataTransfer.getData("text/app-path"));
+      moveCard(app, status);
+    });
+    for (const app of group) col.append(boardCard(app));
+    host.append(col);
+  }
+}
+
 // -- Leads ----------------------------------------------------------------
 // Pre-application interest. Open leads carry their editors; promoted and
 // passed ones read as history.
@@ -1375,6 +1461,7 @@ function render() {
   if (VIEW === "now") renderNow();
   else if (VIEW === "leads") renderLeads();
   else if (VIEW === "applications") renderApplications();
+  else if (VIEW === "board") renderBoard();
   else if (VIEW === "calendar") renderCalendar();
   else if (VIEW === "people") renderPeople();
   else if (VIEW === "evidence") renderEvidence();
@@ -1388,6 +1475,10 @@ $("#addPerson").addEventListener("click", addPerson);
 $("#addRole").addEventListener("click", () => formModal("role"));
 $("#addAccomplishment").addEventListener("click", () => formModal("accomplishment"));
 $("#addLead").addEventListener("click", () => formModal("lead"));
+$("#boardTerminal").addEventListener("change", (e) => {
+  BOARD_TERMINAL = e.target.checked;
+  render();
+});
 
 // Live updates. The vault is edited outside this page — Obsidian, the agent,
 // the scripts — so poll a stat-only digest and refetch when it moves. Never

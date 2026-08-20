@@ -319,6 +319,10 @@
     </div>
     <h2>People</h2>
     <div id="people"></div>
+    <h2>Introductions</h2>
+    <p class="muted">Chains built from each person's <code>via</code> field:
+      target ← the person whose introduction makes them reachable.</p>
+    <div id="network"></div>
     <h2>Application contacts</h2>
     <p class="muted">Per-application involvement, recorded in each application's
       Contacts note. The person's own details live on their People note.</p>
@@ -1162,6 +1166,8 @@ function renderPeople() {
     byFolder.get(folderName).forEach(person => people.append(personCard(person)));
   }
 
+  renderNetwork();
+
   const contacts = $("#contacts"); contacts.textContent = "";
   if (!DATA.contacts.length) {
     contacts.append(el("div", { className: "empty" },
@@ -1176,6 +1182,63 @@ function renderPeople() {
         el("td", {}, c.company),
         el("td", {}, el("span", { className: "muted" }, c.next_follow_up || "—")),
         el("td", {}, obsidian(c.note))))))));
+  }
+}
+
+// Introduction chains from `via` wikilinks: target ← via ← connector, walked
+// until the chain ends, goes missing, or loops. A via naming no People note is
+// listed rather than dropped — a dangling chain is a note waiting to be made.
+function renderNetwork() {
+  const host = $("#network"); host.textContent = "";
+  const byLeaf = new Map();
+  for (const p of DATA.people) {
+    byLeaf.set(String(p.name).toLowerCase(), p);
+    byLeaf.set(p.path.replace(/\.md$/, "").split("/").pop().toLowerCase(), p);
+  }
+  const resolveVia = (value) => {
+    const leaf = String(inlineText(value) || "").toLowerCase();
+    return leaf ? byLeaf.get(leaf) : null;
+  };
+
+  const chains = [], dangling = [];
+  for (const person of DATA.people.filter(p => p.via)) {
+    const chain = [person];
+    const seen = new Set([person.path]);
+    let current = person, missing = null;
+    while (current && current.via) {
+      const next = resolveVia(current.via);
+      if (!next) { missing = inlineText(current.via); break; }
+      if (seen.has(next.path)) break;
+      chain.push(next);
+      seen.add(next.path);
+      current = next;
+    }
+    (missing ? dangling : chains).push({ chain, missing });
+  }
+
+  if (!chains.length && !dangling.length) {
+    host.append(el("div", { className: "empty" },
+      "No introduction chains yet. Set “Via” on a person to record who the "
+      + "introduction runs through."));
+    return;
+  }
+  for (const { chain } of chains) {
+    host.append(el("div", { className: "card row" },
+      el("span", { className: "grow title" }, chain.map(p => p.name).join(" ← ")),
+      ...(chain[0].relationships || []).map(r => el("span", { className: "pill" }, r)),
+      obsidian(chain[0].path)));
+  }
+  if (dangling.length) {
+    host.append(el("div", { className: "group-label" }, "Missing connector notes"));
+    for (const { chain, missing } of dangling) {
+      host.append(el("div", { className: "card row" },
+        el("span", { className: "grow" },
+          el("span", { className: "title" },
+             `${chain.map(p => p.name).join(" ← ")} ← ${missing}`),
+          el("div", { className: "muted" },
+             `“${missing}” has no People note yet — add one so the chain resolves.`)),
+        obsidian(chain[0].path)));
+    }
   }
 }
 

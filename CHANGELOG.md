@@ -5,6 +5,16 @@ loosely; versions are git tags.
 
 ## Unreleased
 
+- Schema-driven scaffold forms (#13): dashboard forms are now generated from
+  `FORMS` in `schema.py` via `/api/schema`, and two new scaffolds join the
+  API and CLI — `new_role.py` and `new_accomplishment.py` create evidence
+  notes with open Questions sections, so forms create structure and
+  interviews create facts.
+- Edit flows for person fields (#14): `company_context`, `via`,
+  `next_follow_up`, and `last_contact` are editable from a person card.
+  The person-level follow-up dates carry the relationship's own cadence,
+  distinct from per-application contact follow-ups.
+- The application Details card now includes the stated experience level.
 - Product scaffolding: roadmap, contributing guide, changelog, issue and PR
   templates.
 - Release workflow now triggers on plain `X.Y.Z` tags (previous tags never

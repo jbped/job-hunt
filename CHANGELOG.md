@@ -5,6 +5,10 @@ loosely; versions are git tags.
 
 ## Unreleased
 
+- Applications and interviews are visibly associated: the application rail
+  gains an Interviews card (status pills, one click to each note, Schedule
+  interview beside them), and interview cards in the Interviews tab and the
+  now view link back to their application.
 - Wikilinks navigate inside the dashboard: `[[...]]` in any rendered note is
   now a real link. `GET /api/resolve` translates the target the way Obsidian
   would (vault-relative path first, then vault-wide name match, shortest path

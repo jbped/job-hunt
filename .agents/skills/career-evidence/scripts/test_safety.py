@@ -339,6 +339,21 @@ class SafetyTest(unittest.TestCase):
             serve.create_application(
                 self.vault, {"lead": "Applications/Promoco/Tester/Analysis.md"})
 
+    def test_wikilink_resolution_is_bounded(self):
+        with self.assertRaises(serve.RequestError):  # escape attempts refused
+            serve.resolve_wikilink(self.vault, "../outside")
+        with self.assertRaises(serve.RequestError):  # empty after stripping
+            serve.resolve_wikilink(self.vault, "#section")
+        with self.assertRaises(serve.RequestError):
+            serve.resolve_wikilink(self.vault, "No Such Note Anywhere")
+        # Full vault-relative path, with alias and anchor stripped.
+        result = serve.resolve_wikilink(
+            self.vault, "Applications/Testco/Tester/Analysis#Fit|the analysis")
+        self.assertEqual(result["path"], "Applications/Testco/Tester/Analysis.md")
+        # Bare-name fallback, the way Obsidian resolves short links.
+        result = serve.resolve_wikilink(self.vault, "Sam Test")
+        self.assertEqual(result["path"], "People/Network/Sam Test.md")
+
     def test_note_save_is_guarded(self):
         analysis = self.app / "Analysis.md"
         rel = str(analysis.relative_to(self.vault))

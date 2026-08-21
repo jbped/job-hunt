@@ -89,6 +89,8 @@
     background: var(--panel); color: var(--ink); max-width: 560px; width: 92vw;
   }
   dialog::backdrop { background: rgba(0,0,0,.45); }
+  #noteOverlay { max-width: 760px; }
+  #noteOverlayBody { max-height: 78vh; overflow-y: auto; }
   #toast {
     position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
     background: var(--ink); color: var(--bg); padding: 10px 18px; border-radius: 8px;
@@ -239,7 +241,9 @@
   .note-body .wikilink {
     color: var(--brand); background: var(--brand-soft);
     padding: 1px 6px; border-radius: 4px; font-size: 13px;
+    text-decoration: none; cursor: pointer;
   }
+  .note-body .wikilink:hover { text-decoration: underline; }
   .note-foot {
     display: flex; gap: 12px; align-items: center; flex-wrap: wrap;
     margin-top: 16px; padding-top: 10px; border-top: 1px dashed var(--line);
@@ -352,6 +356,7 @@
 </main>
 
 <dialog id="modal"><form method="dialog" id="modalForm"></form></dialog>
+<dialog id="noteOverlay"><div id="noteOverlayBody"></div></dialog>
 <div id="toast"></div>
 
 <script>
@@ -433,10 +438,15 @@ function inline(text) {
   const code = [];
   let out = escapeHtml(text)
     .replace(/`([^`]+)`/g, (_, body) => `\u0000${code.push(body) - 1}\u0000`);
+  // Wikilinks become real links; a delegated click handler resolves them
+  // server-side and routes inside the app. Text is already HTML-escaped, so
+  // the target is attribute-safe as-is.
+  const wikilink = (target, label) =>
+    `<a href="#" class="wikilink" data-wikilink="${target.trim()}">${label}</a>`;
   out = out
-    .replace(/\[\[([^\]|]+)\|([^\]]+)\]\]/g, "$2")
+    .replace(/\[\[([^\]|]+)\|([^\]]+)\]\]/g, (_, target, label) => wikilink(target, label))
     .replace(/\[\[([^\]]+)\]\]/g, (_, target) =>
-      `<span class="wikilink">${target.split("/").pop()}</span>`)
+      wikilink(target, target.split("#")[0].split("/").pop().trim()))
     .replace(/\[([^\]]+)\]\((https?:[^)\s]+)\)/g,
       '<a href="$2" target="_blank" rel="noreferrer">$1</a>')
     .replace(/(^|[\s(])(https?:\/\/[^\s<)]+)/g,
@@ -587,6 +597,67 @@ function noteFoot(path, body, note, rerender) {
   foot.append(obsidian(path));
   return foot;
 }
+
+/** The wikilink translation layer: resolve the target server-side the way
+ *  Obsidian would, then route inside the app — files open directly,
+ *  application documents open in the split view, everything else opens in
+ *  the note overlay. */
+async function openWikilink(target) {
+  let resolved;
+  try {
+    resolved = await api(`/api/resolve?link=${encodeURIComponent(target)}`);
+  } catch (error) {
+    toast(error.message, "error");
+    return;
+  }
+  const path = resolved.path;
+  if (/\.(png|jpe?g|pdf)$/i.test(path)) {
+    window.open(`/file/${encodeURI(path)}`, "_blank");
+    return;
+  }
+  const app = (DATA.applications || []).find(a => path.startsWith(a.path + "/"));
+  if (app) {
+    if ($("#noteOverlay").open) $("#noteOverlay").close();
+    CURRENT = app;
+    DOC = { label: path.split("/").pop().replace(/\.md$/, ""), path, kind: "note" };
+    show("applications");
+    return;
+  }
+  openNoteOverlay(path);
+}
+
+/** A lightbox for notes that have no view of their own (people, evidence,
+ *  leads). Rendered like any note, edit buffer included; wikilinks inside it
+ *  keep navigating in place. */
+async function openNoteOverlay(path) {
+  const dialog = $("#noteOverlay"), host = $("#noteOverlayBody");
+  async function load() {
+    host.textContent = "";
+    const body = el("div", { className: "note-body" });
+    host.append(
+      el("div", { className: "row" },
+        el("span", { className: "title grow" },
+          path.split("/").pop().replace(/\.md$/, "")),
+        el("button", { className: "btn", onclick: () => dialog.close() }, "Close")),
+      body);
+    try {
+      const note = await api(`/api/note?path=${encodeURIComponent(path)}`);
+      body.innerHTML = markdown(note.text);
+      body.append(noteFoot(path, body, note, load));
+    } catch (error) {
+      body.append(el("div", { className: "banner bad" }, error.message));
+    }
+  }
+  await load();
+  if (!dialog.open) dialog.showModal();
+}
+
+document.addEventListener("click", (event) => {
+  const link = event.target.closest("a[data-wikilink]");
+  if (!link) return;
+  event.preventDefault();
+  openWikilink(link.dataset.wikilink);
+});
 
 function obsidian(path) {
   const url = `obsidian://open?vault=${encodeURIComponent(SCHEMA.vault_name)}`

@@ -5,6 +5,12 @@ loosely; versions are git tags.
 
 ## Unreleased
 
+- Wikilinks navigate inside the dashboard: `[[...]]` in any rendered note is
+  now a real link. `GET /api/resolve` translates the target the way Obsidian
+  would (vault-relative path first, then vault-wide name match, shortest path
+  wins) and the click routes in place — application documents open in the
+  split view, images and PDFs open as files, and everything else (people,
+  evidence, leads) opens in a note overlay with the edit buffer available.
 - Interviews redesigned as one note per interview: `Applications/<Co>/<Role>/
   Interviews/<date> <time> <stage>.md` with `type: interview` frontmatter
   (`status: scheduled | completed | cancelled`, when, stage, method, people)

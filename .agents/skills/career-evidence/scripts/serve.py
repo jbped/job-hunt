@@ -262,6 +262,34 @@ def read_note(vault: Path, relative: str) -> dict:
     }
 
 
+def resolve_wikilink(vault: Path, target: str) -> dict:
+    """Resolve an Obsidian-style `[[wikilink]]` target to a vault-relative path.
+
+    Tries the target as a vault-relative path first (with and without `.md`),
+    then falls back to the vault-wide name match Obsidian uses, preferring the
+    shortest path when several notes share a name.
+    """
+    target = target.split("#", 1)[0].split("|", 1)[0].strip().strip("/")
+    if not target:
+        raise RequestError(400, "no link given")
+    for candidate in (vault / target, vault / f"{target}.md"):
+        resolved = candidate.resolve()
+        try:
+            resolved.relative_to(vault.resolve())
+        except ValueError:
+            raise RequestError(403, "link points outside the vault")
+        if resolved.is_file():
+            return {"path": str(resolved.relative_to(vault.resolve()))}
+    leaf = target.rsplit("/", 1)[-1]
+    matches = [p for p in [*vault.rglob(f"{leaf}.md"), *vault.rglob(leaf)]
+               if p.is_file()
+               and ".cache" not in p.parts and ".obsidian" not in p.parts]
+    if not matches:
+        raise RequestError(404, f"nothing in the vault matches [[{target}]]")
+    best = min(matches, key=lambda p: (len(p.parts), str(p)))
+    return {"path": str(best.relative_to(vault))}
+
+
 def append_entry(vault: Path, payload: dict) -> dict:
     """Append a contact or interview block, composed the same way a person would."""
     target = resolve(vault, payload.get("path", ""))
@@ -683,6 +711,10 @@ class Handler(BaseHTTPRequestHandler):
             elif route == "/api/note":
                 query = urllib.parse.parse_qs(parsed.query)
                 self._json(read_note(self.vault, (query.get("path") or [""])[0]))
+            elif route == "/api/resolve":
+                query = urllib.parse.parse_qs(parsed.query)
+                self._json(resolve_wikilink(self.vault,
+                                            (query.get("link") or [""])[0]))
             elif route == "/api/audit":
                 report = audit_vault.audit(self.vault)
                 self._json({"errors": report.errors, "warnings": report.warnings})

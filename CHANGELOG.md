@@ -5,6 +5,12 @@ loosely; versions are git tags.
 
 ## Unreleased
 
+- Browser extension MVP (#17): `extension/` holds a plain no-build MV3
+  Chrome/Firefox add-on — click it on a posting, name the company and role,
+  and the page's visible text (or your selection) is POSTed to the local
+  dashboard as an application capture or a lead. No site detection by
+  design. The server answers CORS preflights for extension origins only, on
+  POST routes only, so no extension can read the vault.
 - Capture endpoint (#18): `POST /api/capture` scaffolds an application and
   stores the checksummed verbatim posting in one call, through the same
   `new_application` + `capture_jd` path the CLI uses; `mode: lead` files a

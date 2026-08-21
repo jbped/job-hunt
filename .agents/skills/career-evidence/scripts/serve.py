@@ -645,6 +645,12 @@ class Handler(BaseHTTPRequestHandler):
         self.send_header("Content-Type", content_type)
         self.send_header("Content-Length", str(len(body)))
         self.send_header("Cache-Control", "no-store")
+        # POST answers are readable by the extension that sent them; GETs are
+        # not token-gated and stay same-origin so no extension can read the vault.
+        if self.command == "POST":
+            origin = self._extension_origin()
+            if origin:
+                self.send_header("Access-Control-Allow-Origin", origin)
         self.end_headers()
         self.wfile.write(body)
 
@@ -714,6 +720,30 @@ class Handler(BaseHTTPRequestHandler):
             raise RequestError(403, "only images and PDFs are served")
         kind = mimetypes.guess_type(target.name)[0] or "application/octet-stream"
         self._send(200, target.read_bytes(), kind)
+
+    def _extension_origin(self) -> str:
+        """The request's Origin when it is a browser extension, else ''."""
+        origin = self.headers.get("Origin") or ""
+        scheme = urllib.parse.urlparse(origin).scheme
+        return origin if scheme in ("chrome-extension", "moz-extension",
+                                    "safari-web-extension") else ""
+
+    def do_OPTIONS(self) -> None:
+        # CORS preflight, answered for extension origins only, so the extension
+        # works even when the browser did not grant it host permissions. This
+        # only unlocks the browser's willingness to send the request — the
+        # session token still gates every write.
+        origin = self._extension_origin()
+        if not origin:
+            self._json({"error": "cross-origin writes are not allowed"}, 403)
+            return
+        self.send_response(204)
+        self.send_header("Access-Control-Allow-Origin", origin)
+        self.send_header("Access-Control-Allow-Methods", "POST")
+        self.send_header("Access-Control-Allow-Headers",
+                         "Content-Type, X-Session-Token")
+        self.send_header("Access-Control-Max-Age", "600")
+        self.end_headers()
 
     def do_POST(self) -> None:
         route = urllib.parse.urlparse(self.path).path

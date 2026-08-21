@@ -1,0 +1,41 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+  body { font: 13px/1.45 system-ui, sans-serif; margin: 0; width: 320px; }
+  main { padding: 12px 14px 14px; }
+  h1 { font-size: 14px; margin: 0 0 10px; }
+  label { display: block; margin: 8px 0 2px; color: #555; }
+  input[type=text] { width: 100%; box-sizing: border-box; padding: 5px 7px;
+    border: 1px solid #ccc; border-radius: 5px; font: inherit; }
+  .modes { display: flex; gap: 12px; margin: 10px 0 4px; }
+  .modes label { display: flex; gap: 5px; margin: 0; align-items: center; color: inherit; }
+  button { margin-top: 12px; width: 100%; padding: 7px; border: 0; border-radius: 6px;
+    background: #2557a7; color: #fff; font: inherit; font-weight: 600; cursor: pointer; }
+  button:disabled { opacity: .6; cursor: default; }
+  #status { margin-top: 10px; min-height: 1.3em; word-break: break-word; }
+  #status.ok { color: #1a7f37; }
+  #status.bad { color: #b42318; }
+  .meta { color: #777; margin-top: 8px; }
+  a { color: #2557a7; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Capture this posting</h1>
+  <label for="company">Company</label>
+  <input type="text" id="company" autocomplete="off">
+  <label for="position">Position</label>
+  <input type="text" id="position" autocomplete="off">
+  <div class="modes">
+    <label><input type="radio" name="mode" value="application" checked> Application</label>
+    <label><input type="radio" name="mode" value="lead"> Lead only</label>
+  </div>
+  <button id="capture">Capture</button>
+  <div id="status"></div>
+  <div class="meta" id="meta"></div>
+</main>
+<script src="popup.js"></script>
+</body>
+</html>

@@ -105,6 +105,15 @@ python scripts/render_pdf.py --app <folder> --kind resume
 python scripts/audit_vault.py              # check structure, vocabulary, evidence
 ```
 
+## Capture from the browser
+
+The `extension/` directory holds a small Chrome/Firefox extension: on a job
+posting, click it, name the company and role, and the page's text lands in
+your vault as a checksummed verbatim capture with the application scaffolded
+around it (or as a lightweight lead). It talks to the local dashboard and
+pairs with the per-session token behind the dashboard's **Pair extension**
+button — see [extension/README.md](extension/README.md).
+
 ## What's in the repo
 
 - `.agents/skills/` — the canonical skills: the `career-evidence` core and the
@@ -112,6 +121,7 @@ python scripts/audit_vault.py              # check structure, vocabulary, eviden
   inside it. `.claude/skills/` symlinks these for Claude Code. (Windows: git
   needs Developer Mode and `git config core.symlinks true` to recreate
   symlinks, or use the release zip, which contains real files.)
+- `extension/` — the browser capture extension, a plain no-build MV3 add-on.
 - `vault/` — your data, if you chose the default location. Yours, gitignored.
 - Your vault's `Preferences/` folder — standing instructions for the agent:
   tone, formatting tastes, workflow defaults.

@@ -425,6 +425,27 @@ class SafetyTest(unittest.TestCase):
                                    "Origin": "chrome-extension://abcdefgh"}), 403)
             self.assertEqual(post({**json_type, "Origin": "chrome-extension://abcdefgh",
                                    "X-Session-Token": "test-token-value"}), 404)
+
+            def preflight(headers):
+                request = urllib.request.Request(
+                    f"http://127.0.0.1:{port}/api/capture",
+                    headers=headers, method="OPTIONS")
+                try:
+                    return urllib.request.urlopen(request).status
+                except urllib.error.HTTPError as error:
+                    return error.code
+
+            self.assertEqual(preflight({"Origin": "moz-extension://abcdefgh"}), 204)
+            self.assertEqual(preflight({"Origin": "http://evil.example"}), 403)
+            self.assertEqual(preflight({}), 403)
+
+            # GETs are not token-gated, so no extension may be allowed to read
+            # them cross-origin — the CORS header appears on POST answers only.
+            request = urllib.request.Request(
+                f"http://127.0.0.1:{port}/api/schema",
+                headers={"Origin": "chrome-extension://abcdefgh"})
+            with urllib.request.urlopen(request) as response:
+                self.assertIsNone(response.headers.get("Access-Control-Allow-Origin"))
         finally:
             server.shutdown()
             server.server_close()

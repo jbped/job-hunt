@@ -120,6 +120,10 @@ INTERVIEW_STAGE = [
 
 INTERVIEW_METHOD = ["phone", "video", "onsite", "async", "unknown"]
 
+# One note per interview. Completion is a status change plus filling the
+# note's Outcome section, so it is undoable and never all-or-nothing.
+INTERVIEW_STATUS = ["scheduled", "completed", "cancelled"]
+
 REFERENCE_PERMISSION = ["confirmed", "requested", "prospective", "declined"]
 
 # Trust-descending disclosure levels for contact details. `self` never leaves
@@ -161,6 +165,7 @@ ENUMS = {
 STATUS_BY_TYPE = {
     "application": APPLICATION_STATUS,
     "lead": LEAD_STATUS,
+    "interview": INTERVIEW_STATUS,
     "role": ROLE_STATUS,
     "accomplishment": ACCOMPLISHMENT_STATUS,
     "submission": SUBMISSION_STATUS,
@@ -273,10 +278,21 @@ NOTE_TYPES = {
         "required": ["type", "company", "position"],
         "optional": ["tags"],
     },
-    "application-interviews": {
-        "file": "Interviews.md",
-        "required": ["type", "company", "position"],
-        "optional": ["tags"],
+    # One note per interview, in the application's Interviews/ folder. The
+    # structured fields live here so the dashboard can edit them in place;
+    # Preparation and Outcome are body prose.
+    "interview": {
+        "required": ["type", "company", "position", "status", "when"],
+        "optional": [
+            "stage",
+            "method",
+            "location_or_link",
+            "point_of_contact",
+            "interviewers",
+            "thank_you_sent",
+            "next_step",
+            "tags",
+        ],
     },
 }
 
@@ -322,6 +338,17 @@ UI_EDITABLE = {
         "source",
         "next_follow_up",
         "passed_reason",
+    ],
+    "interview": [
+        "status",
+        "when",
+        "stage",
+        "method",
+        "location_or_link",
+        "point_of_contact",
+        "interviewers",
+        "thank_you_sent",
+        "next_step",
     ],
 }
 

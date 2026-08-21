@@ -23,7 +23,7 @@ BULLET = re.compile(r"^\s*-\s+([^:]+):\s*(.*)$")
 
 # Headings that document the note's own format rather than holding data. The
 # templates keep a worked example so a hand-editor knows the shape; without this
-# the example would index as a phantom contact or interview.
+# the example would index as a phantom contact.
 IGNORED_HEADINGS = {"entry format", "name", "full name", "company | position"}
 PLACEHOLDER = re.compile(r"^(YYYY|<|\{\{)", re.IGNORECASE)
 
@@ -39,9 +39,9 @@ def _display_name(title: str) -> str:
 def _entries(text: str, under: str | None = None) -> list[dict]:
     """Parse `## Name` / `### Name` blocks of `- Field: value` bullets.
 
-    Contacts, interviews, and reference logs all share this shape, so one
-    parser covers them. Returns [] for the placeholder text the templates ship
-    with ("No upcoming interviews recorded.").
+    Contacts and reference logs share this shape, so one parser covers them.
+    Returns [] for the placeholder text the templates ship with
+    ("No contacts recorded.").
     """
     lines = text.split("\n")
     start, level = 0, 2
@@ -79,23 +79,6 @@ def _entries(text: str, under: str | None = None) -> list[dict]:
             key = match.group(1).strip().lower().replace(" ", "_")
             current["fields"][key] = match.group(2).strip()
     return [e for e in out if e["fields"]]
-
-
-def _interview(entry: dict, app: dict, upcoming: bool) -> dict:
-    """Split a `YYYY-MM-DD HH:mm TZ | Stage` heading into date and stage."""
-    title = entry["title"]
-    date, stage = (title.split("|", 1) + [""])[:2] if "|" in title else (title, "")
-    date = date.strip()
-    return {
-        "company": app["company"],
-        "position": app["position"],
-        "application": app["path"],
-        "when": date,
-        "date": date.split(" ")[0] if date else "",
-        "stage": stage.strip(),
-        "upcoming": upcoming,
-        **entry["fields"],
-    }
 
 
 def build(vault: Path) -> dict:
@@ -144,7 +127,7 @@ def build(vault: Path) -> dict:
         app["tags"] = fm.get("tags") or []
 
         for name in ("Analysis.md", "Job Description.md", "Contacts.md",
-                     "Interviews.md", "Draft - Resume.md", "Draft - Cover Letter.md",
+                     "Draft - Resume.md", "Draft - Cover Letter.md",
                      "Submission Notes.md"):
             if (folder / name).exists():
                 app["notes"][name[:-3]] = str((folder / name).relative_to(vault))
@@ -178,13 +161,31 @@ def build(vault: Path) -> dict:
                     **entry["fields"],
                 })
 
-        interviews_note = folder / "Interviews.md"
-        if interviews_note.exists():
-            _, itext = v.read_note(interviews_note)
-            for entry in _entries(itext, "## Upcoming"):
-                interviews.append(_interview(entry, app, True))
-            for entry in _entries(itext, "## Previous"):
-                interviews.append(_interview(entry, app, False))
+        interviews_dir = folder / "Interviews"
+        if interviews_dir.is_dir():
+            for note in sorted(interviews_dir.glob("*.md")):
+                ifm, _ = v.read_note(note)
+                if ifm.get("type") != "interview":
+                    continue
+                when = str(ifm.get("when") or "")
+                status = ifm.get("status") or "scheduled"
+                interview = {
+                    "company": app["company"],
+                    "position": app["position"],
+                    "application": rel,
+                    "path": str(note.relative_to(vault)),
+                    "fingerprint": v.fingerprint(note),
+                    "when": when,
+                    "date": when.split(" ")[0] if when else "",
+                    "status": status,
+                    # Kept for every consumer that asks "is this still ahead
+                    # of me": only a scheduled interview is.
+                    "upcoming": status == "scheduled",
+                }
+                for key in schema.NOTE_TYPES["interview"]["optional"]:
+                    if key != "tags":
+                        interview[key] = ifm.get(key)
+                interviews.append(interview)
 
         applications.append(app)
 

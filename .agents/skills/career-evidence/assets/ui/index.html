@@ -311,8 +311,8 @@
   <section data-view="calendar">
     <div class="actionbar">
       <button class="btn btn-primary" id="scheduleInterview">Schedule interview</button>
-      <span class="hint">Interviews belong to an application; completing one moves it
-        to Previous and records the outcome.</span>
+      <span class="hint">Interviews belong to an application. Set the status to
+        completed when one happens, then record the outcome in its note.</span>
     </div>
     <h2>Upcoming</h2>
     <div id="calendarUpcoming"></div>
@@ -686,7 +686,7 @@ function renderNow() {
       el("span", { className: "grow" },
         el("span", { className: "title" }, `${iv.company} — ${iv.stage || "interview"}`),
         el("div", { className: "muted" }, iv.method ? `${iv.method}` : "")),
-      obsidian(`${iv.application}/Interviews`)));
+      obsidian(iv.path)));
   }
   for (const item of queue) {
     const overdue = item.date < today();
@@ -745,7 +745,7 @@ function renderNow() {
 // means moving between the posting, the analysis, and the rendered PDF is one
 // click rather than a round trip through a list.
 
-const NOTE_ORDER = ["Job Description", "Analysis", "Contacts", "Interviews",
+const NOTE_ORDER = ["Job Description", "Analysis", "Contacts",
                     "Resume Content", "Cover Letter", "Submission Notes"];
 
 function renderApplications() {
@@ -1110,16 +1110,30 @@ function renderLeads() {
 }
 
 function interviewCard(iv) {
-  return el("div", { className: "card row" },
-    el("span", { className: `pill ${iv.upcoming ? "" : "good"}` }, iv.when || "date unknown"),
-    el("span", { className: "grow" },
-      el("span", { className: "title" }, iv.company),
-      el("div", { className: "muted" },
-         [iv.stage, iv.method, iv.interviewers].filter(Boolean).join(" · "))),
-    iv.upcoming
-      ? el("button", { className: "btn", onclick: () => completeInterview(iv) }, "Mark complete")
-      : null,
-    obsidian(`${iv.application}/Interviews`));
+  // Completion, cancellation, and undo are all the same move: a status change.
+  // Preparation and outcome prose live in the note, one edit-buffer away.
+  const select = el("select", {}, ...SCHEMA.interview_status.map(s =>
+    el("option", { value: s, selected: s === iv.status }, s)));
+  select.addEventListener("change", async () => {
+    try {
+      await save(iv.path, "status", select.value, iv.fingerprint);
+      toast(select.value === "completed"
+        ? "Completed — record the outcome in the note below" : "Saved");
+    } catch (error) { toast(error.message, "error"); }
+    await refresh();
+  });
+  const pillKind = iv.status === "completed" ? "good"
+                 : iv.status === "cancelled" ? "bad" : "";
+  return el("div", { className: "card" },
+    el("div", { className: "row" },
+      el("span", { className: `pill ${pillKind}` }, iv.when || "date unknown"),
+      el("span", { className: "grow" },
+        el("span", { className: "title" }, `${iv.company} — ${iv.position}`),
+        el("div", { className: "muted" },
+           [iv.stage, iv.method, iv.interviewers, iv.location_or_link]
+             .filter(Boolean).join(" · "))),
+      select),
+    noteViewer(iv.path, "Preparation and outcome"));
 }
 
 function renderCalendar() {
@@ -1136,7 +1150,7 @@ function renderCalendar() {
 
   const prev = $("#calendarPrevious"); prev.textContent = "";
   if (!previous.length)
-    prev.append(el("div", { className: "empty" }, "No interviews completed yet."));
+    prev.append(el("div", { className: "empty" }, "No interviews completed or cancelled yet."));
   for (const iv of previous) prev.append(interviewCard(iv));
 }
 
@@ -1491,43 +1505,17 @@ function addInterview(app) {
     { key: "point_of_contact", label: "Point of contact" },
     { key: "interviewers", label: "Interviewers" },
     { key: "location_or_link", label: "Location or link" },
-    { key: "preparation_priorities", label: "Preparation priorities", multiline: true },
   ], async (values) => {
     if (!values.when) throw new Error("A date is required.");
-    const { when, stage, application, ...fields } = values;
+    const { application, ...fields } = values;
     const appPath = app ? app.path : application;
     if (!appPath) throw new Error("Pick the application this interview belongs to.");
-    await api("/api/entry", {
+    const result = await api("/api/interview", {
       method: "POST", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        path: `${appPath}/Interviews.md`, heading: "## Upcoming",
-        title: `${when} | ${stage || "Interview"}`, fields,
-      }),
+      body: JSON.stringify({ application: appPath, ...fields }),
     });
-    toast("Interview scheduled");
+    toast(`Scheduled — preparation notes live in ${result.path}`);
   }, "Schedule");
-}
-
-function completeInterview(iv) {
-  modal(`Completed: ${iv.company}`, [
-    { key: "sentiment", label: "How did it feel?" },
-    { key: "what_went_well", label: "What went well", multiline: true },
-    { key: "concerns", label: "Concerns", multiline: true },
-    { key: "takeaways", label: "Takeaways and new role information", multiline: true },
-    { key: "commitments_or_follow_ups", label: "Commitments or follow-ups" },
-    { key: "thank_you_sent", label: "Thank-you sent" },
-    { key: "next_step", label: "Next step" },
-  ], async (fields) => {
-    await api("/api/interview/complete", {
-      method: "POST", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        path: `${iv.application}/Interviews.md`,
-        title: `${iv.when} | ${iv.stage}`.replace(/ \| $/, ""),
-        fields,
-      }),
-    });
-    toast("Moved to Previous");
-  }, "Save");
 }
 
 async function renderPdf(app, kind) {

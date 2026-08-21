@@ -9,7 +9,7 @@ become the thing you are editing.
 A closed set of write operations is allowed, and no others:
 
   1. Edit a frontmatter field the schema marks UI-editable (one line rewritten)
-  2. Append a structured entry built from a template (contact, interview, reference)
+  2. Append a structured entry built from a template (contact, reference)
   3. Create a scaffold — application, person, role, accomplishment — by calling
      the same code the CLI scripts call, so either path produces identical files
   4. Replace a note's full text through the edit buffer — guarded by the
@@ -52,6 +52,7 @@ import capture_jd
 import export_index
 import new_accomplishment
 import new_application
+import new_interview
 import new_lead
 import new_role
 import schema
@@ -181,8 +182,6 @@ def save_note(vault: Path, payload: dict) -> dict:
 # The empty-state sentence each template ships, per section. Removing the wrong
 # one leaves a sibling section looking broken, so they are matched by heading.
 PLACEHOLDERS = {
-    "## upcoming": "No upcoming interviews recorded.",
-    "## previous": "No previous interviews recorded.",
     "": "No contacts recorded.",
 }
 
@@ -263,22 +262,6 @@ def read_note(vault: Path, relative: str) -> dict:
     }
 
 
-def _section_has_entries(text: str, heading: str) -> bool:
-    """Whether a section still holds at least one `###` entry."""
-    lines = text.split("\n")
-    start = next((i for i, l in enumerate(lines)
-                  if l.strip().lower() == heading.strip().lower()), None)
-    if start is None:
-        return False
-    for line in lines[start + 1:]:
-        stripped = line.strip()
-        if stripped.startswith("## "):
-            return False
-        if stripped.startswith("### "):
-            return True
-    return False
-
-
 def append_entry(vault: Path, payload: dict) -> dict:
     """Append a contact or interview block, composed the same way a person would."""
     target = resolve(vault, payload.get("path", ""))
@@ -294,9 +277,9 @@ def append_entry(vault: Path, payload: dict) -> dict:
     fm, text = v.read_note(target)
     # Entries belong in entry-shaped notes. Anything else — the brief, an
     # evidence note — is hand-structured and not this API's to grow.
-    if target.name not in ("Contacts.md", "Interviews.md") and fm.get("type") != "person":
-        raise RequestError(403, "entries may be appended only to Contacts.md, "
-                                "Interviews.md, or a person note")
+    if target.name != "Contacts.md" and fm.get("type") != "person":
+        raise RequestError(403, "entries may be appended only to Contacts.md "
+                                "or a person note")
     expect = payload.get("fingerprint") or v.fingerprint(target)
     level = "###" if heading else "##"
     lines = [f"{level} {title}"]
@@ -324,65 +307,25 @@ def append_entry(vault: Path, payload: dict) -> dict:
     return {"changed": True, "fingerprint": fingerprint}
 
 
-def complete_interview(vault: Path, payload: dict) -> dict:
-    """Move an interview from Upcoming to Previous and append its outcome.
-
-    Defined as a structural move rather than an edit: the entry is relocated
-    verbatim and the outcome fields are added beneath it. Nothing around it is
-    reflowed, so a hand-written note survives the operation unchanged.
-    """
-    target = resolve(vault, payload.get("path", ""))
-    title = str(payload.get("title", "")).strip()
-    outcome = payload.get("fields") or {}
-
-    if target.name != "Interviews.md":
-        raise RequestError(403, "interview completion applies only to Interviews.md")
-    expect = payload.get("fingerprint") or v.fingerprint(target)
-    _, text = v.read_note(target)
-    lines = text.split("\n")
-
-    start = next((i for i, l in enumerate(lines)
-                  if l.strip().startswith("### ") and l.strip()[4:].strip() == title), None)
-    if start is None:
-        raise RequestError(404, f"no upcoming interview titled '{title}'")
-
-    end = len(lines)
-    for i in range(start + 1, len(lines)):
-        stripped = lines[i].lstrip()
-        if stripped.startswith("#") and len(stripped) - len(stripped.lstrip("#")) <= 3:
-            end = i
-            break
-    while end > start + 1 and not lines[end - 1].strip():
-        end -= 1
-
-    block = lines[start:end]
-    for key, value in outcome.items():
-        label = str(key).replace("_", " ").strip()
-        label = label[:1].upper() + label[1:]
-        block.append(f"- {label}: {str(value).strip() or 'Unknown'}")
-
-    del lines[start:end]
-    while start < len(lines) and not lines[start].strip() and \
-            (start == 0 or not lines[start - 1].strip()):
-        del lines[start]
-
-    remaining = _drop_placeholder("\n".join(lines), "## Previous")
+def create_interview(vault: Path, payload: dict) -> dict:
+    """Scaffold an interview note. Everything after creation — reschedule,
+    completion, cancellation — is a field edit or the note's own prose."""
+    app_rel = str(payload.get("application", "")).strip()
+    when = str(payload.get("when", "")).strip()
+    if not app_rel or not when:
+        raise RequestError(400, "an application and a date are both required")
     try:
-        updated = v.append_section_entry(remaining, "## Previous", "\n".join(block))
-    except ValueError as error:
+        target = new_interview.create(
+            vault, app_rel, when,
+            stage=str(payload.get("stage", "")).strip(),
+            method=str(payload.get("method", "")).strip(),
+            location=str(payload.get("location_or_link", "")).strip(),
+            contact=str(payload.get("point_of_contact", "")).strip(),
+            interviewers=str(payload.get("interviewers", "")).strip(),
+        )
+    except SystemExit as error:
         raise RequestError(400, str(error))
-
-    # If that was the last upcoming interview, put the empty-state sentence back
-    # so the section reads as deliberately empty rather than truncated.
-    if not _section_has_entries(updated, "## Upcoming"):
-        updated = v.append_section_entry(updated, "## Upcoming",
-                                         PLACEHOLDERS["## upcoming"])
-
-    try:
-        fingerprint = v.atomic_write(target, updated, expect=expect, vault=vault)
-    except v.ConflictError as error:
-        raise RequestError(409, str(error))
-    return {"changed": True, "fingerprint": fingerprint}
+    return {"path": str(target.relative_to(vault))}
 
 
 def create_application(vault: Path, payload: dict) -> dict:
@@ -642,7 +585,7 @@ HANDLERS = {
     "/api/field": set_field,
     "/api/note/save": save_note,
     "/api/entry": append_entry,
-    "/api/interview/complete": complete_interview,
+    "/api/interview": create_interview,
     "/api/application": create_application,
     "/api/person": create_person,
     "/api/role": create_role,
@@ -660,6 +603,7 @@ def api_schema(vault: Path) -> dict:
         "status": schema.APPLICATION_STATUS,
         "terminal": sorted(schema.TERMINAL_STATUS),
         "lead_status": schema.LEAD_STATUS,
+        "interview_status": schema.INTERVIEW_STATUS,
         "discovery_method": schema.DISCOVERY_METHOD,
         "compensation_status": schema.COMPENSATION_STATUS,
         "compensation_period": schema.COMPENSATION_PERIOD,

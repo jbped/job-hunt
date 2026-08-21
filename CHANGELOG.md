@@ -5,6 +5,16 @@ loosely; versions are git tags.
 
 ## Unreleased
 
+- Interviews redesigned as one note per interview: `Applications/<Co>/<Role>/
+  Interviews/<date> <time> <stage>.md` with `type: interview` frontmatter
+  (`status: scheduled | completed | cancelled`, when, stage, method, people)
+  and Preparation/Outcome prose in the body. Completion, cancellation, and
+  undo are all plain status changes — no more heading-matching block surgery,
+  and every field is dashboard-editable. New `new_interview.py` +
+  `POST /api/interview`; interview cards get a status select and an inline
+  note view with the edit buffer. `Interviews.md`, its template, and the
+  `/api/interview/complete` endpoint are retired; the live vault's recorded
+  interviews were migrated verbatim into notes.
 - Full-note edit buffer: every non-evidence note can now be edited as whole
   markdown text from the dashboard ("edit here" under any rendered note).
   Saves are atomic against the fingerprint the buffer loaded with, so an

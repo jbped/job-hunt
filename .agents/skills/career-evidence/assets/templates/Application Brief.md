@@ -53,7 +53,7 @@ Facts you record. Interpretation lives in [[Analysis]].
 - Verbatim posting: [[Job Description]]
 - Analysis and strategy: [[Analysis]]
 - Contacts and referral: [[Contacts]]
-- Interviews: [[Interviews]]
+- Interviews: one note each in `Interviews/`
 - Resume working copy: [[Draft - Resume]]
 - Cover-letter working copy: [[Draft - Cover Letter]]
 - Submission record: [[Submission Notes]]

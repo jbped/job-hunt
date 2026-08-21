@@ -27,7 +27,7 @@ VAULT_ROOT/
 │           ├── Analysis.md             <- the agent's
 │           ├── Job Description.md      <- evidence, checksummed
 │           ├── Contacts.md
-│           ├── Interviews.md
+│           ├── Interviews/             (one note per interview)
 │           ├── Draft - Resume.md
 │           ├── Draft - Cover Letter.md
 │           ├── Submission Notes.md
@@ -224,20 +224,37 @@ mistakes. `capture_jd.py` writes it and computes the checksum; `audit_vault.py`
 verifies the two still agree. A changed posting is a new dated capture, never an
 edit in place.
 
-### Contacts and interviews
+### Contacts
 
-These are sections within a note, not separate notes:
-`## [[People/<Folder>/Full Name]]`
-blocks in `Contacts.md` holding only application-specific facts (the person's
-own details live on their `People/` note), and `### YYYY-MM-DD HH:mm TZ | Stage`
-blocks under `## Upcoming` or `## Previous` in `Interviews.md`, each followed by
-`- Field: value` bullets.
+Contacts are sections within `Contacts.md`, not separate notes:
+`## [[People/<Folder>/Full Name]]` blocks holding only application-specific
+facts (the person's own details live on their `People/` note), each followed by
+`- Field: value` bullets. The note ends with an `## Entry format` section
+documenting its own shape; the tools skip it and insert new entries above it.
 
-Both notes end with an `## Entry format` section documenting their own shape. The
-tools skip it, and new entries are inserted above it.
+### Interview
 
-Move a completed interview from Upcoming to Previous and add its outcome. Do not
-create a second entry — one conversation should read as one entry.
+One note per interview, in the application's `Interviews/` folder, named
+`<YYYY-MM-DD> <HHmm> <Stage>.md`:
+
+```yaml
+type: interview
+company:
+position:
+status: scheduled | completed | cancelled
+when:                              # date-leading, e.g. 2026-09-02 14:00 MDT
+stage:                             # interview stage vocabulary
+method: phone | video | onsite | async | unknown
+location_or_link:
+point_of_contact:
+interviewers:
+thank_you_sent:
+next_step:
+```
+
+The body holds `## Preparation` and `## Outcome` as prose. Completing or
+cancelling an interview is a status change, never a move and never a second
+note — one conversation reads as one note, and its history stays in git.
 
 ### Person
 

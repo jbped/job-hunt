@@ -80,11 +80,17 @@ Do not infer that a formal referral is also a professional
 reference — reference consent is a separate fact on the person note
 (`reference_status`, `permission_confirmed`).
 
-## Interview entries
+## Interview notes
 
-Use local date, explicit time zone, and method. Preserve meeting links only when the vault's privacy policy permits; never put passwords, access tokens, or private keys in the vault.
+One note per interview, in the application's `Interviews/` folder. The
+structured facts (`when`, `stage`, `method`, people, status) are frontmatter;
+preparation and outcome are prose sections in the body. Completing or
+cancelling an interview is a `status` change — never a second note for the
+same conversation. Use local date with an explicit time zone in `when`.
+Preserve meeting links only when the vault's privacy policy permits; never put
+passwords, access tokens, or private keys in the vault.
 
-For completed interviews, record evidence rather than only a positive/negative label:
+For completed interviews, record evidence in `## Outcome` rather than only a positive/negative label:
 
 - Questions and topics
 - Candidate sentiment

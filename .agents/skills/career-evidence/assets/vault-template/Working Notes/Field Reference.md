@@ -170,5 +170,3 @@ These are the values the tools accept in note frontmatter. Anything outside thes
 - `ready`
 - `submitted`
 - `confirmed`
-
-

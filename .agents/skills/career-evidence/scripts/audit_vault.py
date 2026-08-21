@@ -39,7 +39,6 @@ APPLICATION_FILES = [
     "Analysis.md",
     "Job Description.md",
     "Contacts.md",
-    "Interviews.md",
     "Submission Notes.md",
 ]
 
@@ -49,7 +48,7 @@ TEMPLATES = [
     "Analysis.md",
     "Job Description.md",
     "Contacts.md",
-    "Interviews.md",
+    "Interview.md",
     "Draft - Resume.md",
     "Draft - Cover Letter.md",
     "Submission Notes.md",
@@ -139,6 +138,21 @@ def check_lead(report: Report, note: Path, vault: Path, fm: dict) -> None:
         report.warn(f"{rel}: passed without a passed_reason — the reason is funnel data")
     if status == "promoted" and not fm.get("application"):
         report.warn(f"{rel}: promoted without an application link back")
+
+
+def check_interview(report: Report, note: Path, vault: Path, fm: dict) -> None:
+    rel = note.relative_to(vault)
+    parts = rel.parts
+    if len(parts) != 5 or parts[0] != "Applications" or parts[3] != "Interviews":
+        report.warn(f"{rel}: interview notes belong in "
+                    "Applications/<Company>/<Role>/Interviews/")
+    when = str(fm.get("when") or "")
+    if when and not re.match(r"^\d{4}-\d{2}-\d{2}(\s|$)", when):
+        report.error(f"{rel}: when '{when}' must start with the date as "
+                     "YYYY-MM-DD so interviews sort")
+    if fm.get("status") == "cancelled" and not fm.get("next_step"):
+        report.warn(f"{rel}: cancelled without a next_step — was it rescheduled, "
+                    "or is the process over?")
 
 
 def check_contact_profile(report: Report, note: Path, vault: Path, fm: dict) -> None:
@@ -257,6 +271,8 @@ def audit(vault: Path, check_wikilinks: bool = True) -> Report:
             check_person(report, note, vault, fm, text)
         if fm.get("type") == "lead":
             check_lead(report, note, vault, fm)
+        if fm.get("type") == "interview":
+            check_interview(report, note, vault, fm)
         if fm.get("type") == "contact-profile":
             check_contact_profile(report, note, vault, fm)
         if check_wikilinks:

@@ -28,7 +28,6 @@ FILES = {
     "Analysis.md": "Analysis.md",
     "Job Description.md": "Job Description.md",
     "Contacts.md": "Contacts.md",
-    "Interviews.md": "Interviews.md",
     "Draft - Resume.md": "Draft - Resume.md",
     "Draft - Cover Letter.md": "Draft - Cover Letter.md",
     "Submission Notes.md": "Submission Notes.md",

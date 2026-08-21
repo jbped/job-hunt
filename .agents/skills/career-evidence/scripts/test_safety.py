@@ -129,10 +129,42 @@ class SafetyTest(unittest.TestCase):
                                                  "fields": {"role": "recruiter"}})
         self.assertTrue(result["changed"])
 
-    def test_interview_completion_only_touches_interviews(self):
-        brief = str((self.app / "Application Brief.md").relative_to(self.vault))
-        with self.assertRaises(serve.RequestError):
-            serve.complete_interview(self.vault, {"path": brief, "title": "x"})
+    def test_create_interview_is_bounded(self):
+        app = "Applications/Testco/Tester"
+        with self.assertRaises(serve.RequestError):  # a date is required
+            serve.create_interview(self.vault, {"application": app})
+        with self.assertRaises(serve.RequestError):  # and it must lead the value
+            serve.create_interview(self.vault, {"application": app,
+                                                "when": "next Tuesday"})
+        with self.assertRaises(serve.RequestError):  # stage vocabulary enforced
+            serve.create_interview(self.vault, {"application": app,
+                                                "when": "2026-09-02 14:00 MDT",
+                                                "stage": "vibe-check"})
+        with self.assertRaises(serve.RequestError):  # only application folders
+            serve.create_interview(self.vault, {"application": "People",
+                                                "when": "2026-09-02"})
+        result = serve.create_interview(self.vault, {
+            "application": app, "when": "2026-09-02 14:00 MDT",
+            "stage": "hiring-manager", "method": "video",
+            "interviewers": "Pat Example"})
+        self.assertEqual(result["path"],
+                         f"{app}/Interviews/2026-09-02 1400 hiring-manager.md")
+        fm, text = v.read_note(self.vault / result["path"])
+        self.assertEqual(fm.get("type"), "interview")
+        self.assertEqual(fm.get("status"), "scheduled")
+        self.assertEqual(fm.get("when"), "2026-09-02 14:00 MDT")
+        self.assertIn("## Outcome", text)
+        with self.assertRaises(serve.RequestError):  # one note per interview
+            serve.create_interview(self.vault, {
+                "application": app, "when": "2026-09-02 14:00 MDT",
+                "stage": "hiring-manager"})
+        # Status is a plain field edit — completion needs no special endpoint.
+        serve.set_field(self.vault, {"path": result["path"], "field": "status",
+                                     "value": "completed"})
+        fm, _ = v.read_note(self.vault / result["path"])
+        self.assertEqual(fm.get("status"), "completed")
+        report = audit_vault.audit(self.vault)
+        self.assertEqual([e for e in report.errors if "Interviews" in e], [])
 
     def test_stale_fingerprint_is_refused(self):
         contacts = self.app / "Contacts.md"

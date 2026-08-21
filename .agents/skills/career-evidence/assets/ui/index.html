@@ -755,7 +755,9 @@ function renderNow() {
     up.append(el("div", { className: "card row" },
       el("span", { className: "pill" }, iv.when || "date unknown"),
       el("span", { className: "grow" },
-        el("span", { className: "title" }, `${iv.company} — ${iv.stage || "interview"}`),
+        el("a", { href: "#", className: "title", title: "Open the application",
+            onclick: (event) => { event.preventDefault(); openDetail(iv.application); } },
+          `${iv.company} — ${iv.stage || "interview"}`),
         el("div", { className: "muted" }, iv.method ? `${iv.method}` : "")),
       obsidian(iv.path)));
   }
@@ -887,8 +889,29 @@ function buildRail(rail) {
   rail.append(el("div", { className: "card" },
     el("h3", {}, "Actions"),
     el("div", { className: "rail-actions" },
-      el("button", { className: "btn", onclick: () => addContact(app) }, "Add contact"),
-      el("button", { className: "btn", onclick: () => addInterview(app) }, "Schedule interview"))));
+      el("button", { className: "btn", onclick: () => addContact(app) }, "Add contact"))));
+
+  // Interviews — this application's, soonest first. Each opens its note in
+  // the viewer; the status pill mirrors the Interviews tab.
+  const interviews = DATA.interviews.filter(i => i.application === app.path)
+    .sort((a, b) => (a.date || "9").localeCompare(b.date || "9"));
+  const interviewsCard = el("div", { className: "card" }, el("h3", {}, "Interviews"));
+  for (const iv of interviews) {
+    const button = docButton(
+      `${iv.when || "date unknown"}${iv.stage ? " · " + iv.stage : ""}`,
+      iv.path, "note");
+    button.append(el("span", { className: `pill ${
+      iv.status === "completed" ? "good" : iv.status === "cancelled" ? "bad" : ""
+    }` }, iv.status));
+    interviewsCard.append(button);
+  }
+  if (!interviews.length)
+    interviewsCard.append(el("div", { className: "muted", style: "padding:2px 0 6px" },
+      "None scheduled yet."));
+  interviewsCard.append(el("div", { className: "rail-actions" },
+    el("button", { className: "btn", onclick: () => addInterview(app) },
+       "Schedule interview")));
+  rail.append(interviewsCard);
 
   // People — who is attached to this application: referrals, references,
   // contacts. Sourced from People notes (the one-note-per-person truth) plus
@@ -1199,7 +1222,10 @@ function interviewCard(iv) {
     el("div", { className: "row" },
       el("span", { className: `pill ${pillKind}` }, iv.when || "date unknown"),
       el("span", { className: "grow" },
-        el("span", { className: "title" }, `${iv.company} — ${iv.position}`),
+        el("a", { href: "#", className: "title",
+            title: "Open the application",
+            onclick: (event) => { event.preventDefault(); openDetail(iv.application); } },
+          `${iv.company} — ${iv.position}`),
         el("div", { className: "muted" },
            [iv.stage, iv.method, iv.interviewers, iv.location_or_link]
              .filter(Boolean).join(" · "))),

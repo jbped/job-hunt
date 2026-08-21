@@ -307,6 +307,44 @@ class SafetyTest(unittest.TestCase):
             serve.create_application(
                 self.vault, {"lead": "Applications/Promoco/Tester/Analysis.md"})
 
+    def test_note_save_is_guarded(self):
+        analysis = self.app / "Analysis.md"
+        rel = str(analysis.relative_to(self.vault))
+        fp = v.fingerprint(analysis)
+        with self.assertRaises(serve.RequestError):  # evidence stays read-only
+            serve.save_note(self.vault, {
+                "path": str((self.app / "Job Description.md").relative_to(self.vault)),
+                "text": "x", "fingerprint": "y"})
+        with self.assertRaises(serve.RequestError):  # emptying is not deleting
+            serve.save_note(self.vault, {"path": rel, "text": "  ",
+                                         "fingerprint": fp})
+        with self.assertRaises(serve.RequestError):  # the loaded fingerprint is required
+            serve.save_note(self.vault, {"path": rel, "text": "x"})
+        with self.assertRaises(serve.RequestError):  # a stale one is refused
+            serve.save_note(self.vault, {"path": rel, "text": "x",
+                                         "fingerprint": "stale"})
+
+        result = serve.save_note(self.vault, {
+            "path": rel, "fingerprint": fp,
+            "text": "---\ntype: application-analysis\ncompany: Testco\n"
+                    "position: Tester\n---\n\n# New analysis"})
+        self.assertTrue(result["changed"])
+        self.assertEqual(result["warnings"], [])
+        fm, body = v.read_note(analysis)
+        self.assertEqual(fm.get("type"), "application-analysis")
+        self.assertIn("# New analysis", body)
+
+        # Structural damage saves — the buffer is the user's — but warns loudly.
+        result = serve.save_note(self.vault, {
+            "path": rel, "fingerprint": result["fingerprint"],
+            "text": "---\ntype: application\nstatus: bogus\n---\nbody\n"})
+        self.assertTrue(any("type changed" in w for w in result["warnings"]))
+        self.assertTrue(any("'bogus'" in w for w in result["warnings"]))
+        serve.save_note(self.vault, {  # leave the shared fixture note valid
+            "path": rel, "fingerprint": result["fingerprint"],
+            "text": "---\ntype: application-analysis\ncompany: Testco\n"
+                    "position: Tester\n---\n\n# Restored\n"})
+
     def test_capture_endpoint_scaffolds_and_checksums(self):
         with self.assertRaises(serve.RequestError):  # position is required
             serve.create_capture(self.vault, {"company": "Capco", "text": "x"})

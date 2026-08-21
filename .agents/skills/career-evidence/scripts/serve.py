@@ -12,10 +12,13 @@ A closed set of write operations is allowed, and no others:
   2. Append a structured entry built from a template (contact, interview, reference)
   3. Create a scaffold — application, person, role, accomplishment — by calling
      the same code the CLI scripts call, so either path produces identical files
+  4. Replace a note's full text through the edit buffer — guarded by the
+     fingerprint the buffer loaded, never for the evidence files
 
-Everything else — prose, analysis, the verbatim posting — is read-only here and
-links out to Obsidian. That boundary is what keeps the notes hand-editable
-rather than UI-managed.
+The evidence files (the verbatim posting, submission records) stay read-only
+here and link out to Obsidian. Saving a buffer re-validates the frontmatter and
+warns rather than blocks: hand-shaped notes are legal, and the audit — not the
+editor — is what guards them.
 
 Usage:
     python serve.py [--vault PATH] [--port 8765] [--no-browser]
@@ -126,6 +129,53 @@ def set_field(vault: Path, payload: dict) -> dict:
     except v.ConflictError as error:
         raise RequestError(409, str(error))
     return {"changed": True, "fingerprint": fingerprint}
+
+
+def _note_warnings(old_fm: dict, text: str) -> list[str]:
+    """What an edit-buffer save should flag without refusing the save."""
+    warnings = []
+    fm = v.parse_frontmatter(text)
+    if old_fm and not fm:
+        return ["the note had frontmatter before this save and now has none"]
+    old_type, new_type = old_fm.get("type"), fm.get("type")
+    if old_type and new_type != old_type:
+        warnings.append(f"note type changed from '{old_type}' to '{new_type or 'nothing'}'")
+    for field, value in fm.items():
+        if field == "status":
+            allowed = schema.STATUS_BY_TYPE.get(str(fm.get("type") or ""))
+        else:
+            allowed = schema.ENUMS.get(field)
+        if allowed and isinstance(value, str) and value and value not in allowed:
+            warnings.append(f"{field} '{value}' is not one of: {', '.join(allowed)}")
+    return warnings
+
+
+def save_note(vault: Path, payload: dict) -> dict:
+    """Replace a note's full text — the dashboard's edit buffer landing.
+
+    The one write path that touches prose. resolve() keeps it inside the vault
+    and away from the evidence files; the fingerprint the buffer loaded keeps
+    it from clobbering an edit Obsidian made while the buffer was open.
+    """
+    target = resolve(vault, payload.get("path", ""))
+    if target.suffix.lower() != ".md":
+        raise RequestError(403, "only markdown notes can be edited")
+    text = payload.get("text")
+    if not isinstance(text, str) or not text.strip():
+        raise RequestError(400, "refusing to save an empty note — deleting is "
+                                "a deliberate act, not an emptied editor")
+    expect = str(payload.get("fingerprint") or "")
+    if not expect:
+        raise RequestError(400, "the editor must send the fingerprint it loaded with")
+    old_fm, _ = v.read_note(target)
+    if not text.endswith("\n"):
+        text += "\n"
+    try:
+        fingerprint = v.atomic_write(target, text, expect=expect, vault=vault)
+    except v.ConflictError as error:
+        raise RequestError(409, str(error))
+    return {"changed": True, "fingerprint": fingerprint,
+            "warnings": _note_warnings(old_fm, text)}
 
 
 # The empty-state sentence each template ships, per section. Removing the wrong
@@ -590,6 +640,7 @@ def start_render(vault: Path, payload: dict) -> dict:
 # auditable in one glance, and testable against the endpoints schema.FORMS names.
 HANDLERS = {
     "/api/field": set_field,
+    "/api/note/save": save_note,
     "/api/entry": append_entry,
     "/api/interview/complete": complete_interview,
     "/api/application": create_application,

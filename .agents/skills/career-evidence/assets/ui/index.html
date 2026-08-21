@@ -189,6 +189,14 @@
   .rail-actions { display: flex; flex-wrap: wrap; gap: 6px; }
   .rail-actions .btn { flex: 1 1 auto; }
 
+  .note-edit textarea {
+    width: 100%; box-sizing: border-box; min-height: 55vh; resize: vertical;
+    font: 13px/1.55 ui-monospace, "Cascadia Code", monospace;
+    padding: 12px; border: 1px solid var(--line); border-radius: 8px;
+    background: var(--bg); color: var(--text);
+  }
+  .note-edit .row { margin-top: 8px; gap: 8px; align-items: center; }
+
   /* Read-only note viewer */
   details.note { border: 1px solid var(--line); border-radius: 8px; background: var(--bg); }
   details.note > summary {
@@ -508,24 +516,76 @@ function noteViewer(path, label) {
   const body = el("div", { className: "note-body" });
   box.append(summary, body);
 
-  box.addEventListener("toggle", async () => {
-    if (!box.open || box.dataset.loaded) return;
-    box.dataset.loaded = "1";
+  async function load() {
     body.innerHTML = '<p class="muted">Loading…</p>';
     try {
       const note = await api(`/api/note?path=${encodeURIComponent(path)}`);
       body.innerHTML = markdown(note.text);
-      body.append(el("div", { className: "note-foot" },
-        el("span", { className: "muted" },
-           note.readonly ? "Evidence — read-only everywhere in this dashboard"
-                         : "Read-only here. Edit in Obsidian."),
-        obsidian(path)));
+      body.append(noteFoot(path, body, note, load));
     } catch (error) {
       body.innerHTML = "";
       body.append(el("div", { className: "banner bad" }, error.message));
     }
+  }
+  box.addEventListener("toggle", () => {
+    if (!box.open || box.dataset.loaded) return;
+    box.dataset.loaded = "1";
+    load();
   });
   return box;
+}
+
+/** Swap a rendered note for a full-text edit buffer. The save is atomic
+ *  against the fingerprint the note loaded with: a 409 means Obsidian or
+ *  another tab wrote first, and the buffer stays open so nothing is lost. */
+function noteEditor(path, body, note, rerender) {
+  const area = el("textarea", { value: note.text, spellcheck: false });
+  const problem = el("span", { className: "muted grow" });
+  const saveButton = el("button", { className: "btn btn-primary" }, "Save");
+  const cancelButton = el("button", { className: "btn" }, "Cancel");
+  body.textContent = "";
+  body.append(el("div", { className: "note-edit" }, area,
+    el("div", { className: "row" }, saveButton, cancelButton, problem)));
+  area.focus();
+  cancelButton.onclick = () => rerender();
+  saveButton.onclick = async () => {
+    saveButton.disabled = true; problem.textContent = "";
+    try {
+      const result = await api("/api/note/save", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ path, text: area.value, fingerprint: note.fingerprint }),
+      });
+      const warnings = result.warnings || [];
+      for (const warning of warnings) toast(warning, "error");
+      if (!warnings.length) toast("Saved");
+      rerender();
+      await refresh();
+    } catch (error) {
+      problem.textContent = error.message;
+      problem.style.color = "var(--bad)";
+      saveButton.disabled = false;
+    }
+  };
+}
+
+/** The note-foot line under a rendered note: read-only notice, or edit + Obsidian links. */
+function noteFoot(path, body, note, rerender) {
+  const foot = el("div", { className: "note-foot" });
+  if (note.readonly) {
+    foot.append(el("span", { className: "muted" },
+      "Evidence — read-only everywhere in this dashboard"));
+  } else {
+    foot.append(
+      el("a", { href: "#", className: "muted", onclick: async (event) => {
+        event.preventDefault();
+        // Refetch so the buffer opens on the freshest text and fingerprint.
+        const fresh = await api(`/api/note?path=${encodeURIComponent(path)}`);
+        noteEditor(path, body, fresh, rerender);
+      } }, "edit here"),
+      el("span", { className: "muted" }, " · "));
+  }
+  foot.append(obsidian(path));
+  return foot;
 }
 
 function obsidian(path) {
@@ -899,10 +959,7 @@ async function renderViewer() {
   try {
     const note = await api(`/api/note?path=${encodeURIComponent(DOC.path)}`);
     body.innerHTML = markdown(note.text);
-    body.append(el("div", { className: "note-foot" },
-      el("span", { className: "muted" },
-        note.readonly ? "Evidence — read-only everywhere in this dashboard"
-                      : "Read-only here. Edit fields on the left, or the note in Obsidian.")));
+    body.append(noteFoot(DOC.path, body, note, renderViewer));
   } catch (error) {
     body.innerHTML = "";
     body.append(el("div", { className: "banner bad" }, error.message));

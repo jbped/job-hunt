@@ -307,6 +307,46 @@ class SafetyTest(unittest.TestCase):
             serve.create_application(
                 self.vault, {"lead": "Applications/Promoco/Tester/Analysis.md"})
 
+    def test_capture_endpoint_scaffolds_and_checksums(self):
+        with self.assertRaises(serve.RequestError):  # position is required
+            serve.create_capture(self.vault, {"company": "Capco", "text": "x"})
+        with self.assertRaises(serve.RequestError):  # so is actual posting text
+            serve.create_capture(self.vault, {"company": "Capco",
+                                              "position": "Dev", "text": "  "})
+        result = serve.create_capture(self.vault, {
+            "company": "Capco", "position": "Dev",
+            "url": "https://jobs.example.com/dev",
+            "text": "Line one\nLine two"})
+        self.assertEqual(result["path"], "Applications/Capco/Dev")
+        fm, body = v.read_note(self.vault / result["path"] / "Job Description.md")
+        self.assertEqual(fm.get("verbatim_sha256"), result["sha256"])
+        self.assertEqual(fm.get("source_kind"), "extension")
+        self.assertEqual(capture_jd.find_posting(body).group(2),
+                         "Line one\nLine two")
+        brief, _ = v.read_note(self.vault / result["path"] / "Application Brief.md")
+        self.assertEqual(brief.get("posting_source"), "jobs.example.com")
+        # How the user found the job is their fact — never inferred by a capture.
+        self.assertFalse(brief.get("discovery_method"))
+        with self.assertRaises(serve.RequestError):  # duplicate refused
+            serve.create_capture(self.vault, {"company": "Capco",
+                                              "position": "Dev", "text": "again"})
+
+    def test_capture_rolls_back_the_scaffold_when_capture_fails(self):
+        with self.assertRaises(serve.RequestError):
+            serve.create_capture(self.vault, {
+                "company": "Rollco", "position": "Dev",
+                "text": "broken <!-- verbatim-end --> marker"})
+        self.assertFalse((self.vault / "Applications" / "Rollco").exists())
+
+    def test_capture_lead_mode_stores_no_posting_text(self):
+        result = serve.create_capture(self.vault, {
+            "mode": "lead", "company": "Leadcapco", "position": "Dev",
+            "url": "https://x.example/job", "text": "secret posting text"})
+        self.assertEqual(result["path"], "Leads/Leadcapco - Dev.md")
+        fm, body = v.read_note(self.vault / result["path"])
+        self.assertEqual(fm.get("type"), "lead")
+        self.assertNotIn("secret posting text", body)
+
     def test_person_follow_up_fields_are_editable_but_name_is_not(self):
         result = serve.create_person(self.vault, {"name": "Cadence Check"})
         path = result["path"]
@@ -380,6 +420,11 @@ class SafetyTest(unittest.TestCase):
                                    "X-Session-Token": "test-token-value"}), 403)
             self.assertEqual(post({**json_type, "X-Session-Token": "test-token-value"}),
                              404)  # authenticated; fails on the bogus path, not on auth
+            # An extension origin passes the Origin guard but still needs the token.
+            self.assertEqual(post({**json_type,
+                                   "Origin": "chrome-extension://abcdefgh"}), 403)
+            self.assertEqual(post({**json_type, "Origin": "chrome-extension://abcdefgh",
+                                   "X-Session-Token": "test-token-value"}), 404)
         finally:
             server.shutdown()
             server.server_close()

@@ -24,6 +24,7 @@ import hashlib
 import re
 import sys
 
+import schema
 import vaultlib as v
 
 MARKED_BLOCK = re.compile(
@@ -45,6 +46,9 @@ def checksum(posting: str) -> str:
 def capture(note: Path, posting: str, *, source_url: str = "", source_kind: str = "",
             today: str | None = None, force: bool = False) -> str:
     """Replace the marked block and stamp verbatim_sha256. Returns the checksum."""
+    if source_kind and source_kind not in schema.SOURCE_KIND:
+        raise SystemExit(f"Unknown source kind '{source_kind}'. "
+                         f"Use one of: {', '.join(schema.SOURCE_KIND)}")
     text = note.read_text(encoding="utf-8")
     match = find_posting(text)
     if match is None:
@@ -107,7 +111,7 @@ def main() -> int:
     ap.add_argument("--note", help="path to a Job Description.md directly")
     ap.add_argument("--file", help="read the posting from a file instead of stdin")
     ap.add_argument("--url", default="")
-    ap.add_argument("--kind", default="", choices=["pasted", "webpage", "recruiter", ""])
+    ap.add_argument("--kind", default="", choices=schema.SOURCE_KIND + [""])
     ap.add_argument("--force", action="store_true", help="overwrite an existing capture")
     ap.add_argument("--recompute", action="store_true",
                     help="restamp the checksum from the block already in the note")

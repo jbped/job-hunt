@@ -32,6 +32,7 @@ import mimetypes
 import os
 import re
 import secrets
+import shutil
 import signal
 import subprocess
 import sys
@@ -44,6 +45,7 @@ import uuid
 import webbrowser
 
 import audit_vault
+import capture_jd
 import export_index
 import new_accomplishment
 import new_application
@@ -482,6 +484,66 @@ def create_accomplishment(vault: Path, payload: dict) -> dict:
     return {"path": str(target.relative_to(vault))}
 
 
+def create_capture(vault: Path, payload: dict) -> dict:
+    """One-shot posting capture, built for the browser extension.
+
+    Application mode runs the exact scaffold-then-checksum path the CLI uses
+    (`new_application.create` + `capture_jd.capture`), so a captured application
+    is indistinguishable from a hand-made one. Lead mode files a lightweight
+    lead and deliberately stores no posting text — a lead is interest, not
+    evidence. discovery_method is never set here: how the user found the job is
+    their fact to record, not something to infer from a capture.
+    """
+    mode = str(payload.get("mode", "")).strip() or "application"
+    company = str(payload.get("company", "")).strip()
+    url = str(payload.get("url", "")).strip()
+
+    if mode == "lead":
+        if not company:
+            raise RequestError(400, "a company is required")
+        try:
+            target = new_lead.create(vault, company,
+                                     role=str(payload.get("position", "")).strip(),
+                                     url=url)
+        except SystemExit as error:
+            raise RequestError(400, str(error))
+        return {"path": str(target.relative_to(vault)), "mode": "lead",
+                "stored_posting": False}
+    if mode != "application":
+        raise RequestError(400, "mode must be 'application' or 'lead'")
+
+    position = str(payload.get("position", "")).strip()
+    text = str(payload.get("text", ""))
+    if not company or not position:
+        raise RequestError(400, "company and position are both required")
+    if not text.strip():
+        raise RequestError(400, "no posting text was captured")
+
+    source = str(payload.get("source", "")).strip()
+    if not source and url:
+        source = urllib.parse.urlparse(url).hostname or ""
+    try:
+        folder = new_application.create(vault, company, position, url=url,
+                                        source=source)
+    except SystemExit as error:
+        raise RequestError(400, str(error))
+    try:
+        digest = capture_jd.capture(folder / "Job Description.md", text,
+                                    source_url=url, source_kind="extension")
+    except SystemExit as error:
+        # The folder was created by this same request and holds nothing but the
+        # failed capture's scaffold, so removing it is a rollback, not a delete.
+        # rmdir on the company folder only succeeds when this was its sole role.
+        shutil.rmtree(folder, ignore_errors=True)
+        try:
+            folder.parent.rmdir()
+        except OSError:
+            pass
+        raise RequestError(400, f"{error}\nThe scaffold was rolled back.")
+    return {"path": str(folder.relative_to(vault)), "mode": "application",
+            "sha256": digest}
+
+
 def start_render(vault: Path, payload: dict) -> dict:
     """Kick off a PDF render on a worker thread and return a job id to poll.
 
@@ -535,6 +597,7 @@ HANDLERS = {
     "/api/role": create_role,
     "/api/accomplishment": create_accomplishment,
     "/api/lead": create_lead,
+    "/api/capture": create_capture,
     "/api/render": start_render,
 }
 
@@ -657,11 +720,17 @@ class Handler(BaseHTTPRequestHandler):
         # 127.0.0.1 keeps the network out, but not a browser tab: any webpage
         # can fire POSTs at localhost. Writes therefore require the per-session
         # token the served page carries, a JSON content type, and — when a
-        # browser sends one — a local Origin.
+        # browser sends one — a local or extension Origin. Extension origins are
+        # allowed through only because the token still gates them: an extension
+        # holds it only after the user pastes it in from the dashboard.
         origin = self.headers.get("Origin")
-        if origin and urllib.parse.urlparse(origin).hostname not in ("127.0.0.1", "localhost"):
-            self._json({"error": "cross-origin writes are not allowed"}, 403)
-            return
+        if origin:
+            parts = urllib.parse.urlparse(origin)
+            if (parts.hostname not in ("127.0.0.1", "localhost")
+                    and parts.scheme not in ("chrome-extension", "moz-extension",
+                                             "safari-web-extension")):
+                self._json({"error": "cross-origin writes are not allowed"}, 403)
+                return
         content_type = (self.headers.get("Content-Type") or "").split(";")[0].strip()
         if content_type != "application/json":
             self._json({"error": "writes must be application/json"}, 403)

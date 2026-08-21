@@ -5,6 +5,16 @@ loosely; versions are git tags.
 
 ## Unreleased
 
+- Capture endpoint (#18): `POST /api/capture` scaffolds an application and
+  stores the checksummed verbatim posting in one call, through the same
+  `new_application` + `capture_jd` path the CLI uses; `mode: lead` files a
+  lightweight lead instead and stores no posting text. A failed capture rolls
+  the scaffold back. `source_kind` gains an `extension` value and its
+  vocabulary moves into `schema.py`; the JD template now ships the field
+  empty instead of a placeholder the audit would flag.
+- Extension pairing (#18): browser-extension origins may POST when they carry
+  the per-session token; the dashboard nav gains a "Pair extension" button
+  that shows and copies the token. The server keeps binding `127.0.0.1` only.
 - Resume standards rebuilt around collected professional advice (three
   writer/recruiter guides, distilled into the vault's Resources): the
   result test on every bullet, Action + How + Impact structure, the

@@ -212,7 +212,7 @@ judgement, not something the employer stated.
 type: job-description
 captured_at:
 source_url:
-source_kind: pasted | webpage | recruiter
+source_kind: pasted | webpage | recruiter | extension
 capture_status: verbatim
 verbatim_sha256:
 ```

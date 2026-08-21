@@ -4,7 +4,7 @@ company:
 position:
 captured_at:
 source_url:
-source_kind: pasted | webpage | recruiter
+source_kind:
 capture_status: verbatim
 verbatim_sha256:
 tags:

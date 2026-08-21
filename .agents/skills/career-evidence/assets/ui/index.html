@@ -251,6 +251,7 @@
     <button data-view="calendar">Interviews</button>
     <button data-view="people">People</button>
     <button data-view="evidence">Evidence</button>
+    <button id="pairExtension" title="Show the session token the browser extension needs">Pair extension</button>
     <button class="btn-primary" id="newApp">New application</button>
   </nav>
 </header>
@@ -1538,6 +1539,17 @@ for (const button of document.querySelectorAll("nav button[data-view]"))
 const HASH_VIEW = location.hash.replace("#", "");
 if (document.querySelector(`nav button[data-view="${HASH_VIEW}"]`)) show(HASH_VIEW);
 $("#newApp").addEventListener("click", newApplication);
+$("#pairExtension").addEventListener("click", () => {
+  // The token is per-session: restarting the server invalidates it, and the
+  // extension needs the new one pasted in again.
+  modal("Pair the browser extension", [
+    { key: "token", label: "Session token — paste it into the extension's settings. " +
+        "It changes every time the dashboard restarts.", value: SESSION_TOKEN },
+  ], async () => {
+    try { await navigator.clipboard.writeText(SESSION_TOKEN); toast("Token copied"); }
+    catch { toast("Copy it from the field above", "bad"); }
+  }, "Copy");
+});
 $("#scheduleInterview").addEventListener("click", () => addInterview(null));
 $("#addPerson").addEventListener("click", addPerson);
 $("#addRole").addEventListener("click", () => formModal("role"));

@@ -135,6 +135,10 @@ ACCOMPLISHMENT_STATUS = ["draft", "partial", "verified"]
 
 SUBMISSION_STATUS = ["draft", "ready", "submitted", "confirmed"]
 
+# How a verbatim posting reached the vault — the extraction method the capture
+# records. `extension` means the browser extension collected the page text.
+SOURCE_KIND = ["pasted", "webpage", "recruiter", "extension"]
+
 # Claim classes from references/writing-standards.md. Recorded on accomplishment
 # metrics so a resume bullet can never silently upgrade an estimate to a fact.
 CLAIM_CLASS = ["exact", "approved-estimate", "derived", "qualitative", "unknown"]
@@ -149,6 +153,7 @@ ENUMS = {
     "stage": INTERVIEW_STAGE,
     "method": INTERVIEW_METHOD,
     "reference_status": REFERENCE_PERMISSION,
+    "source_kind": SOURCE_KIND,
 }
 
 # `status` means something different per note type, so it is resolved here

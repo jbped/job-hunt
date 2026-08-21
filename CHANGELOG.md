@@ -5,6 +5,12 @@ loosely; versions are git tags.
 
 ## Unreleased
 
+- Full-note edit buffer: every non-evidence note can now be edited as whole
+  markdown text from the dashboard ("edit here" under any rendered note).
+  Saves are atomic against the fingerprint the buffer loaded with, so an
+  Obsidian edit made meanwhile turns into a conflict instead of a clobber;
+  frontmatter problems warn on save rather than block. The verbatim posting
+  and submission records stay read-only everywhere.
 - Browser extension MVP (#17): `extension/` holds a plain no-build MV3
   Chrome/Firefox add-on — click it on a posting, name the company and role,
   and the page's visible text (or your selection) is POSTed to the local

@@ -4,12 +4,14 @@
 
 const PLACEHOLDER = "__SESSION_TOKEN__";
 
-/** The served page has the token substituted into an inline script. Under
+/** The served page has the token substituted into an inline script — into the
+ *  value only: serve.py replaces every occurrence of the literal, so the
+ *  property it lands on is named `__CE_SESSION_TOKEN__` instead. Under
  *  `npm run dev` nothing substitutes it, so the placeholder survives and the
  *  token comes from the environment instead (VITE_SESSION_TOKEN, read from the
  *  vault's .cache/session-token). */
 export function sessionToken(): string {
-  const injected = window.__SESSION_TOKEN__;
+  const injected = window.__CE_SESSION_TOKEN__;
   if (injected && injected !== PLACEHOLDER) return injected;
   return import.meta.env.VITE_SESSION_TOKEN ?? PLACEHOLDER;
 }

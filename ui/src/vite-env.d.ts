@@ -12,7 +12,10 @@ interface ImportMeta {
 
 declare global {
   interface Window {
-    __SESSION_TOKEN__?: string;
+    /** Deliberately not named `__SESSION_TOKEN__`: serve.py replaces every
+     *  occurrence of that literal in index.html, so a property of that name
+     *  would be renamed along with its value. */
+    __CE_SESSION_TOKEN__?: string;
   }
 }
 

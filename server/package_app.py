@@ -28,6 +28,8 @@ APP_TOP_LEVEL = [
     "Dockerfile",
     "compose.yaml",
     ".dockerignore",
+    ".env.example",
+    "AGENTS.md",
     "README.md",
     "CHANGELOG.md",
     "LICENSE",

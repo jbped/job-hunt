@@ -9,7 +9,7 @@ Read [the core rules](../career-evidence/SKILL.md) first if the career-evidence
 skill is not already loaded — it defines how the vault is found, the truth and
 privacy rules, and who owns which note. Then read
 [document-generation.md](../career-evidence/references/document-generation.md)
-for the source order, selection rules, and the source format `render_pdf.py`
+for the source order, selection rules, and the source format `server/render_pdf.py`
 expects, and the resume sections of
 [writing-standards.md](../career-evidence/references/writing-standards.md) —
 they are the content rules, not suggestions.

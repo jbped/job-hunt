@@ -12,8 +12,8 @@ of [document-generation.md](../career-evidence/references/document-generation.md
 1. The source is the application's `Draft - Cover Letter.md`. If it is missing
    or stale, follow the [`draft-cover-letter`](../draft-cover-letter/SKILL.md)
    workflow first — this skill renders; it does not write copy.
-2. Run `render_pdf.py --app <folder> --kind cover-letter` from
-   `../career-evidence/scripts/`. The letterhead comes from
+2. Run `python3 server/render_pdf.py --app <folder> --kind cover-letter` from
+   the repository root. The letterhead comes from
    `Personal Information/Contact.md`; only entries whose audience is
    `application` or `public` are printed — `recruiter` details are for
    conversation, never for artifacts. Output is versioned into `Artifacts/`,

@@ -25,8 +25,10 @@ lives either outside the repo or in the gitignored `vault/` at the repo root —
 never in history. If none of the three lookups finds a vault, ask before
 creating one; never silently make a second vault.
 
-Scripts live in this skill's `scripts/` and resolve the vault the same way, so
-they work from any directory. `--vault PATH` overrides. Stdlib-only Python 3.
+Scripts live in the repository's `server/` directory; run them from the
+repository root as `python3 server/<script>.py`. They resolve the vault the
+same way, so they work from any directory. `--vault PATH` overrides.
+Stdlib-only Python 3.
 
 ```text
 init_vault.py <path>              create an empty vault
@@ -105,7 +107,7 @@ mid-sentence.
   letters, PDF rendering and validation.
 
 The controlled vocabularies (statuses, discovery methods, stages) are defined in
-`scripts/schema.py` and mirrored into `Working Notes/Field Reference.md`.
+`server/schema.py` and mirrored into `Working Notes/Field Reference.md`.
 `audit_vault.py` enforces them, so use a listed value or add one deliberately.
 
 ## Truth and privacy

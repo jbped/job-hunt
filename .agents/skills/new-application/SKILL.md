@@ -7,12 +7,14 @@ description: Start tracking a new job application in the job-hunt vault — scaf
 
 Read [the core rules](../career-evidence/SKILL.md) first if the career-evidence
 skill is not already loaded — it defines how the vault is found, who owns which
-note, and the truth and privacy rules. Scripts live in
-`../career-evidence/scripts/` and locate the vault themselves.
+note, and the truth and privacy rules. Scripts live in the repository's
+`server/` directory, run from the repository root, and locate the vault
+themselves.
 
-1. `new_application.py "<Company>" "<Role>"` — scaffolds the folder and Artifacts/.
-2. `capture_jd.py --app <folder>` — stores the posting verbatim and stamps
-   `verbatim_sha256`. Capture before analysing, so the analysis cannot quietly
+1. `python3 server/new_application.py "<Company>" "<Role>"` — scaffolds the
+   folder and Artifacts/.
+2. `python3 server/capture_jd.py --app <folder>` — stores the posting verbatim
+   and stamps `verbatim_sha256`. Capture before analysing, so the analysis cannot quietly
    reshape the source.
 3. Write `Analysis.md`, insight first: a three-sentence TL;DR, a compatibility
    confidence verdict with its drivers, and the synthesised level with
@@ -27,5 +29,5 @@ note, and the truth and privacy rules. Scripts live in
 
 What the fields mean — status flow, discovery, compensation, level synthesis —
 is in [application-tracking.md](../career-evidence/references/application-tracking.md).
-Accepted values live in `scripts/schema.py`, mirrored into the vault's
+Accepted values live in `server/schema.py`, mirrored into the vault's
 `Working Notes/Field Reference.md`; use a listed value or add one deliberately.

@@ -29,7 +29,7 @@ existing note anywhere under `People/` before creating one.
 The frontmatter shape is the `Person` section of
 [vault-schema.md](../career-evidence/references/vault-schema.md); accepted
 `relationships` and `professional_relationships` values live in
-`scripts/schema.py` and the vault's `Working Notes/Field Reference.md`.
+`server/schema.py` and the vault's `Working Notes/Field Reference.md`.
 
 1. Record organisation, title, professional relationship, job-search role when
    there is one, contact details, and preferred contact method. Use `Unknown`

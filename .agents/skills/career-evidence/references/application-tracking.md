@@ -1,6 +1,6 @@
 # Application tracking
 
-The accepted values for every field below live in `scripts/schema.py`, are
+The accepted values for every field below live in `server/schema.py`, are
 mirrored into `Working Notes/Field Reference.md` for reading in Obsidian, and are
 enforced by `audit_vault.py`. Read them from there rather than from memory — this
 file explains what the fields *mean*, not what values they take.

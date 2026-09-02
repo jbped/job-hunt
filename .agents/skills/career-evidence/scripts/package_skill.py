@@ -20,6 +20,20 @@ SKILLS_ROOT = SKILL_ROOT.parent
 EXCLUDED_DIRS = {"__pycache__", ".cache", ".git", "vault"}
 EXCLUDED_FILES = {".DS_Store", ".env"}
 
+# The skills that ship. Anything else under the skills root is a personal
+# install (gitignored) and must never enter the archive.
+CANONICAL_SKILLS = {
+    "career-evidence",
+    "cover-letter-pdf",
+    "cross-check",
+    "draft-cover-letter",
+    "draft-resume",
+    "init-vault",
+    "new-application",
+    "new-person",
+    "resume-pdf",
+}
+
 
 def skill_files() -> list[Path]:
     files = []
@@ -27,6 +41,8 @@ def skill_files() -> list[Path]:
         if not path.is_file():
             continue
         parts = path.relative_to(SKILLS_ROOT).parts
+        if parts[0] not in CANONICAL_SKILLS:
+            continue
         if any(part in EXCLUDED_DIRS for part in parts):
             continue
         if path.name in EXCLUDED_FILES or path.suffix == ".pyc":

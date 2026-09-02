@@ -203,8 +203,11 @@ class SafetyTest(unittest.TestCase):
             "argument-hint:",
         )
         checked = []
-        for pattern in ("SKILL.md", "references/*.md", "scripts/*.py"):
-            checked.extend(package_skill.SKILLS_ROOT.rglob(pattern))
+        for skill in package_skill.CANONICAL_SKILLS:
+            root = package_skill.SKILLS_ROOT / skill
+            for pattern in ("SKILL.md", "references/*.md", "scripts/*.py"):
+                checked.extend(root.rglob(pattern))
+        self.assertTrue(checked, "no canonical skill files found to check")
         for path in sorted(set(checked)):
             if path.resolve() == Path(__file__).resolve():
                 continue

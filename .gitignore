@@ -7,3 +7,25 @@ dist/
 __pycache__/
 *.pyc
 .cache/
+# Personal skill installs; only the canonical career-evidence set is tracked.
+/.agents/skills/*
+!/.agents/skills/career-evidence/
+!/.agents/skills/cover-letter-pdf/
+!/.agents/skills/cross-check/
+!/.agents/skills/draft-cover-letter/
+!/.agents/skills/draft-resume/
+!/.agents/skills/init-vault/
+!/.agents/skills/new-application/
+!/.agents/skills/new-person/
+!/.agents/skills/resume-pdf/
+/.claude/skills/*
+!/.claude/skills/career-evidence
+!/.claude/skills/cover-letter-pdf
+!/.claude/skills/cross-check
+!/.claude/skills/draft-cover-letter
+!/.claude/skills/draft-resume
+!/.claude/skills/init-vault
+!/.claude/skills/new-application
+!/.claude/skills/new-person
+!/.claude/skills/resume-pdf
+/skills-lock.json

@@ -2,6 +2,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import ApplicationsView from "../../ApplicationsView";
+import { resetSelection } from "../selection";
+import { requestApplication, takePendingApplication } from "../../../lib/wikilink";
 import type { Application, VaultIndex } from "../../../api/types";
 import {
   makeQueryClient,
@@ -81,6 +83,8 @@ describe("ApplicationsView", () => {
   let job: string;
 
   beforeEach(() => {
+    resetSelection();
+    takePendingApplication();
     posts = [];
     job = "running";
     fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
@@ -149,6 +153,31 @@ describe("ApplicationsView", () => {
       await screen.findByText("Body of Applications/Oldco/Application Brief.md."),
     ).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Analysis" })).not.toBeInTheDocument();
+  });
+
+  it("keeps the selection when the view is left and re-entered", async () => {
+    const first = renderWithProviders(<ApplicationsView />);
+    await userEvent.click(await screen.findByRole("button", { name: "Analysis" }));
+    await screen.findByText("Body of Applications/Acme/Analysis.md.");
+    first.unmount();
+
+    renderWithProviders(<ApplicationsView />);
+    expect(
+      await screen.findByText("Body of Applications/Acme/Analysis.md."),
+    ).toBeInTheDocument();
+  });
+
+  it("shows the application a wikilink asks for", async () => {
+    requestApplication("Applications/Oldco/Application Brief.md");
+    renderWithProviders(<ApplicationsView />);
+
+    expect(
+      await screen.findByText("Body of Applications/Oldco/Application Brief.md."),
+    ).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Oldco — Engineer/ })).toHaveAttribute(
+      "aria-current",
+      "true",
+    );
   });
 
   it("renders a PDF, polls the job, and shows the artifact in the viewer", async () => {

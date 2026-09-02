@@ -10,6 +10,7 @@ import Viewer from "./applications/Viewer";
 import { useArchiveApplication } from "./applications/actions";
 import { useRenderPdf } from "./applications/useRenderPdf";
 import { noteLabel, type DocSelection } from "./applications/helpers";
+import { selection, setSelectedApp, setSelectedDoc } from "./applications/selection";
 
 /** Applications: the split view (`renderApplications()`, index.html:832). Left
  *  rail carries navigation, editable metadata, and the document list; the right
@@ -18,12 +19,21 @@ import { noteLabel, type DocSelection } from "./applications/helpers";
 export default function ApplicationsView() {
   const index = useIndexQuery();
   const schema = useSchemaQuery();
-  const [selected, setSelected] = useState<string | null>(null);
-  const [doc, setDoc] = useState<DocSelection | null>(null);
+  const [selected, setSelectedState] = useState<string | null>(selection().app);
+  const [doc, setDocState] = useState<DocSelection | null>(selection().doc);
   const [request, setRequest] = useState<string | null>(null);
   const archive = useArchiveApplication();
 
-  const onArtifact = useCallback((next: DocSelection) => setDoc(next), []);
+  const setSelected = useCallback((next: string | null) => {
+    setSelectedApp(next);
+    setSelectedState(next);
+  }, []);
+  const setDoc = useCallback((next: DocSelection | null) => {
+    setSelectedDoc(next);
+    setDocState(next);
+  }, []);
+
+  const onArtifact = useCallback((next: DocSelection) => setDoc(next), [setDoc]);
   const render = useRenderPdf(onArtifact);
 
   const applications = index.data?.applications ?? [];
@@ -31,7 +41,13 @@ export default function ApplicationsView() {
   // A wikilink, or a freshly created application, asks for one to be shown.
   // App switches the view; picking the target is this view's job.
   useEffect(() => {
-    const unsubscribe = subscribeApplicationRequest(setRequest);
+    const unsubscribe = subscribeApplicationRequest((path) => {
+      // Consume the published copy too: it is only there for a view that was
+      // not mounted when the request went out, and a stale one would hijack
+      // the selection on the next mount.
+      takePendingApplication();
+      setRequest(path);
+    });
     const pending = takePendingApplication();
     if (pending) setRequest(pending);
     return unsubscribe;
@@ -52,7 +68,7 @@ export default function ApplicationsView() {
         : { label: noteLabel(request), path: request, kind: "note" },
     );
     setRequest(null);
-  }, [request, applications]);
+  }, [request, applications, setSelected, setDoc]);
 
   if (!index.data || !schema.data) return <section data-view="applications" data-active="" />;
 

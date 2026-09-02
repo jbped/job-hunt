@@ -1,6 +1,7 @@
 import { useState } from "react";
 import type { Application } from "../../api/types";
 import { today } from "./helpers";
+import { selection, setPickFilter } from "./selection";
 
 /** `pickButton()`, index.html:856 — the dot carries the state: brand while the
  *  application is active, bad once its next action is overdue, blank when the
@@ -30,9 +31,9 @@ function PickButton({
 }
 
 /** `fillPickList()`, index.html:1000 — active first, closed beneath their own
- *  label. The filter (index.html:876) survives re-renders as component state,
- *  so selecting a result does not clear it, and only appears once the list is
- *  long enough to need it. */
+ *  label. The filter (index.html:876) survives re-renders, so selecting a
+ *  result does not clear it, and only appears once the list is long enough to
+ *  need it. */
 export default function PickList({
   applications,
   selectedPath,
@@ -42,7 +43,11 @@ export default function PickList({
   selectedPath: string;
   onSelect: (app: Application) => void;
 }) {
-  const [filter, setFilter] = useState("");
+  const [filter, setFilterState] = useState(selection().filter);
+  const setFilter = (next: string) => {
+    setPickFilter(next);
+    setFilterState(next);
+  };
 
   const needle = filter.toLowerCase();
   const match = (a: Application) =>

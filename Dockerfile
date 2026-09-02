@@ -8,7 +8,7 @@ RUN apt-get update \
     && apt-get install -y --no-install-recommends ghostscript poppler-utils \
     && rm -rf /var/lib/apt/lists/*
 
-COPY .agents/skills/career-evidence /app/career-evidence
+COPY server/ /app/server
 
 # Inside the container the server must bind its own interface to be reachable
 # through the published port; compose publishes on the host's loopback only.
@@ -20,4 +20,4 @@ EXPOSE 8765
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s \
     CMD python3 -c "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8765/api/schema', timeout=2)"
 
-ENTRYPOINT ["python3", "/app/career-evidence/scripts/serve.py", "--no-browser"]
+ENTRYPOINT ["python3", "/app/server/serve.py", "--no-browser"]

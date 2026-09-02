@@ -4,17 +4,8 @@ import { useHashView } from "../hooks/useHashView";
 import { requestApplication } from "../lib/wikilink";
 import { ObsidianLink } from "../components/NoteViewer";
 import type { Application } from "../api/types";
-
-const today = () => new Date().toISOString().slice(0, 10);
-const days = (a: string, b: string) => Math.round((+new Date(b) - +new Date(a)) / 86400000);
-
-/** Port of `statusPill()` (index.html:429): "bad" for terminal statuses, "good"
- *  for an offer, plain otherwise. */
-function StatusPill({ status, terminal }: { status: string; terminal: string[] }) {
-  const bad = terminal.includes(status);
-  const good = status === "offer";
-  return <span className={`pill ${bad ? "bad" : good ? "good" : ""}`}>{status}</span>;
-}
+import { days, today } from "../lib/format";
+import { StatusPill } from "../components/Pills";
 
 interface QueueItem {
   date: string;

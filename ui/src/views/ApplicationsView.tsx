@@ -7,9 +7,10 @@ import {
 import type { Application } from "../api/types";
 import Rail from "./applications/Rail";
 import Viewer from "./applications/Viewer";
-import { useArchiveApplication } from "./applications/actions";
+import { useArchiveApplication } from "../lib/actions";
 import { useRenderPdf } from "./applications/useRenderPdf";
-import { noteLabel, type DocSelection } from "./applications/helpers";
+import { noteLabel } from "../lib/format";
+import type { DocSelection } from "./applications/helpers";
 import { selection, setSelectedApp, setSelectedDoc } from "./applications/selection";
 
 /** Applications: the split view (`renderApplications()`, index.html:832). Left
@@ -42,11 +43,8 @@ export default function ApplicationsView() {
   // App switches the view; picking the target is this view's job.
   useEffect(() => {
     const unsubscribe = subscribeApplicationRequest((path) => {
-      // Consume the published copy too: it is only there for a view that was
-      // not mounted when the request went out, and a stale one would hijack
-      // the selection on the next mount.
-      takePendingApplication();
       setRequest(path);
+      return true;
     });
     const pending = takePendingApplication();
     if (pending) setRequest(pending);

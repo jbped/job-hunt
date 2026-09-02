@@ -7,10 +7,10 @@ import EditableField from "../../components/EditableField";
 import { ObsidianLink } from "../../components/NoteViewer";
 import { useToast } from "../../components/Toast";
 import { requestApplication } from "../../lib/wikilink";
-import FieldRow from "./FieldRow";
+import { today } from "../../lib/format";
+import FieldRow from "../../components/FieldRow";
 import { useArchiveUnit } from "./useArchiveUnit";
 
-const today = () => new Date().toISOString().slice(0, 10);
 
 // Wikilink values ("[[People/Network/Jo Doe]]") display as their leaf name
 // (`inlineText()`, index.html:1199).

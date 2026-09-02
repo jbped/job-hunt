@@ -1,9 +1,10 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState, type ReactNode } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { ApiError, api, withParam } from "../api/client";
 import { invalidateAfterWrite, useSchemaQuery } from "../api/queries";
 import type { NotePayload, NoteSaveResult } from "../api/types";
 import { renderMarkdown } from "../lib/markdown";
+import { noteLabel } from "../lib/format";
 import { useToast } from "./Toast";
 
 /** An `obsidian://` deep link for the note (`obsidian()`, index.html:670). */
@@ -173,12 +174,17 @@ export function NoteContent({ path }: { path: string }) {
 export default function NoteViewer({
   path,
   title,
+  summary,
 }: {
   path: string;
   title?: string;
+  /** Extra badges appended inside the `<summary>`, after the path — Evidence
+   *  hangs the company and status pill there (`renderEvidence()`,
+   *  index.html:1483). */
+  summary?: ReactNode;
 }) {
   const [loaded, setLoaded] = useState(false);
-  const label = title ?? (path.split("/").pop() ?? path).replace(/\.md$/, "");
+  const label = title ?? noteLabel(path);
 
   return (
     <details
@@ -190,6 +196,7 @@ export default function NoteViewer({
       <summary>
         <span className="title">{label}</span>
         <span className="muted note-path">{path}</span>
+        {summary}
       </summary>
       <div className="note-body">{loaded ? <NoteContent path={path} /> : null}</div>
     </details>

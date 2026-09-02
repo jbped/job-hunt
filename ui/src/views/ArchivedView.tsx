@@ -1,14 +1,7 @@
 import { useIndexQuery, useSchemaQuery } from "../api/queries";
 import { ObsidianLink } from "../components/NoteViewer";
 import RestoreButton from "./archived/RestoreButton";
-
-/** `statusPill()` (index.html:429), local since Board's copy lives in a
- *  sibling subdir that Archived has no reason to import. */
-function StatusPill({ status, terminal }: { status: string; terminal: string[] }) {
-  const bad = terminal.includes(status);
-  const good = status === "offer";
-  return <span className={`pill ${bad ? "bad" : good ? "good" : ""}`}>{status}</span>;
-}
+import { StatusPill } from "../components/Pills";
 
 /** `renderArchived()` (index.html:1551). There is no delete: every entry here
  *  came from `/api/archive` and can go back with one click. */

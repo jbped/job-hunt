@@ -4,17 +4,7 @@ import { invalidateAfterWrite } from "../../api/queries";
 import type { Application, FieldSaveResult } from "../../api/types";
 import { useToast } from "../../components/Toast";
 import { requestApplication } from "../../lib/wikilink";
-
-const today = () => new Date().toISOString().slice(0, 10);
-const days = (a: string, b: string) => Math.round((+new Date(b) - +new Date(a)) / 86400000);
-
-/** `SCHEMA.terminal`/`"offer"` styling shared with the column header
- *  (`statusPill()`, index.html:429). */
-export function StatusPill({ status, terminal }: { status: string; terminal: string[] }) {
-  const bad = terminal.includes(status);
-  const good = status === "offer";
-  return <span className={`pill ${bad ? "bad" : good ? "good" : ""}`}>{status}</span>;
-}
+import { days, today } from "../../lib/format";
 
 /** One card per application. Its `<select>` and drag handle both write through
  *  `moveCard()` (index.html:1083/1095) — the same `/api/field` path as any

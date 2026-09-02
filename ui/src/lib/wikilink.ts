@@ -22,14 +22,19 @@ export interface WikilinkHelpers {
  *  split view on a particular document without owning it. They publish a
  *  request; App switches the view and the Applications view selects the target.
  *  The path may be an application folder or any note inside one. */
-type ApplicationListener = (path: string) => void;
+type ApplicationListener = (path: string) => boolean | void;
 
 const listeners = new Set<ApplicationListener>();
 let pending: string | null = null;
 
+/** A listener that took the request says so by returning true; App's
+ *  view-switching listener does not, because switching the view is not
+ *  selecting the document. Only an unclaimed request is left pending, so a
+ *  handled one can never hijack the next Applications mount. */
 export function requestApplication(path: string): void {
-  pending = path;
-  for (const listener of listeners) listener(path);
+  let handled = false;
+  for (const listener of listeners) if (listener(path) === true) handled = true;
+  pending = handled ? null : path;
 }
 
 export function subscribeApplicationRequest(

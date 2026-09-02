@@ -1,14 +1,16 @@
 import { useCallback } from "react";
-import { api } from "../../api/client";
-import { useIndexQuery, useSchemaQuery } from "../../api/queries";
-import { useModal } from "../../components/Modal";
-import { useToast } from "../../components/Toast";
-import type { Application, CreatedPath } from "../../api/types";
-import { peopleFor } from "./helpers";
+import { api } from "../api/client";
+import { useIndexQuery, useSchemaQuery } from "../api/queries";
+import { useModal } from "../components/Modal";
+import { useToast } from "../components/Toast";
+import type { Application, CreatedPath } from "../api/types";
+import { peopleFor } from "./people";
 
-/** The rail's write actions. Each is the vanilla page's hand-built modal —
- *  these forms are not schema-driven there and stay that way here. The shared
- *  `useModal` invalidates the queries once a submit succeeds. */
+/** The vault's hand-built write actions — the modals the vanilla page did not
+ *  drive from `/api/schema` `forms`, and which stay hand-built here. They live
+ *  beside the views rather than inside one because the Applications rail and
+ *  the Interviews view reach the same dialogs. The shared `useModal`
+ *  invalidates the queries once a submit succeeds. */
 
 /** `archiveUnit()`, index.html:1527. Resolves true once the archive is made. */
 export function useArchiveApplication(): (app: Application) => Promise<boolean> {
@@ -80,17 +82,36 @@ export function useAddContact(): (app: Application) => Promise<void> {
   );
 }
 
-/** `addInterview()`, index.html:1658, called with the application in hand —
- *  from this rail there is never a picker to show. */
-export function useAddInterview(): (app: Application) => Promise<void> {
+/** `addInterview()`, index.html:1658. From the Applications rail the
+ *  application is already in hand; from the Interviews view it is not, so the
+ *  modal asks — active applications first, since that is almost always the
+ *  answer. */
+export function useAddInterview(): (app: Application | null) => Promise<void> {
   const modal = useModal();
   const toast = useToast();
   const schema = useSchemaQuery();
+  const index = useIndexQuery();
 
   return useCallback(
     async (app) => {
+      const applications = [...(index.data?.applications ?? [])].sort(
+        (a, b) => Number(b.active) - Number(a.active),
+      );
+      const appField = app
+        ? []
+        : [
+            {
+              key: "application",
+              label: "Application",
+              choices: applications.map((a) => ({
+                value: a.path,
+                label: `${a.company} — ${a.position}`,
+              })),
+            },
+          ];
       await modal(
         [
+          ...appField,
           { key: "when", label: "Date and time", placeholder: "2026-09-02 14:00 MDT" },
           { key: "stage", label: "Stage", options: schema.data?.stage },
           { key: "method", label: "Method", options: schema.data?.method },
@@ -103,16 +124,20 @@ export function useAddInterview(): (app: Application) => Promise<void> {
           submit: "Schedule",
           onSubmit: async (values) => {
             if (!values.when) throw new Error("A date is required.");
+            const { application, ...fields } = values;
+            const appPath = app ? app.path : application;
+            if (!appPath)
+              throw new Error("Pick the application this interview belongs to.");
             const result = await api<CreatedPath>("/api/interview", {
               method: "POST",
-              body: { application: app.path, ...values },
+              body: { application: appPath, ...fields },
             });
             toast(`Scheduled — preparation notes live in ${result.path}`);
           },
         },
       );
     },
-    [modal, schema.data, toast],
+    [index.data, modal, schema.data, toast],
   );
 }
 

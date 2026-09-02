@@ -1,24 +1,8 @@
-import type { ReactNode } from "react";
 import type { Person } from "../../api/types";
 import { ObsidianLink } from "../../components/NoteViewer";
 import EditableField from "../../components/EditableField";
-
-/** `fieldRow()` (index.html:705). */
-function FieldRow({ label, children }: { label: string; children: ReactNode }) {
-  return (
-    <div className="field-row">
-      <label>{label}</label>
-      {children}
-    </div>
-  );
-}
-
-/** `referencePill()` (index.html:1319). */
-function ReferencePill({ status }: { status: string | null }) {
-  if (!status) return null;
-  const kind = status === "confirmed" ? "good" : status === "declined" ? "bad" : "warn";
-  return <span className={`pill ${kind}`}>{`reference: ${status}`}</span>;
-}
+import FieldRow from "../../components/FieldRow";
+import { ReferencePill } from "../../components/Pills";
 
 /** Port of `personCard()` (index.html:1429). Open/closed accordion state lives
  *  in the parent's per-path Set (`personCard`'s `OPEN_EDITORS`), passed down so

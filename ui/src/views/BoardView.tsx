@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { useIndexQuery, useSchemaQuery } from "../api/queries";
 import type { Application } from "../api/types";
-import BoardCard, { StatusPill, useMoveCard } from "./board/BoardCard";
+import BoardCard, { useMoveCard } from "./board/BoardCard";
+import { StatusPill } from "../components/Pills";
 
 /** One drop-target column per status. Drag-and-drop and each card's `<select>`
  *  are two paths to the same write (`renderBoard()`, index.html:1116). */

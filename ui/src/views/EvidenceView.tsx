@@ -3,10 +3,8 @@ import { useFormModal } from "../components/FormModal";
 import NoteViewer from "../components/NoteViewer";
 
 /** Port of `renderEvidence()` (index.html:1477): roles then accomplishments,
- *  each a `noteViewer` whose summary also carries the company and status. The
- *  shared `NoteViewer` has no slot for that extra summary content (frozen —
- *  see the branch report for this gap); the company/status ride along in the
- *  title text instead, which is the closest approximation without editing it. */
+ *  each a `noteViewer` whose summary also carries the company and a status
+ *  pill. */
 export default function EvidenceView() {
   const index = useIndexQuery().data;
   const openForm = useFormModal();
@@ -25,8 +23,14 @@ export default function EvidenceView() {
             <NoteViewer
               key={item.path}
               path={item.path}
-              title={
-                [item.title, item.company, item.status].filter(Boolean).join(" — ") || item.title
+              title={item.title}
+              summary={
+                <>
+                  <span className="muted" style={{ marginLeft: "auto" }}>
+                    {item.company || ""}
+                  </span>
+                  <span className="pill">{item.status || "—"}</span>
+                </>
               }
             />
           ))}

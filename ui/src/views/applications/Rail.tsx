@@ -3,15 +3,11 @@ import EditableField from "../../components/EditableField";
 import { ObsidianLink } from "../../components/NoteViewer";
 import type { Application, VaultIndex } from "../../api/types";
 import PickList from "./PickList";
-import {
-  FieldRow,
-  NOTE_ORDER,
-  ReferencePill,
-  involvementMatches,
-  peopleFor,
-  type DocSelection,
-} from "./helpers";
-import { useAddContact, useAddInterview, useLinkPerson } from "./actions";
+import FieldRow from "../../components/FieldRow";
+import { ReferencePill } from "../../components/Pills";
+import { involvementMatches, peopleFor } from "../../lib/people";
+import { NOTE_ORDER, type DocSelection } from "./helpers";
+import { useAddContact, useAddInterview, useLinkPerson } from "../../lib/actions";
 
 /** `docButton()`, index.html:1012. The selection is marked from the path each
  *  button carries rather than its label, so duplicate names cannot confuse it

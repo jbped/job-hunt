@@ -1,6 +1,7 @@
 import { NoteContent, ObsidianLink } from "../../components/NoteViewer";
 import type { Application } from "../../api/types";
-import { StatusPill, type DocSelection } from "./helpers";
+import { StatusPill } from "../../components/Pills";
+import type { DocSelection } from "./helpers";
 
 /** `renderViewer()`, index.html:1030 — the right pane shows exactly one
  *  document: a note rendered with its edit flow, or a rendered PDF inline. */

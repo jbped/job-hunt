@@ -1,57 +1,10 @@
-import { useIndexQuery, useSchemaQuery } from "../api/queries";
-import { api } from "../api/client";
-import { useModal } from "../components/Modal";
-import { useToast } from "../components/Toast";
-import type { CreatedPath } from "../api/types";
+import { useIndexQuery } from "../api/queries";
+import { useAddInterview } from "../lib/actions";
 import InterviewCard from "./interviews/InterviewCard";
-
-/** Port of `addInterview(null)` (index.html:1658) — the "Schedule interview"
- *  action on this view always asks which application, unlike the same modal
- *  reached from the Applications viewer with one already picked. */
-function useScheduleInterview() {
-  const modal = useModal();
-  const toast = useToast();
-  const index = useIndexQuery().data;
-  const schema = useSchemaQuery().data;
-
-  return async () => {
-    if (!index || !schema) return;
-    const applications = [...index.applications].sort((a, b) => Number(b.active) - Number(a.active));
-    await modal(
-      [
-        {
-          key: "application",
-          label: "Application",
-          choices: applications.map((a) => ({ value: a.path, label: `${a.company} — ${a.position}` })),
-        },
-        { key: "when", label: "Date and time", placeholder: "2026-09-02 14:00 MDT" },
-        { key: "stage", label: "Stage", options: schema.stage },
-        { key: "method", label: "Method", options: schema.method },
-        { key: "point_of_contact", label: "Point of contact" },
-        { key: "interviewers", label: "Interviewers" },
-        { key: "location_or_link", label: "Location or link" },
-      ],
-      {
-        title: "Schedule an interview",
-        submit: "Schedule",
-        onSubmit: async (values) => {
-          if (!values.when) throw new Error("A date is required.");
-          const { application, ...fields } = values;
-          if (!application) throw new Error("Pick the application this interview belongs to.");
-          const result = await api<CreatedPath>("/api/interview", {
-            method: "POST",
-            body: { application, ...fields },
-          });
-          toast(`Scheduled — preparation notes live in ${result.path}`);
-        },
-      },
-    );
-  };
-}
 
 export default function InterviewsView() {
   const index = useIndexQuery().data;
-  const scheduleInterview = useScheduleInterview();
+  const addInterview = useAddInterview();
 
   const upcoming = [...(index?.interviews ?? [])]
     .filter((i) => i.upcoming)
@@ -63,7 +16,7 @@ export default function InterviewsView() {
   return (
     <section data-view="calendar" data-active="">
       <div className="actionbar">
-        <button className="btn btn-primary" id="scheduleInterview" onClick={() => void scheduleInterview()}>
+        <button className="btn btn-primary" id="scheduleInterview" onClick={() => void addInterview(null)}>
           Schedule interview
         </button>
         <span className="hint">

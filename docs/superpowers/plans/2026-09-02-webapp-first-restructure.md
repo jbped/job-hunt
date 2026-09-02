@@ -48,13 +48,13 @@
 - Consumes: nothing (first task).
 - Produces: `vaultlib.SERVER_ROOT: Path` (the `server/` directory), `vaultlib.TEMPLATES_DIR: Path`, `vaultlib.REPO_ROOT: Path` (unchanged name/behavior). Every later task assumes scripts run as `python3 server/<script>.py` from the repo root.
 
-- [ ] **Step 1: Create the branch**
+- [x] **Step 1: Create the branch**
 
 ```bash
 git checkout -b webapp-first-0.5
 ```
 
-- [ ] **Step 2: git mv the script directory and assets**
+- [x] **Step 2: git mv the script directory and assets**
 
 ```bash
 git mv .agents/skills/career-evidence/scripts server
@@ -67,7 +67,7 @@ rmdir .agents/skills/career-evidence/assets
 
 If a stray `server/__pycache__/` came along, delete it (`rm -rf server/__pycache__`).
 
-- [ ] **Step 3: Retarget the root constants**
+- [x] **Step 3: Retarget the root constants**
 
 In `server/vaultlib.py`, replace lines 33-34:
 
@@ -131,7 +131,7 @@ SKILLS_ROOT = REPO_ROOT / ".agents" / "skills"
 
 After the edits, `grep -rn "SKILL_ROOT" server/` must return nothing.
 
-- [ ] **Step 4: Run the safety tests**
+- [x] **Step 4: Run the safety tests**
 
 ```bash
 python3 server/test_safety.py
@@ -139,7 +139,7 @@ python3 server/test_safety.py
 
 Expected: `test_release_archive_has_portable_skill_roots` may FAIL (the zip contract changes in Task 2 — old assertions expect `career-evidence/SKILL.md` at the archive root). Every other test must PASS. If anything else fails, fix the constant retargeting — do not touch the tests.
 
-- [ ] **Step 5: Smoke the vault audit**
+- [x] **Step 5: Smoke the vault audit**
 
 ```bash
 python3 server/audit_vault.py; echo "exit=$?"
@@ -147,7 +147,7 @@ python3 server/audit_vault.py; echo "exit=$?"
 
 Expected: `exit=0` against the live vault.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add -A
@@ -166,13 +166,13 @@ git commit -m "Move the Python app and its assets to server/"
 - Consumes: `vaultlib.REPO_ROOT` from Task 1.
 - Produces: `package_app.build(output: Path) -> Path` writing `dist/career-evidence-app.zip`; module constants `APP_TOP_LEVEL: list[str]`, `CANONICAL_SKILLS: set[str]` (unchanged members), `EXCLUDED_DIRS: set[str]`, `EXCLUDED_FILES: set[str]`. Task 5 (CI) invokes `python3 server/package_app.py`.
 
-- [ ] **Step 1: Rename the module**
+- [x] **Step 1: Rename the module**
 
 ```bash
 git mv server/package_skill.py server/package_app.py
 ```
 
-- [ ] **Step 2: Rewrite the packaging logic**
+- [x] **Step 2: Rewrite the packaging logic**
 
 Keep `CANONICAL_SKILLS`, `EXCLUDED_DIRS`, `EXCLUDED_FILES` and the CLI shape; replace the file selection and archive layout. The zip is the application, rooted at the repo layout, runnable from the unzipped root:
 
@@ -233,7 +233,7 @@ def build(output):
 
 Archive names are therefore repo-relative: `server/serve.py`, `.agents/skills/career-evidence/SKILL.md`, `Dockerfile`, … Default output becomes `REPO_ROOT / "dist" / "career-evidence-app.zip"`. `docs/superpowers/` (personal process docs) is excluded via `EXCLUDED_DIRS`. Adapt surrounding code (docstring, `main()`, argparse help) to say "app", and keep the module stdlib-only.
 
-- [ ] **Step 3: Update the two packaging references in test_safety.py**
+- [x] **Step 3: Update the two packaging references in test_safety.py**
 
 In `server/test_safety.py`: change `import package_skill` to `import package_app` (and every `package_skill.` reference — grep for it). Leave `test_skill_sources_are_host_neutral` (line 199) logically unchanged: it walks `CANONICAL_SKILLS` under `.agents/skills/`, now via `package_app.CANONICAL_SKILLS`; its `scripts/*.py` glob simply matches nothing once skills carry no scripts, which is correct.
 
@@ -265,7 +265,7 @@ def test_release_archive_has_portable_skill_roots(self):
 
 Match the existing test file's assertion style and helpers when writing the final version — this block shows the required assertions, not necessarily the file's idiom.
 
-- [ ] **Step 4: Run the safety tests**
+- [x] **Step 4: Run the safety tests**
 
 ```bash
 python3 server/test_safety.py
@@ -273,7 +273,7 @@ python3 server/test_safety.py
 
 Expected: all tests PASS, including both packaging tests.
 
-- [ ] **Step 5: Build the zip and verify it runs from the unzipped root**
+- [x] **Step 5: Build the zip and verify it runs from the unzipped root**
 
 ```bash
 rm -f dist/career-evidence-skill.zip
@@ -284,7 +284,7 @@ python3 server/serve.py --help
 
 Expected: unzip succeeds, `--help` prints usage (proves the app is runnable in place). Then `cd` back to the repo. If `dist/` entries are untracked (check `git status dist/`), nothing to commit for the artifacts; if the stale zip was tracked, `git rm` it.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add -A
@@ -303,7 +303,7 @@ git commit -m "Package the application zip instead of the skill set"
 - Consumes: `server/` layout from Task 1.
 - Produces: image entrypoint `python3 /app/server/serve.py --no-browser`; `demo/build_demo.py` imports via `sys.path.insert(0, str(REPO / "server"))`.
 
-- [ ] **Step 1: Retarget the Dockerfile**
+- [x] **Step 1: Retarget the Dockerfile**
 
 Replace:
 
@@ -325,7 +325,7 @@ ENTRYPOINT ["python3", "/app/server/serve.py", "--no-browser"]
 
 Env (`CAREER_EVIDENCE_VAULT=/vault`, `CAREER_EVIDENCE_BIND=0.0.0.0`), `EXPOSE 8765`, and the healthcheck stay exactly as they are. `compose.yaml` needs no change (build context `.`, loopback-only publish `127.0.0.1:8765:8765`) — verify, don't edit.
 
-- [ ] **Step 2: Retarget .dockerignore**
+- [x] **Step 2: Retarget .dockerignore**
 
 Replace its contents:
 
@@ -335,7 +335,7 @@ Replace its contents:
 server/__pycache__
 ```
 
-- [ ] **Step 3: Retarget demo/build_demo.py**
+- [x] **Step 3: Retarget demo/build_demo.py**
 
 Replace:
 
@@ -351,7 +351,7 @@ SERVER = REPO / "server"
 sys.path.insert(0, str(SERVER))
 ```
 
-- [ ] **Step 4: Verify the demo build and the Docker image**
+- [x] **Step 4: Verify the demo build and the Docker image**
 
 ```bash
 python3 demo/build_demo.py
@@ -364,7 +364,7 @@ docker compose down
 
 Expected: demo build completes, image builds, `docker OK` prints. (Docker daemon starts on demand via the socket; no sudo needed.)
 
-- [ ] **Step 5: Run the safety tests**
+- [x] **Step 5: Run the safety tests**
 
 ```bash
 python3 server/test_safety.py
@@ -372,7 +372,7 @@ python3 server/test_safety.py
 
 Expected: PASS.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add -A
@@ -390,7 +390,7 @@ git commit -m "Point Docker and the demo builder at server/"
 - Consumes: `server/<script>.py` invocation form from Task 1.
 - Produces: skills that describe scripts as living in the repo's `server/` directory, still host-neutral.
 
-- [ ] **Step 1: Rewrite the script-location wording**
+- [x] **Step 1: Rewrite the script-location wording**
 
 The convention across all skills: scripts are invoked repo-relative as `python3 server/<script>.py`, run from the repository root (the directory that contains both `server/` and `.agents/`). Concretely:
 
@@ -410,7 +410,7 @@ grep -rn "scripts/" .agents/skills/ --include="*.md"
 
 Expected after edits: no hits referring to the old script location (hits about unrelated words are fine — read each).
 
-- [ ] **Step 2: Run the safety tests (neutrality gate)**
+- [x] **Step 2: Run the safety tests (neutrality gate)**
 
 ```bash
 python3 server/test_safety.py
@@ -418,11 +418,11 @@ python3 server/test_safety.py
 
 Expected: PASS — in particular `test_skill_sources_are_host_neutral` (the edits must introduce no provider names).
 
-- [ ] **Step 3: Walk one skill against the new paths**
+- [x] **Step 3: Walk one skill against the new paths**
 
 Read `.agents/skills/new-application/SKILL.md` end-to-end and dry-check every command it names resolves: `ls server/new_application.py server/capture_jd.py server/schema.py`. Expected: all exist.
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add -A
@@ -441,11 +441,11 @@ git commit -m "Retarget skills to invoke server/ scripts"
 - Consumes: `python3 server/<script>.py` form; `package_app.py` from Task 2.
 - Produces: docs that describe the webapp-first layout; CI that tests and packages from `server/`.
 
-- [ ] **Step 1: README**
+- [x] **Step 1: README**
 
 Line 33 → `python server/serve.py --vault demo/vault`; line 63 → `python server/init_vault.py`; delete line 102's "With `scripts/` meaning …" preamble (no longer needed) and rewrite 105-109 as `python server/status.py`, `python server/serve.py`, `python server/new_application.py "Company" "Role"`, `python server/render_pdf.py --app <folder> --kind resume`, `python server/audit_vault.py`.
 
-- [ ] **Step 2: AGENTS.md**
+- [x] **Step 2: AGENTS.md**
 
 Reframe the opening paragraph webapp-first. Replace the current first paragraph with:
 
@@ -460,7 +460,7 @@ root. Never commit personal data here — `vault/` stays ignored.
 
 Add a short "The server" section before "The skill" noting: the application lives in `server/` (Python stdlib only), serves the dashboard, and owns all deterministic vault operations; the skills in `.agents/skills/` are the AI integration layer and invoke `server/<script>.py`. Update line 35 → "in `server/schema.py`", the regen command → `python3 server/export_index.py --write-field-reference`, and line 41's "run from `scripts/`:" → "run from the repo root:" with `python3 server/test_safety.py` and `python3 server/audit_vault.py`. Update the "skills ship together — `package_skill.py` zips the whole set" sentence to "the release zip is the whole application — `server/package_app.py` builds it".
 
-- [ ] **Step 3: docs/setup.md, docs/host-adapters.md, extension/README.md**
+- [x] **Step 3: docs/setup.md, docs/host-adapters.md, extension/README.md**
 
 - `docs/setup.md:22` — `cd .agents/skills/career-evidence/scripts` → run from the repo root, `python3 server/…`; line 88 — "From `.agents/skills/career-evidence/scripts/`:" → "From the repo root:" (adjust the commands beneath to `server/` paths).
 - `docs/host-adapters.md:9` — `.agents/skills/career-evidence/scripts/test_safety.py` → `server/test_safety.py`; line 47 — "work through `career-evidence/scripts/`" → "work through `server/`"; line 61 — "`scripts/package_skill.py` builds a portable zip" → "`server/package_app.py` builds the application zip"; line 65 — "from `.agents/skills/career-evidence/scripts/`, run `python3 test_safety.py`" → "from the repo root, run `python3 server/test_safety.py`".
@@ -474,7 +474,7 @@ grep -rn "career-evidence/scripts" --include="*.md" --include="*.yml" --include=
 
 Expected: no hits (docs/superpowers specs/plans are historical records and stay as written).
 
-- [ ] **Step 4: Generated footers + regenerate Field Reference**
+- [x] **Step 4: Generated footers + regenerate Field Reference**
 
 - `server/schema.py:475` — footer text → ``regenerate with `python server/export_index.py --write-field-reference`.``
 - `server/export_index.py:321` — Skill Matrix footer → ``regenerate with `python server/export_index.py --write-skill-matrix`.`` (the live Skill Matrix updates whenever the user next regenerates it; do not regenerate it now — it belongs to the user's evidence flow).
@@ -487,11 +487,11 @@ python3 server/audit_vault.py; echo "exit=$?"
 
 Expected: Field Reference rewritten with the new footer; audit `exit=0`.
 
-- [ ] **Step 5: ROADMAP.md**
+- [x] **Step 5: ROADMAP.md**
 
 Apply the spec's "Roadmap rewrite" section verbatim in spirit: reframe the product line to "A local-first job-hunt **webapp** where markdown is the database — a dashboard you run yourself, supplemented by local CLI AI agents that work the same vault through the same surface." Mark 0.4 as shipped if the file tracks status, then list: **0.5 — Webapp-first restructure** (this milestone; release artifact becomes the app zip), **0.6 — React frontend** (parity port, committed bundle, old page retired), **0.7 — AI sandbox (investigate)** (open questions copied unchanged from the spec), **Later** items reframed as React feature work over the same API, and the unchanged non-goals. Preserve the file's existing structure and voice — this is a retargeting, not a rewrite from scratch.
 
-- [ ] **Step 6: CI workflow**
+- [x] **Step 6: CI workflow**
 
 In `.github/workflows/release.yml`, both steps currently use `working-directory: .agents/skills/career-evidence/scripts`. Change to run from the checkout root:
 
@@ -504,7 +504,7 @@ In `.github/workflows/release.yml`, both steps currently use `working-directory:
 
 and retarget the artifact/release attachment from `dist/career-evidence-skill.zip` to `dist/career-evidence-app.zip` (keep the tag-vs-dispatch conditional structure exactly as it is).
 
-- [ ] **Step 7: Run the safety tests**
+- [x] **Step 7: Run the safety tests**
 
 ```bash
 python3 server/test_safety.py
@@ -512,7 +512,7 @@ python3 server/test_safety.py
 
 Expected: PASS.
 
-- [ ] **Step 8: Commit**
+- [x] **Step 8: Commit**
 
 ```bash
 git add -A
@@ -530,7 +530,7 @@ git commit -m "Sweep docs, roadmap, generated footers, and CI to the server/ lay
 - Consumes: everything above.
 - Produces: the verification evidence for the milestone.
 
-- [ ] **Step 1: Tests and audit**
+- [x] **Step 1: Tests and audit**
 
 ```bash
 python3 server/test_safety.py
@@ -539,7 +539,7 @@ python3 server/audit_vault.py; echo "exit=$?"
 
 Expected: all tests PASS; `exit=0`.
 
-- [ ] **Step 2: Dashboard smoke against the demo vault (create lead → archive → restore → PDF)**
+- [x] **Step 2: Dashboard smoke against the demo vault (create lead → archive → restore → PDF)**
 
 ```bash
 python3 demo/build_demo.py
@@ -558,7 +558,7 @@ command -v ps2pdf >/dev/null && python3 server/render_pdf.py --app <a demo appli
 
 Expected: lead lifecycle works; PDF renders if Ghostscript is installed.
 
-- [ ] **Step 3: Docker**
+- [x] **Step 3: Docker**
 
 ```bash
 docker compose up --build -d
@@ -568,7 +568,7 @@ docker compose down
 
 (Requires `CAREER_EVIDENCE_VAULT_HOST` — use the demo vault path as in Task 3.) Expected: `docker OK`.
 
-- [ ] **Step 4: App zip from a clean unzip**
+- [x] **Step 4: App zip from a clean unzip**
 
 ```bash
 python3 server/package_app.py
@@ -578,7 +578,7 @@ cd "$ZIPDIR" && python3 server/test_safety.py; cd -
 
 Expected: safety tests pass inside the unzipped tree (proves runnable-from-unzipped-root; the archive test inside the zip re-verifies no vault data / no provider-named paths).
 
-- [ ] **Step 5: Final commit if verification required fixes; report**
+- [x] **Step 5: Final commit if verification required fixes; report**
 
 Write a short verification report (what ran, what passed, anything skipped and why) to `docs/superpowers/plans/2026-09-02-webapp-first-restructure-verification.md`, commit:
 

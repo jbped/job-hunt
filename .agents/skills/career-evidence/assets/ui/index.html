@@ -263,6 +263,7 @@
     <button data-view="calendar">Interviews</button>
     <button data-view="people">People</button>
     <button data-view="evidence">Evidence</button>
+    <button data-view="archived">Archived</button>
     <button id="pairExtension" title="Show the session token the browser extension needs">Pair extension</button>
     <button class="btn-primary" id="newApp">New application</button>
   </nav>
@@ -351,6 +352,13 @@
     </div>
     <h2>Career evidence</h2>
     <div id="evidence"></div>
+  </section>
+
+  <section data-view="archived">
+    <h2>Archived</h2>
+    <p class="hint">Moved to the vault's Archive/ folder, whole and untouched.
+      There is no delete — restoring puts a unit back exactly where it came from.</p>
+    <div id="archived"></div>
   </section>
 
 </main>
@@ -1032,7 +1040,12 @@ async function renderViewer() {
   viewer.textContent = "";
   const head = el("div", { className: "viewer-head" },
     el("span", { className: "title grow" }, DOC.label),
-    statusPill(app.status));
+    statusPill(app.status),
+    el("button", { className: "btn",
+                   onclick: () => archiveUnit("application", app.path,
+                                              `${app.company} — ${app.position}`),
+                   title: "Move the whole application folder to Archive/" },
+       "Archive…"));
   const body = el("div", {});
   const doc = el("div", { className: "viewer-doc" }, head, body);
   viewer.append(doc);
@@ -1168,6 +1181,9 @@ function leadCard(lead) {
       open ? el("button", { className: "btn", onclick: () => promoteLead(lead),
                             title: roleKnown ? "Scaffold the application"
                                              : "Record the role first" }, "Promote") : null,
+      el("button", { className: "btn",
+                     onclick: () => archiveUnit("lead", lead.path, lead.company),
+                     title: "Move this lead to Archive/" }, "Archive…"),
       obsidian(lead.path)),
     el("div", { className: "muted" },
        [inlineText(lead.source), lead.date_added ? `added ${lead.date_added}` : null,
@@ -1504,6 +1520,59 @@ function openDetail(path) {
 
 // -- write actions --------------------------------------------------------
 
+// -- Archive --------------------------------------------------------------
+// Archival is the API's only removal flow: the unit moves whole into Archive/
+// and can be restored from there. Nothing here deletes.
+
+function archiveUnit(kind, path, label) {
+  modal(`Archive ${label}?`, [
+    { key: "reason", label: "Why (optional, kept on the note)", multiline: true },
+  ], async (values) => {
+    await api("/api/archive", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ kind, path, reason: values.reason }),
+    });
+    toast(`Archived ${label}`);
+    if (kind === "application" && CURRENT && CURRENT.path === path) CURRENT = null;
+  }, "Archive");
+}
+
+async function restoreUnit(entry) {
+  try {
+    const result = await api("/api/unarchive", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ path: entry.path }),
+    });
+    toast(`Restored to ${result.restored}`);
+    await refresh();
+  } catch (error) { toast(error.message, "error"); }
+}
+
+function renderArchived() {
+  const host = $("#archived"); host.textContent = "";
+  const entries = DATA.archived || [];
+  if (!entries.length) {
+    host.append(el("div", { className: "empty" },
+      "Nothing archived. Applications and leads archive from their own views."));
+    return;
+  }
+  for (const entry of entries) {
+    const name = [entry.company, entry.position].filter(Boolean).join(" — ");
+    host.append(el("div", { className: "card" },
+      el("div", { className: "row" },
+        el("span", { className: "title grow" }, name || entry.path),
+        el("span", { className: "pill" }, entry.kind),
+        entry.status ? statusPill(entry.status) : null,
+        el("button", { className: "btn", onclick: () => restoreUnit(entry),
+                       title: `Move back to ${entry.archived_from}` }, "Restore"),
+        obsidian(entry.brief)),
+      el("div", { className: "muted" },
+         [entry.archived ? `archived ${entry.archived}` : null,
+          entry.archive_reason, entry.archived_from]
+           .filter(Boolean).join(" · "))));
+  }
+}
+
 function modal(title, fields, onSubmit, submitLabel) {
   const dialog = $("#modal"), form = $("#modalForm");
   form.textContent = "";
@@ -1672,6 +1741,7 @@ function render() {
   else if (VIEW === "calendar") renderCalendar();
   else if (VIEW === "people") renderPeople();
   else if (VIEW === "evidence") renderEvidence();
+  else if (VIEW === "archived") renderArchived();
 }
 
 for (const button of document.querySelectorAll("nav button[data-view]"))
@@ -1682,11 +1752,11 @@ const HASH_VIEW = location.hash.replace("#", "");
 if (document.querySelector(`nav button[data-view="${HASH_VIEW}"]`)) show(HASH_VIEW);
 $("#newApp").addEventListener("click", newApplication);
 $("#pairExtension").addEventListener("click", () => {
-  // The token is per-session: restarting the server invalidates it, and the
-  // extension needs the new one pasted in again.
+  // The token is per-vault and survives restarts; pairing is a one-time act
+  // unless the token is deliberately re-rolled (--new-token).
   modal("Pair the browser extension", [
-    { key: "token", label: "Session token — paste it into the extension's settings. " +
-        "It changes every time the dashboard restarts.", value: SESSION_TOKEN },
+    { key: "token", label: "Write token — paste it into the extension's settings. " +
+        "It survives restarts; re-roll it with serve.py --new-token.", value: SESSION_TOKEN },
   ], async () => {
     try { await navigator.clipboard.writeText(SESSION_TOKEN); toast("Token copied"); }
     catch { toast("Copy it from the field above", "bad"); }

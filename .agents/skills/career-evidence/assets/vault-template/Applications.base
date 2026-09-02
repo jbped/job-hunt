@@ -1,6 +1,7 @@
 filters:
   and:
     - note.type == "application"
+    - '!file.inFolder("Archive")'
 properties:
   note.company:
     displayName: Company

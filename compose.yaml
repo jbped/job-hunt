@@ -1,0 +1,11 @@
+services:
+  dashboard:
+    build: .
+    ports:
+      # Published on the host's loopback only — nothing is reachable off-host.
+      - "127.0.0.1:8765:8765"
+    volumes:
+      - "${CAREER_EVIDENCE_VAULT_HOST:?set CAREER_EVIDENCE_VAULT_HOST to your vault's absolute path}:/vault"
+    # Match the host user so vault files keep their ownership.
+    user: "${UID:-1000}:${GID:-1000}"
+    restart: unless-stopped

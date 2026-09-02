@@ -127,9 +127,16 @@ def check_person(report: Report, note: Path, vault: Path, fm: dict, text: str) -
                              f"{', '.join(schema.CONTACT_RELATIONSHIP)}")
 
 
+def _live_parts(rel: Path) -> tuple[str, ...]:
+    """A note's path parts with the Archive/ mirror prefix stripped, so
+    location checks apply equally to live and archived notes."""
+    parts = rel.parts
+    return parts[1:] if parts[:1] == ("Archive",) else parts
+
+
 def check_lead(report: Report, note: Path, vault: Path, fm: dict) -> None:
     rel = note.relative_to(vault)
-    if rel.parts[0] != "Leads":
+    if _live_parts(rel)[0] != "Leads":
         report.warn(f"{rel}: lead notes belong in Leads/ at the vault root")
     status = fm.get("status")
     # These are the two transitions that carry information; losing it silently
@@ -142,7 +149,7 @@ def check_lead(report: Report, note: Path, vault: Path, fm: dict) -> None:
 
 def check_interview(report: Report, note: Path, vault: Path, fm: dict) -> None:
     rel = note.relative_to(vault)
-    parts = rel.parts
+    parts = _live_parts(rel)
     if len(parts) != 5 or parts[0] != "Applications" or parts[3] != "Interviews":
         report.warn(f"{rel}: interview notes belong in "
                     "Applications/<Company>/<Role>/Interviews/")
@@ -259,6 +266,23 @@ def audit(vault: Path, check_wikilinks: bool = True) -> Report:
                 for field in ("job_url", "discovery_method", "compensation_status"):
                     if not fm.get(field):
                         report.warn(f"{rel}/Application Brief.md: {field} not recorded")
+
+    archive = vault / "Archive"
+    if archive.is_dir():
+        # The mirror only holds what may be archived; anything else there was
+        # moved by hand and is invisible to the live tooling.
+        for entry in sorted(archive.iterdir()):
+            if entry.name not in ("Applications", "Leads"):
+                report.error(f"Archive/{entry.name}: only Applications/ and Leads/ "
+                             "may be archived")
+        anchors = [*archive.glob("Applications/*/*/Application Brief.md"),
+                   *archive.glob("Leads/*.md")]
+        for anchor in sorted(anchors):
+            fm, _ = v.read_note(anchor)
+            rel = anchor.relative_to(vault)
+            for field in ("archived", "archived_from"):
+                if not fm.get(field):
+                    report.error(f"{rel}: archived note is missing '{field}'")
 
     for note in sorted(vault.rglob("*.md")):
         if ".cache" in note.parts or "Templates" in note.parts:

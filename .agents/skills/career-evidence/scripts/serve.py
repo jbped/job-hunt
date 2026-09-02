@@ -565,6 +565,111 @@ def create_capture(vault: Path, payload: dict) -> dict:
             "sha256": digest}
 
 
+ARCHIVE_DIR = "Archive"
+
+
+def _archive_anchor(kind: str, target: Path) -> Path:
+    """The note that carries the archive frontmatter for a unit being moved."""
+    if kind == "application":
+        anchor = target / "Application Brief.md"
+        if not target.is_dir() or not anchor.is_file():
+            raise RequestError(400, "an application archives as its whole folder — "
+                                    "pass Applications/<Company>/<Role>")
+    else:
+        anchor = target
+        if not target.is_file():
+            raise RequestError(400, "a lead archives as its single note")
+    return anchor
+
+
+def _stamp(vault: Path, anchor: Path, fields: dict, drop: list[str],
+           expect: str | None) -> None:
+    """Rewrite the anchor's archive frontmatter, guarded like every other write."""
+    _, text = v.read_note(anchor)
+    expect = expect or v.fingerprint(anchor)
+    for key in drop:
+        text = v.drop_frontmatter_field(text, key)
+    for key, value in fields.items():
+        text = v.set_frontmatter_field(text, key, value)
+    try:
+        v.atomic_write(anchor, text, expect=expect, vault=vault)
+    except v.ConflictError as error:
+        raise RequestError(409, str(error))
+
+
+def archive_unit(vault: Path, payload: dict) -> dict:
+    """Move an application folder or lead note into the Archive/ mirror.
+
+    Archival is the only removal flow the API offers; nothing here deletes.
+    The unit moves whole — for an application that includes the checksummed
+    posting, untouched — and the anchor note records where it came from so
+    unarchiving is deterministic.
+    """
+    kind = str(payload.get("kind", "")).strip()
+    if kind not in schema.ARCHIVABLE_KINDS:
+        raise RequestError(400, f"kind must be one of: "
+                                f"{', '.join(schema.ARCHIVABLE_KINDS)}")
+    relative = str(payload.get("path", "")).strip().strip("/")
+    parts = Path(relative).parts
+    expected_root = {"application": "Applications", "lead": "Leads"}[kind]
+    depth = {"application": 3, "lead": 2}[kind]
+    if len(parts) != depth or parts[0] != expected_root:
+        raise RequestError(400, f"a {kind} lives directly under {expected_root}/")
+    target = resolve(vault, relative)
+
+    anchor = _archive_anchor(kind, target)
+    fm, _ = v.read_note(anchor)
+    if fm.get("type") != kind:
+        raise RequestError(400, f"{relative} is not a {kind} note")
+
+    _stamp(vault, anchor, {
+        "archived": time.strftime("%Y-%m-%d"),
+        "archive_reason": str(payload.get("reason", "")).strip() or None,
+        "archived_from": Path(relative).as_posix(),
+    }, drop=[], expect=payload.get("fingerprint"))
+
+    dest = vault / ARCHIVE_DIR / relative
+    if dest.exists():
+        stem, suffix = (dest.stem, dest.suffix) if target.is_file() else (dest.name, "")
+        dest = dest.with_name(f"{stem} (archived {time.strftime('%Y-%m-%d')}){suffix}")
+    if dest.exists():
+        raise RequestError(409, f"{dest.relative_to(vault)} already exists")
+    dest.parent.mkdir(parents=True, exist_ok=True)
+    target.rename(dest)
+    return {"changed": True, "archived": str(dest.relative_to(vault)),
+            "from": relative}
+
+
+def unarchive_unit(vault: Path, payload: dict) -> dict:
+    """Move an archived unit back to the path its frontmatter recorded."""
+    relative = str(payload.get("path", "")).strip().strip("/")
+    if Path(relative).parts[:1] != (ARCHIVE_DIR,):
+        raise RequestError(400, f"only paths under {ARCHIVE_DIR}/ can be restored")
+    target = resolve(vault, relative)
+    kind = "application" if target.is_dir() else "lead"
+
+    anchor = _archive_anchor(kind, target)
+    fm, _ = v.read_note(anchor)
+    original = str(fm.get("archived_from") or "").strip().strip("/")
+    if not original:
+        raise RequestError(400, "the note records no archived_from path — "
+                                "restore it by hand in Obsidian")
+    dest = (vault / original).resolve()
+    try:
+        dest.relative_to(vault.resolve())
+    except ValueError:
+        raise RequestError(403, "archived_from points outside the vault")
+    if dest.exists():
+        raise RequestError(409, f"{original} already exists — a new {kind} has "
+                                "taken that path since this one was archived")
+
+    _stamp(vault, anchor, {}, drop=list(schema.ARCHIVE_FIELDS),
+           expect=payload.get("fingerprint"))
+    dest.parent.mkdir(parents=True, exist_ok=True)
+    target.rename(dest)
+    return {"changed": True, "restored": original}
+
+
 def start_render(vault: Path, payload: dict) -> dict:
     """Kick off a PDF render on a worker thread and return a job id to poll.
 
@@ -620,6 +725,8 @@ HANDLERS = {
     "/api/accomplishment": create_accomplishment,
     "/api/lead": create_lead,
     "/api/capture": create_capture,
+    "/api/archive": archive_unit,
+    "/api/unarchive": unarchive_unit,
     "/api/render": start_render,
 }
 
@@ -644,6 +751,7 @@ def api_schema(vault: Path) -> dict:
         "reference_permission": schema.REFERENCE_PERMISSION,
         "contact_audience": schema.CONTACT_AUDIENCE,
         "editable": schema.UI_EDITABLE,
+        "archivable": schema.ARCHIVABLE_KINDS,
         "forms": schema.FORMS,
         "vault_name": vault.name,
     }
@@ -840,7 +948,10 @@ def stop_previous(vault: Path) -> bool:
     The PID alone is not trusted — PIDs get recycled, and killing whatever now
     holds the number would be worse than the stale server. The process is only
     signalled after the port it recorded answers as a career-evidence dashboard.
-    Returns whether a running dashboard was actually stopped.
+    Returns whether a running dashboard was actually stopped. In a container
+    this is harmless by construction: the server is PID 1, the self-PID check
+    skips it, and a stale record from a previous container run fails the
+    liveness probe.
     """
     pidfile = _pidfile(vault)
     if not pidfile.is_file():
@@ -884,6 +995,34 @@ def default_port() -> int:
         return 8765
 
 
+def default_bind() -> str:
+    return (os.environ.get("CAREER_EVIDENCE_BIND")
+            or v.load_env().get("CAREER_EVIDENCE_BIND") or "127.0.0.1")
+
+
+def load_or_create_token(vault: Path) -> str:
+    """The per-vault write token, created once and reused across restarts.
+
+    Persisting it means the browser extension pairs once instead of after
+    every restart. It lives in .cache/ — derived and disposable — so deleting
+    the file (or --new-token) re-rolls it deliberately.
+    """
+    token_file = vault / ".cache" / "session-token"
+    try:
+        token = token_file.read_text(encoding="utf-8").strip()
+        if token:
+            return token
+    except OSError:
+        pass
+    token = secrets.token_hex(16)
+    token_file.parent.mkdir(parents=True, exist_ok=True)
+    # 0600 keeps other local users out; advisory on Windows/NTFS.
+    fd = os.open(token_file, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
+    with os.fdopen(fd, "w", encoding="utf-8") as handle:
+        handle.write(token + "\n")
+    return token
+
+
 def detach(vault: Path, args) -> int:
     """Relaunch the server as its own session and return once it answers.
 
@@ -894,7 +1033,7 @@ def detach(vault: Path, args) -> int:
     log = vault / ".cache" / "serve.log"
     log.parent.mkdir(parents=True, exist_ok=True)
     cmd = [sys.executable, str(Path(__file__).resolve()),
-           "--port", str(args.port), "--no-browser"]
+           "--port", str(args.port), "--bind", args.bind, "--no-browser"]
     if args.vault:
         cmd += ["--vault", args.vault]
     kwargs: dict = {}
@@ -927,7 +1066,13 @@ def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--vault")
     ap.add_argument("--port", type=int, default=default_port())
+    ap.add_argument("--bind", default=default_bind(),
+                    help="interface to bind (default 127.0.0.1; only a container "
+                         "should widen this, with its published port kept local)")
     ap.add_argument("--no-browser", action="store_true")
+    ap.add_argument("--new-token", action="store_true",
+                    help="re-roll the persisted write token; paired extensions "
+                         "must pair again")
     ap.add_argument("--detach", action="store_true",
                     help="start in the background and return immediately")
     ap.add_argument("--stop", action="store_true",
@@ -942,18 +1087,25 @@ def main() -> int:
         return detach(vault, args)
 
     Handler.vault = vault
-    Handler.token = secrets.token_hex(16)
+    if args.new_token:
+        (vault / ".cache" / "session-token").parent.mkdir(parents=True, exist_ok=True)
+        (vault / ".cache" / "session-token").write_text("", encoding="utf-8")
+    Handler.token = load_or_create_token(vault)
     stop_previous(vault)
     export_index.write(vault)
 
-    # 127.0.0.1 rather than 0.0.0.0: this server can write to personal data, so
-    # it must not be reachable from the network. Writes additionally require the
-    # per-session token injected into the served page.
+    # 127.0.0.1 rather than 0.0.0.0, always, by default: this server can write
+    # to personal data, so it must not be reachable from the network. Writes
+    # additionally require the per-vault token injected into the served page.
+    # The bind widens only through the explicit CAREER_EVIDENCE_BIND / --bind
+    # opt-in, which exists for the Docker image — there the container binds its
+    # own interface while compose publishes the port on the host's loopback
+    # only, so nothing is reachable off-host either way.
     try:
-        server = ThreadingHTTPServer(("127.0.0.1", args.port), Handler)
+        server = ThreadingHTTPServer((args.bind, args.port), Handler)
     except OSError as error:
         raise SystemExit(
-            f"Could not bind 127.0.0.1:{args.port} ({error.strerror}).\n"
+            f"Could not bind {args.bind}:{args.port} ({error.strerror}).\n"
             "Something else holds the port — an untracked older dashboard, or "
             "another program. Stop it, or pass --port to use a different one."
         )

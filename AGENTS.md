@@ -26,6 +26,7 @@ a provider, model, command prefix, slash-command syntax, proprietary tool name,
 or provider-specific frontmatter. Host adapters belong outside `.agents/skills/`;
 for example, each entry in `.claude/skills/` is a symlink to a canonical skill,
 which keeps the commands scoped to this project checkout in Claude Code.
+`docs/host-adapters.md` is the written guide, with a worked non-Claude example.
 
 ## Working on the tooling
 
@@ -52,5 +53,8 @@ which keeps the commands scoped to this project checkout in Claude Code.
   does not belong on a resume.
 - Contact details carry audience levels; `self` never leaves the vault, and
   rendered artifacts may carry only `application` and `public`.
-- The dashboard binds `127.0.0.1` and requires its per-session token for
-  writes — keep it that way.
+- The dashboard binds `127.0.0.1` by default and requires its per-vault token
+  (`.cache/session-token`) for writes — keep it that way. The only sanctioned
+  widening is the explicit `CAREER_EVIDENCE_BIND`/`--bind` opt-in the Docker
+  image uses, and there `compose.yaml` publishes the port on the host's
+  loopback only.

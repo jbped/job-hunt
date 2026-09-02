@@ -15,7 +15,8 @@ verbatim and checksummed so analysis can't quietly reshape it.
 - **Obsidian** (free) — for reading and editing your vault. Optional but
   recommended; everything is plain markdown either way.
 - **An AI agent** — Claude Code picks the skills up automatically when you
-  open this repo. Other agents can be pointed at `.agents/skills/`.
+  open this repo. Other agents can be pointed at `.agents/skills/` — see
+  [docs/host-adapters.md](docs/host-adapters.md).
 - **Ghostscript + Poppler** — only for PDF rendering:
   `pacman -S ghostscript poppler` (Arch), `apt install ghostscript
   poppler-utils` (Debian/Ubuntu), `brew install ghostscript poppler` (macOS),
@@ -51,6 +52,9 @@ validated before anything is submitted:
 ![A rendered resume for the demo's fictional candidate](docs/images/resume-page.png)
 
 ## Getting started
+
+Platform specifics (macOS, Windows, Docker) live in
+[docs/setup.md](docs/setup.md); the short version:
 
 1. **Clone the repo** and open a terminal in it.
 2. **Create your vault:**
@@ -111,7 +115,7 @@ The `extension/` directory holds a small Chrome/Firefox extension: on a job
 posting, click it, name the company and role, and the page's text lands in
 your vault as a checksummed verbatim capture with the application scaffolded
 around it (or as a lightweight lead). It talks to the local dashboard and
-pairs with the per-session token behind the dashboard's **Pair extension**
+pairs once with the per-vault token behind the dashboard's **Pair extension**
 button — see [extension/README.md](extension/README.md).
 
 ## What's in the repo
@@ -122,6 +126,8 @@ button — see [extension/README.md](extension/README.md).
   needs Developer Mode and `git config core.symlinks true` to recreate
   symlinks, or use the release zip, which contains real files.)
 - `extension/` — the browser capture extension, a plain no-build MV3 add-on.
+- `Dockerfile` + `compose.yaml` — optional local packaging for the dashboard;
+  the vault mounts as a volume ([docs/setup.md](docs/setup.md#docker-any-os)).
 - `vault/` — your data, if you chose the default location. Yours, gitignored.
 - Your vault's `Preferences/` folder — standing instructions for the agent:
   tone, formatting tastes, workflow defaults.
@@ -134,8 +140,8 @@ button — see [extension/README.md](extension/README.md).
 - A skill with no evidence behind it does not belong on a resume.
 - Contact details carry audience levels; anything marked `self` never leaves
   the vault.
-- The dashboard binds `127.0.0.1` only and requires a per-session token for
-  writes.
+- The dashboard binds `127.0.0.1` by default and requires a per-vault token
+  for writes; the Docker route publishes its port on the host's loopback only.
 
 ## Project
 

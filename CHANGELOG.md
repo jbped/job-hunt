@@ -5,6 +5,29 @@ loosely; versions are git tags.
 
 ## Unreleased
 
+- Setup and adapter docs: `docs/setup.md` covers Linux/macOS/Windows (the
+  symlink, Ghostscript, and PATH gotchas) and the Docker route, ending in a
+  verification checklist; `docs/host-adapters.md` writes down the host-neutral
+  skill contract with worked Claude Code and Codex examples.
+- Docker packaging: a `Dockerfile` (python slim + Ghostscript + poppler, no
+  pip) and `compose.yaml` run the dashboard with the vault as a mounted
+  volume, published on the host's loopback only. The bind stays `127.0.0.1`
+  unless explicitly widened via `CAREER_EVIDENCE_BIND`/`--bind` (the image's
+  opt-in), and the write token is now per-vault — persisted at
+  `.cache/session-token` (0600) so extension pairing survives restarts;
+  `--new-token` re-rolls it deliberately. Safety tests pin the loopback
+  default and the token file's privacy.
+- Archive flows complete CRUD without a delete: `POST /api/archive` moves an
+  application folder (posting, interviews, artifacts intact) or a lead note
+  into an `Archive/` mirror at the vault root, stamping `archived`,
+  `archive_reason`, and `archived_from` on the anchor note; `POST
+  /api/unarchive` restores to the recorded path and strips the fields. The
+  dashboard gains Archive… actions on the application viewer and lead cards
+  plus an Archived tab with Restore; the index gains an `archived` section;
+  the audit validates the mirror (only archivable kinds, archive frontmatter
+  required) and accepts archived leads/interviews at their mirrored paths;
+  the Applications/Leads `.base` tables filter `Archive/` out. There is
+  deliberately no delete endpoint, and the safety tests now pin that.
 - Applications and interviews are visibly associated: the application rail
   gains an Interviews card (status pills, one click to each note, Schedule
   interview beside them), and interview cards in the Interviews tab and the

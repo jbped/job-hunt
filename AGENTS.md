@@ -26,6 +26,7 @@ a provider, model, command prefix, slash-command syntax, proprietary tool name,
 or provider-specific frontmatter. Host adapters belong outside `.agents/skills/`;
 for example, each entry in `.claude/skills/` is a symlink to a canonical skill,
 which keeps the commands scoped to this project checkout in Claude Code.
+`docs/host-adapters.md` is the written guide, with a worked non-Claude example.
 
 ## Working on the tooling
 

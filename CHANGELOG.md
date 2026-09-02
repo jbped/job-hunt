@@ -5,6 +5,10 @@ loosely; versions are git tags.
 
 ## Unreleased
 
+- Setup and adapter docs: `docs/setup.md` covers Linux/macOS/Windows (the
+  symlink, Ghostscript, and PATH gotchas) and the Docker route, ending in a
+  verification checklist; `docs/host-adapters.md` writes down the host-neutral
+  skill contract with worked Claude Code and Codex examples.
 - Docker packaging: a `Dockerfile` (python slim + Ghostscript + poppler, no
   pip) and `compose.yaml` run the dashboard with the vault as a mounted
   volume, published on the host's loopback only. The bind stays `127.0.0.1`

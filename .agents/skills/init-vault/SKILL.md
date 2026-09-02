@@ -14,7 +14,7 @@ If `Personal Information/Contact.md` is missing or still has empty contact
 fields, the user is starting out. Walk them through it rather than filling
 forms silently:
 
-1. Run `init_vault.py` (in `../career-evidence/scripts/`) if there is no vault
+1. Run `server/init_vault.py` (from the repository root) if there is no vault
    yet — without a path it creates the repo's own gitignored `vault/`; pass a
    path to put it elsewhere. Tell the user to use Obsidian's "Open folder as
    vault" on the created folder, not "Create new vault", which would nest a

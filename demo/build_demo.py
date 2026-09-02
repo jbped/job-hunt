@@ -19,8 +19,8 @@ import shutil
 import sys
 
 REPO = Path(__file__).resolve().parent.parent
-SCRIPTS = REPO / ".agents" / "skills" / "career-evidence" / "scripts"
-sys.path.insert(0, str(SCRIPTS))
+SERVER = REPO / "server"
+sys.path.insert(0, str(SERVER))
 
 import audit_vault          # noqa: E402
 import capture_jd           # noqa: E402
@@ -257,7 +257,7 @@ def main() -> int:
     notes = sum(1 for _ in vault.rglob("*.md"))
     print(f"Built the demo vault at {vault} ({notes} notes; audit clean).")
     print("\nExplore it:")
-    print(f"  python {SCRIPTS.relative_to(REPO)}/serve.py --vault demo/vault")
+    print(f"  python {SERVER.relative_to(REPO)}/serve.py --vault demo/vault")
     print( "  or open demo/vault as a vault in Obsidian")
     return 0
 

@@ -1,4 +1,4 @@
-name: Release skill zip
+name: Release app zip
 
 on:
   push:
@@ -15,25 +15,23 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Run safety tests
-        working-directory: .agents/skills/career-evidence/scripts
-        run: python3 test_safety.py
+        run: python3 server/test_safety.py
 
-      - name: Build skill zip
-        working-directory: .agents/skills/career-evidence/scripts
-        run: python3 package_skill.py
+      - name: Build app zip
+        run: python3 server/package_app.py
 
       - name: Attach zip to release
         if: startsWith(github.ref, 'refs/tags/')
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh release create "$GITHUB_REF_NAME" dist/career-evidence-skill.zip \
+          gh release create "$GITHUB_REF_NAME" dist/career-evidence-app.zip \
             --generate-notes || \
-          gh release upload "$GITHUB_REF_NAME" dist/career-evidence-skill.zip --clobber
+          gh release upload "$GITHUB_REF_NAME" dist/career-evidence-app.zip --clobber
 
       - name: Upload build artifact
         if: "!startsWith(github.ref, 'refs/tags/')"
         uses: actions/upload-artifact@v4
         with:
-          name: career-evidence-skill
-          path: dist/career-evidence-skill.zip
+          name: career-evidence-app
+          path: dist/career-evidence-app.zip

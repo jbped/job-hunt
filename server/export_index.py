@@ -318,7 +318,7 @@ def skill_matrix_markdown(vault: Path) -> str:
     out = [
         "# Skill Matrix\n\n",
         "Generated from `skills:` frontmatter across `Career Evidence/` — do not ",
-        "edit by hand; regenerate with `python scripts/export_index.py --write-skill-matrix`.\n\n",
+        "edit by hand; regenerate with `python server/export_index.py --write-skill-matrix`.\n\n",
         "A skill listed on a resume but absent here has no evidence behind it.\n\n",
     ]
     for name, entries in skills.items():

@@ -47,7 +47,7 @@ VAULT_ROOT/
 │   └── README.md                  (+ ingested source documents)
 ├── Working Notes/
 │   ├── Open Questions.md
-│   └── Field Reference.md         (generated from scripts/schema.py)
+│   └── Field Reference.md         (generated from server/schema.py)
 └── .cache/                        (derived; safe to delete)
 ```
 
@@ -117,7 +117,7 @@ vault.
 
 ## Frontmatter
 
-Vocabularies are defined once in `scripts/schema.py` and enforced by
+Vocabularies are defined once in `server/schema.py` and enforced by
 `audit_vault.py`. Do not restate the lists elsewhere; read them from there.
 
 ### Role

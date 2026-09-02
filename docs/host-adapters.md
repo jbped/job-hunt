@@ -6,7 +6,7 @@ frontmatter, and they reference each other only by skill name and relative
 path (`../career-evidence/`), so the whole set ships together. Two safety
 tests enforce the wall — `test_skill_sources_are_host_neutral` and
 `test_release_archive_has_portable_skill_roots` in
-`.agents/skills/career-evidence/scripts/test_safety.py` — so a canonical file
+`server/test_safety.py` — so a canonical file
 that mentions a provider fails the suite.
 
 An **adapter** is anything outside `.agents/skills/` that maps the canonical
@@ -44,7 +44,7 @@ Before any job-hunt work, read
 `.agents/skills/career-evidence/SKILL.md` — it defines note ownership,
 the truth and privacy rules, and points to the workflow skills that sit
 beside it (`new-application`, `draft-resume`, …), each with its own
-`SKILL.md`. Always work through `career-evidence/scripts/` and the
+`SKILL.md`. Always work through `server/` and the
 dashboard API; never edit vault notes beyond what SKILL.md allows.
 ```
 
@@ -58,10 +58,10 @@ it, so a Codex user needs nothing extra in this checkout.
    config). The core skill routes to everything else.
 2. **Preserve relative paths**: link or copy the *whole* `.agents/skills/`
    tree — the workflow skills reference `../career-evidence/` and break if
-   separated. `scripts/package_skill.py` builds a portable zip of exactly
-   this shape.
+   separated. `server/package_app.py` builds the application zip, which
+   carries exactly this shape.
 3. **Never fork the rules**: an adapter points at the canonical files; it
    does not restate or amend them. Shared rules belong in the core skill.
-4. **Verify**: from `.agents/skills/career-evidence/scripts/`, run
-   `python3 test_safety.py` — it must pass, and it will catch a provider
+4. **Verify**: from the repo root, run
+   `python3 server/test_safety.py` — it must pass, and it will catch a provider
    marker accidentally added to a canonical file.

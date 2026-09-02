@@ -1,6 +1,6 @@
 # Field Reference
 
-Generated from the skill's `scripts/schema.py` — do not edit by hand; regenerate with `python scripts/export_index.py --write-field-reference`.
+Generated from the server's `schema.py` — do not edit by hand; regenerate with `python server/export_index.py --write-field-reference`.
 
 These are the values the tools accept in note frontmatter. Anything outside these lists is flagged by the vault audit.
 

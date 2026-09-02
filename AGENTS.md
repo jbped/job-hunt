@@ -1,9 +1,19 @@
 # Agent guidance
 
-This repo is tooling for a job-hunt system; the user's data lives in an
-Obsidian vault located via `.env` (`CAREER_EVIDENCE_VAULT`), by walking upward
-from the working directory, or falling back to the gitignored `vault/` at the
-repo root. Never commit personal data here — `vault/` stays ignored.
+This repo is a local-first job-hunt webapp where markdown is the database:
+a dashboard you run yourself over an Obsidian vault, supplemented by local
+CLI AI agents that work the same vault through the same surface. The vault
+is located via `.env` (`CAREER_EVIDENCE_VAULT`), by walking upward from the
+working directory, or falling back to the gitignored `vault/` at the repo
+root. Never commit personal data here — `vault/` stays ignored.
+
+## The server
+
+The application lives in `server/` — Python 3 stdlib only. It serves the
+dashboard from `server/assets/ui/` and owns every deterministic vault
+operation: scaffolding notes, capturing postings, rendering PDFs, indexing,
+and the audit. Run its scripts from the repository root as
+`python3 server/<script>.py`.
 
 ## The skill
 
@@ -15,10 +25,12 @@ workflow command skills. Deeper references live beside it in `references/`.
 
 The step-by-step workflows are thin sibling skills: `init-vault`,
 `new-application`, `new-person`, `draft-resume`, `draft-cover-letter`,
-`resume-pdf`, and `cover-letter-pdf`. They reference the core skill's rules,
-scripts, and references by relative path (`../career-evidence/`), so the
-skills ship together — `package_skill.py` zips the whole set. Shared rules
-belong in the core skill; a command skill holds only its own workflow.
+`resume-pdf`, and `cover-letter-pdf`. They reference the core skill's rules
+and references by relative path (`../career-evidence/`), and invoke the
+server's scripts as `python3 server/<script>.py`. They are the AI integration
+layer over the same surface the webapp uses; the release zip is the whole
+application — `server/package_app.py` builds it. Shared rules belong in the
+core skill; a command skill holds only its own workflow.
 
 Keep everything under `.agents/skills/` host-neutral. Canonical skill files may
 refer to sibling workflows by skill name and relative link, but must not assume
@@ -32,15 +44,15 @@ which keeps the commands scoped to this project checkout in Claude Code.
 
 - Scripts are Python 3 **stdlib only** — no new dependencies. External
   binaries allowed: Ghostscript (`ps2pdf`) and poppler utils, both optional.
-- Controlled vocabularies live once, in `scripts/schema.py`. After changing
+- Controlled vocabularies live once, in `server/schema.py`. After changing
   them, regenerate the vault's `Working Notes/Field Reference.md` with
-  `export_index.py --write-field-reference`.
+  `python3 server/export_index.py --write-field-reference`.
 - Structural changes to the vault layout must land in four places together:
-  the scripts, `references/vault-schema.md`, `assets/vault-template/`, and the
-  user's live vault.
-- After any change, run from `scripts/`:
-  - `python3 test_safety.py` — safety-boundary tests, must pass
-  - `python3 audit_vault.py` — must exit 0 against the live vault
+  the server scripts, `references/vault-schema.md`,
+  `server/assets/vault-template/`, and the user's live vault.
+- After any change, run from the repo root:
+  - `python3 server/test_safety.py` — safety-boundary tests, must pass
+  - `python3 server/audit_vault.py` — must exit 0 against the live vault
 
 ## Rules that are not negotiable
 

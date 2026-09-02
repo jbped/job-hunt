@@ -12,8 +12,8 @@ of [document-generation.md](../career-evidence/references/document-generation.md
 1. The source is the application's `Draft - Resume.md`. If it is missing or
    stale, follow the [`draft-resume`](../draft-resume/SKILL.md) workflow first —
    this skill renders; it does not write copy.
-2. Run `render_pdf.py --app <folder> --kind resume` from
-   `../career-evidence/scripts/`. It measures the content against real font
+2. Run `python3 server/render_pdf.py --app <folder> --kind resume` from the
+   repository root. It measures the content against real font
    metrics, renders through `ps2pdf`, validates the result, and versions the
    output into `Artifacts/` — a submitted artifact is never overwritten.
 3. If it reports the content is too long, cut copy in the draft — do not reach

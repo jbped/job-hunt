@@ -30,22 +30,22 @@ FRONTMATTER_FENCE = "---"
 # Discovery
 # --------------------------------------------------------------------------
 
-SKILL_ROOT = Path(__file__).resolve().parent.parent
-TEMPLATES_DIR = SKILL_ROOT / "assets" / "templates"
+SERVER_ROOT = Path(__file__).resolve().parent
+TEMPLATES_DIR = SERVER_ROOT / "assets" / "templates"
 ENV_VAR = "CAREER_EVIDENCE_VAULT"
 
 
 def _repo_root() -> Path:
-    """The checkout this skill lives in — where .env sits.
+    """The checkout this server lives in — where .env sits.
 
-    The skill nests at <repo>/.agents/skills/career-evidence, so the depth is
-    fixed, but search for the marker anyway: someone may vendor the skill at a
-    different depth, and a wrong guess would silently ignore their .env.
+    The server sits at <repo>/server, so the depth is fixed, but search for
+    the marker anyway: someone may vendor the app at a different depth, and a
+    wrong guess would silently ignore their .env.
     """
-    for candidate in [SKILL_ROOT, *SKILL_ROOT.parents]:
+    for candidate in [SERVER_ROOT, *SERVER_ROOT.parents]:
         if (candidate / ".git").exists() or (candidate / ".env").is_file():
             return candidate
-    return SKILL_ROOT
+    return SERVER_ROOT
 
 
 REPO_ROOT = _repo_root()

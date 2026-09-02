@@ -15,21 +15,20 @@ use on real personal data; read this once before your first change.
   for any AI agent: no provider names, slash-command syntax, or
   provider-specific frontmatter in canonical files. Host adapters (like the
   `.claude/skills/` symlinks) live outside that tree.
-- **Controlled vocabularies live once**, in
-  `.agents/skills/career-evidence/scripts/schema.py`. After changing them,
-  regenerate the field reference:
-  `python3 export_index.py --write-field-reference`.
-- **Structural vault changes land in four places together:** the scripts,
-  `references/vault-schema.md`, `assets/vault-template/`, and (for your own
-  testing) a live vault.
+- **Controlled vocabularies live once**, in `server/schema.py`. After
+  changing them, regenerate the field reference:
+  `python3 server/export_index.py --write-field-reference`.
+- **Structural vault changes land in four places together:** the server
+  scripts, `references/vault-schema.md`, `server/assets/vault-template/`, and
+  (for your own testing) a live vault.
 
 ## Before you open a PR
 
-From `.agents/skills/career-evidence/scripts/`:
+From the repo root:
 
 ```sh
-python3 test_safety.py    # safety-boundary tests, must pass
-python3 audit_vault.py    # must exit 0 against a vault built by init_vault.py
+python3 server/test_safety.py    # safety-boundary tests, must pass
+python3 server/audit_vault.py    # must exit 0 against a vault built by init_vault.py
 ```
 
 If you touched the dashboard UI, sanity-check the JavaScript still parses

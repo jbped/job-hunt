@@ -19,9 +19,8 @@ vault), and Docker (running the dashboard without installing anything else).
 git clone https://github.com/jbped/job-hunt.git
 cd job-hunt
 cp .env.example .env      # set CAREER_EVIDENCE_VAULT to where your vault should live
-cd .agents/skills/career-evidence/scripts
-python3 init_vault.py     # first time only
-python3 serve.py          # opens the dashboard on http://127.0.0.1:8765
+python3 server/init_vault.py   # first time only
+python3 server/serve.py        # opens the dashboard on http://127.0.0.1:8765
 ```
 
 PDF tooling:
@@ -85,10 +84,10 @@ disposable. The token is also printed nowhere; copy it from the dashboard's
 
 ## Verify the install
 
-From `.agents/skills/career-evidence/scripts/`:
+From the repo root:
 
-1. `python3 test_safety.py` — the safety suite must pass.
-2. `python3 audit_vault.py` — must report 0 errors against your vault.
+1. `python3 server/test_safety.py` — the safety suite must pass.
+2. `python3 server/audit_vault.py` — must report 0 errors against your vault.
 3. Open the dashboard, create a lead, archive it from its card, restore it
    from the Archived tab.
 4. If PDF tooling is installed: open an application and render a resume

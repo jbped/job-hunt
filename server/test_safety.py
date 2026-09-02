@@ -26,7 +26,7 @@ import capture_jd
 import export_index
 import init_vault
 import new_application
-import package_skill
+import package_app
 import render_pdf
 import schema
 import serve
@@ -203,8 +203,8 @@ class SafetyTest(unittest.TestCase):
             "argument-hint:",
         )
         checked = []
-        for skill in package_skill.CANONICAL_SKILLS:
-            root = package_skill.SKILLS_ROOT / skill
+        for skill in package_app.CANONICAL_SKILLS:
+            root = package_app.SKILLS_ROOT / skill
             for pattern in ("SKILL.md", "references/*.md", "scripts/*.py"):
                 checked.extend(root.rglob(pattern))
         self.assertTrue(checked, "no canonical skill files found to check")
@@ -216,17 +216,26 @@ class SafetyTest(unittest.TestCase):
                 self.assertNotIn(marker, text, f"{path}: host-specific marker {marker}")
 
     def test_release_archive_has_portable_skill_roots(self):
-        self.assertIn("vault", package_skill.EXCLUDED_DIRS)
-        output = Path(self._tmp.name) / "skills.zip"
-        package_skill.build(output)
+        self.assertIn("vault", package_app.EXCLUDED_DIRS)
+        output = Path(self._tmp.name) / "app.zip"
+        package_app.build(output)
         with zipfile.ZipFile(output) as archive:
             names = archive.namelist()
-        self.assertIn("career-evidence/SKILL.md", names)
-        self.assertIn("new-application/SKILL.md", names)
+        for required in ("server/serve.py",
+                         "server/test_safety.py",
+                         "server/assets/ui/index.html",
+                         ".agents/skills/career-evidence/SKILL.md",
+                         ".agents/skills/new-application/SKILL.md",
+                         "Dockerfile",
+                         "compose.yaml"):
+            self.assertIn(required, names)
         self.assertFalse(any(".claude-plugin" in name for name in names))
         self.assertFalse(any(name.startswith("job-hunt/") for name in names))
         self.assertFalse(any("vault" in Path(name).parts for name in names))
-        provider_names = {"anthropic", "claude", "codex", "cursor", "gemini", "openai"}
+        self.assertFalse(any(".cache" in Path(name).parts for name in names))
+        self.assertFalse(any("__pycache__" in Path(name).parts for name in names))
+        provider_names = {"anthropic", "claude", "codex", "cursor", "gemini", "openai",
+                          ".claude"}
         for name in names:
             parts = {part.lower() for part in Path(name).parts}
             self.assertTrue(parts.isdisjoint(provider_names),

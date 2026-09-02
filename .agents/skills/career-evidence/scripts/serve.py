@@ -948,7 +948,10 @@ def stop_previous(vault: Path) -> bool:
     The PID alone is not trusted — PIDs get recycled, and killing whatever now
     holds the number would be worse than the stale server. The process is only
     signalled after the port it recorded answers as a career-evidence dashboard.
-    Returns whether a running dashboard was actually stopped.
+    Returns whether a running dashboard was actually stopped. In a container
+    this is harmless by construction: the server is PID 1, the self-PID check
+    skips it, and a stale record from a previous container run fails the
+    liveness probe.
     """
     pidfile = _pidfile(vault)
     if not pidfile.is_file():
@@ -992,6 +995,34 @@ def default_port() -> int:
         return 8765
 
 
+def default_bind() -> str:
+    return (os.environ.get("CAREER_EVIDENCE_BIND")
+            or v.load_env().get("CAREER_EVIDENCE_BIND") or "127.0.0.1")
+
+
+def load_or_create_token(vault: Path) -> str:
+    """The per-vault write token, created once and reused across restarts.
+
+    Persisting it means the browser extension pairs once instead of after
+    every restart. It lives in .cache/ — derived and disposable — so deleting
+    the file (or --new-token) re-rolls it deliberately.
+    """
+    token_file = vault / ".cache" / "session-token"
+    try:
+        token = token_file.read_text(encoding="utf-8").strip()
+        if token:
+            return token
+    except OSError:
+        pass
+    token = secrets.token_hex(16)
+    token_file.parent.mkdir(parents=True, exist_ok=True)
+    # 0600 keeps other local users out; advisory on Windows/NTFS.
+    fd = os.open(token_file, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
+    with os.fdopen(fd, "w", encoding="utf-8") as handle:
+        handle.write(token + "\n")
+    return token
+
+
 def detach(vault: Path, args) -> int:
     """Relaunch the server as its own session and return once it answers.
 
@@ -1002,7 +1033,7 @@ def detach(vault: Path, args) -> int:
     log = vault / ".cache" / "serve.log"
     log.parent.mkdir(parents=True, exist_ok=True)
     cmd = [sys.executable, str(Path(__file__).resolve()),
-           "--port", str(args.port), "--no-browser"]
+           "--port", str(args.port), "--bind", args.bind, "--no-browser"]
     if args.vault:
         cmd += ["--vault", args.vault]
     kwargs: dict = {}
@@ -1035,7 +1066,13 @@ def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--vault")
     ap.add_argument("--port", type=int, default=default_port())
+    ap.add_argument("--bind", default=default_bind(),
+                    help="interface to bind (default 127.0.0.1; only a container "
+                         "should widen this, with its published port kept local)")
     ap.add_argument("--no-browser", action="store_true")
+    ap.add_argument("--new-token", action="store_true",
+                    help="re-roll the persisted write token; paired extensions "
+                         "must pair again")
     ap.add_argument("--detach", action="store_true",
                     help="start in the background and return immediately")
     ap.add_argument("--stop", action="store_true",
@@ -1050,18 +1087,25 @@ def main() -> int:
         return detach(vault, args)
 
     Handler.vault = vault
-    Handler.token = secrets.token_hex(16)
+    if args.new_token:
+        (vault / ".cache" / "session-token").parent.mkdir(parents=True, exist_ok=True)
+        (vault / ".cache" / "session-token").write_text("", encoding="utf-8")
+    Handler.token = load_or_create_token(vault)
     stop_previous(vault)
     export_index.write(vault)
 
-    # 127.0.0.1 rather than 0.0.0.0: this server can write to personal data, so
-    # it must not be reachable from the network. Writes additionally require the
-    # per-session token injected into the served page.
+    # 127.0.0.1 rather than 0.0.0.0, always, by default: this server can write
+    # to personal data, so it must not be reachable from the network. Writes
+    # additionally require the per-vault token injected into the served page.
+    # The bind widens only through the explicit CAREER_EVIDENCE_BIND / --bind
+    # opt-in, which exists for the Docker image — there the container binds its
+    # own interface while compose publishes the port on the host's loopback
+    # only, so nothing is reachable off-host either way.
     try:
-        server = ThreadingHTTPServer(("127.0.0.1", args.port), Handler)
+        server = ThreadingHTTPServer((args.bind, args.port), Handler)
     except OSError as error:
         raise SystemExit(
-            f"Could not bind 127.0.0.1:{args.port} ({error.strerror}).\n"
+            f"Could not bind {args.bind}:{args.port} ({error.strerror}).\n"
             "Something else holds the port — an untracked older dashboard, or "
             "another program. Stop it, or pass --port to use a different one."
         )

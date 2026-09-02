@@ -111,7 +111,7 @@ The `extension/` directory holds a small Chrome/Firefox extension: on a job
 posting, click it, name the company and role, and the page's text lands in
 your vault as a checksummed verbatim capture with the application scaffolded
 around it (or as a lightweight lead). It talks to the local dashboard and
-pairs with the per-session token behind the dashboard's **Pair extension**
+pairs once with the per-vault token behind the dashboard's **Pair extension**
 button — see [extension/README.md](extension/README.md).
 
 ## What's in the repo
@@ -134,8 +134,8 @@ button — see [extension/README.md](extension/README.md).
 - A skill with no evidence behind it does not belong on a resume.
 - Contact details carry audience levels; anything marked `self` never leaves
   the vault.
-- The dashboard binds `127.0.0.1` only and requires a per-session token for
-  writes.
+- The dashboard binds `127.0.0.1` by default and requires a per-vault token
+  for writes; the Docker route publishes its port on the host's loopback only.
 
 ## Project
 

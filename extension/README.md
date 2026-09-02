@@ -27,8 +27,9 @@ permission for `127.0.0.1` under the extension's Permissions tab.
 1. Start the dashboard: `python serve.py` (from the skill's `scripts/`).
 2. Click **Pair extension** in the dashboard's top bar and copy the token.
 3. Open the extension's options and paste it (the popup opens options for
-   you when unpaired). The token is per-session: restart the dashboard,
-   pair again.
+   you when unpaired). The token is per-vault and survives restarts, so
+   pairing is a one-time act; re-roll it with `serve.py --new-token` (then
+   pair again).
 
 The dashboard only ever listens on `127.0.0.1`; the token is what stops
 other pages and extensions from writing to your vault.

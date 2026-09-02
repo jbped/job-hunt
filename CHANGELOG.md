@@ -5,6 +5,14 @@ loosely; versions are git tags.
 
 ## Unreleased
 
+- Docker packaging: a `Dockerfile` (python slim + Ghostscript + poppler, no
+  pip) and `compose.yaml` run the dashboard with the vault as a mounted
+  volume, published on the host's loopback only. The bind stays `127.0.0.1`
+  unless explicitly widened via `CAREER_EVIDENCE_BIND`/`--bind` (the image's
+  opt-in), and the write token is now per-vault — persisted at
+  `.cache/session-token` (0600) so extension pairing survives restarts;
+  `--new-token` re-rolls it deliberately. Safety tests pin the loopback
+  default and the token file's privacy.
 - Archive flows complete CRUD without a delete: `POST /api/archive` moves an
   application folder (posting, interviews, artifacts intact) or a lead note
   into an `Archive/` mirror at the vault root, stamping `archived`,

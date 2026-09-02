@@ -545,6 +545,36 @@ class SafetyTest(unittest.TestCase):
         with self.assertRaises(serve.RequestError):  # restores stay inside Archive/
             serve.unarchive_unit(self.vault, {"path": "Leads"})
 
+    def test_bind_defaults_to_loopback(self):
+        # Widening the bind must be an explicit act; with no environment set,
+        # the server can only ever listen on loopback.
+        saved = {key: os.environ.pop(key, None)
+                 for key in ("CAREER_EVIDENCE_BIND",)}
+        original_load_env = v.load_env
+        v.load_env = lambda path=None: {}
+        try:
+            self.assertEqual(serve.default_bind(), "127.0.0.1")
+            os.environ["CAREER_EVIDENCE_BIND"] = "0.0.0.0"
+            self.assertEqual(serve.default_bind(), "0.0.0.0")
+        finally:
+            v.load_env = original_load_env
+            os.environ.pop("CAREER_EVIDENCE_BIND", None)
+            for key, value in saved.items():
+                if value is not None:
+                    os.environ[key] = value
+
+    def test_session_token_persists_and_is_private(self):
+        first = serve.load_or_create_token(self.vault)
+        token_file = self.vault / ".cache" / "session-token"
+        self.assertTrue(token_file.is_file())
+        if os.name != "nt":
+            self.assertEqual(token_file.stat().st_mode & 0o777, 0o600)
+        # The same token comes back on the next start — pairing survives.
+        self.assertEqual(serve.load_or_create_token(self.vault), first)
+        # An emptied file (the --new-token path) re-rolls it.
+        token_file.write_text("", encoding="utf-8")
+        self.assertNotEqual(serve.load_or_create_token(self.vault), first)
+
     def test_no_destructive_route_exists(self):
         import inspect
         self.assertEqual([r for r in serve.HANDLERS if "delete" in r], [])

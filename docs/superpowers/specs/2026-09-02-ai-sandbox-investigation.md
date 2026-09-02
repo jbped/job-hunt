@@ -45,15 +45,23 @@ sandboxed container run and are covered in §3.
 
 - **Mechanism:** "Sign in with ChatGPT" browser OAuth tied to a ChatGPT
   Plus/Pro subscription (distinct from API-key billing); tokens auto-refresh.
-  A device-code flow is documented as the standard pattern specifically for
-  containerized/headless environments.
+  `codex login --device-auth` implements a device-code flow aimed at
+  containerized/headless environments — but per OpenAI's own docs and
+  open GitHub issues, this flow currently must be **enabled by a
+  workspace/ChatGPT admin** first; it is not available out of the box for
+  every account.
 - **Host path:** `~/.codex/auth.json` (plaintext access/refresh tokens);
   OpenAI's docs caution to treat it like a password.
-- **Container guidance:** because a device-code flow is vendor-documented for
-  containers, a fresh in-container login is the sanctioned path, not
-  bind-mounting `auth.json`.
+- **Container guidance:** where device-code login is enabled, a fresh
+  in-container login is the sanctioned path over bind-mounting `auth.json`;
+  where it is not (the common case for a personal/non-managed account),
+  the documented fallback is copying the host's cached `auth.json` into the
+  container — i.e. bind-mount becomes the practical default for Codex today,
+  not a fallback.
   Sources: [OpenAI authentication docs](https://developers.openai.com/codex/auth.md),
-  [Codex CLI Authentication: OAuth, Device Code, API Keys](https://codex.danielvaughan.com/2026/04/01/codex-cli-authentication-flows-credential-management/).
+  [Codex CLI Authentication: OAuth, Device Code, API Keys](https://codex.danielvaughan.com/2026/04/01/codex-cli-authentication-flows-credential-management/),
+  [openai/codex issue #2798](https://github.com/openai/codex/issues/2798),
+  [openai/codex issue #9253](https://github.com/openai/codex/issues/9253).
 
 ### Google Gemini CLI
 
@@ -75,7 +83,7 @@ sandboxed container run and are covered in §3.
 |---|---|
 | **(a) Bind-mount host config dir, read-only** | Exposes a live, long-lived, high-privilege token to every process the container runs — Anthropic's own docs flag exfiltration risk. Simplest, zero extra friction. Host revocation kills container access too. |
 | **(b) Env var injection at container start** | Visible via `docker inspect`, `/proc/*/environ`, `ps -eww`, daemon logs — worse exposure surface than a file with restrictive perms. Not recommended for OAuth-class tokens. |
-| **(c) Fresh device-code/browser login inside the container** | No host credential ever enters the container — best isolation, matches this project's no-added-attack-surface stance. Needs outbound network to the auth provider and repeats login on every rebuild. Codex documents this as its container pattern; Claude Code supports it via `setup-token`; Gemini's OAuth is less battle-tested for repeated headless use. |
+| **(c) Fresh device-code/browser login inside the container** | No host credential ever enters the container — best isolation, matches this project's no-added-attack-surface stance. Needs outbound network to the auth provider and repeats login on every rebuild. Claude Code supports it cleanly via `setup-token` (bills to the subscription, no admin gate); Codex's `--device-auth` equivalent exists but is gated behind an admin-enabled workspace setting, so it is not reliably available to every account; Gemini's OAuth has no documented device-code path at all. |
 
 **Recommendation:** (c) as the default — it is the only option that never
 plants a copy of the user's subscription credential inside the sandboxed

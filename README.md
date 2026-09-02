@@ -30,7 +30,7 @@ history:
 
 ```sh
 python demo/build_demo.py
-python .agents/skills/career-evidence/scripts/serve.py --vault demo/vault
+python server/serve.py --vault demo/vault
 ```
 
 Or open `demo/vault` in Obsidian. Every name, employer, and number in it is
@@ -60,7 +60,7 @@ Platform specifics (macOS, Windows, Docker) live in
 2. **Create your vault:**
 
    ```sh
-   python .agents/skills/career-evidence/scripts/init_vault.py
+   python server/init_vault.py
    ```
 
    This creates `vault/` inside the checkout — gitignored, so your personal
@@ -95,18 +95,16 @@ privacy) and handles everything else: recording accomplishments, tracking
 interviews, audits, and status checks.
 
 Prefer no agent? Every workflow has a hand-editable fallback — copy a note
-from `assets/templates/` and the scripts still work.
+from `server/assets/templates/` and the scripts still work.
 
 ## Everyday commands
 
-With `scripts/` meaning `.agents/skills/career-evidence/scripts/`:
-
 ```sh
-python scripts/status.py                   # where am I, what's due
-python scripts/serve.py                    # same, as a local dashboard (127.0.0.1)
-python scripts/new_application.py "Company" "Role"
-python scripts/render_pdf.py --app <folder> --kind resume
-python scripts/audit_vault.py              # check structure, vocabulary, evidence
+python server/status.py                    # where am I, what's due
+python server/serve.py                     # same, as a local dashboard (127.0.0.1)
+python server/new_application.py "Company" "Role"
+python server/render_pdf.py --app <folder> --kind resume
+python server/audit_vault.py               # check structure, vocabulary, evidence
 ```
 
 ## Capture from the browser

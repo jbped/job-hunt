@@ -24,7 +24,7 @@ permission for `127.0.0.1` under the extension's Permissions tab.
 
 ## Pair with the dashboard
 
-1. Start the dashboard: `python serve.py` (from the skill's `scripts/`).
+1. Start the dashboard: `python3 server/serve.py` (from the repo root).
 2. Click **Pair extension** in the dashboard's top bar and copy the token.
 3. Open the extension's options and paste it (the popup opens options for
    you when unpaired). The token is per-vault and survives restarts, so

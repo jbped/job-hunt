@@ -1,9 +1,11 @@
 # Roadmap
 
-A local-first job-hunt system where **markdown is the database**. Obsidian,
-git, scripts, dashboards, extensions, and AI agents are all clients of the
-same vault of plain files. The goal: trustworthy enough to run your own
-search on, simple enough to hand to a friend.
+A local-first job-hunt **webapp** where **markdown is the database** — a
+dashboard you run yourself, supplemented by local CLI AI agents that work the
+same vault through the same surface. Obsidian, git, the server's scripts, the
+browser extension, and those agents are all clients of the same vault of
+plain files. The goal: trustworthy enough to run your own search on, simple
+enough to hand to a friend.
 
 This file is direction; concrete work lives in
 [GitHub issues](https://github.com/jbped/job-hunt/issues) by milestone.
@@ -85,12 +87,38 @@ storage change: Obsidian keeps working on the same files throughout.
 - Verified setup on macOS and Windows (with or without Docker).
 - Host adapter guide for non-Claude agents.
 
-## 0.5 — AI sandbox (investigate)
+## 0.5 — Webapp-first restructure
+
+The Python application moves out of the skill and into a top-level `server/`
+directory: engine, API, CLI, and the served UI in one place, with zero
+behavior change. The skills stay as the AI integration layer and invoke
+`server/<script>.py`.
+
+- `server/` holds the modules and `server/assets/` the templates, UI, and
+  vault template; only the root constants move.
+- The release artifact becomes the app zip — the whole application, runnable
+  from the unzipped root — instead of a standalone skill set.
+- Docker, CI, docs, and the skills all retarget to `server/`.
+
+## 0.6 — React frontend
+
+A parity port of the current dashboard page: Vite + React + TypeScript strict
+in a top-level `ui/`, same visual design, TanStack Query over the existing
+API. Redesigns come afterwards as normal feature work.
+
+- The built bundle is committed to `server/assets/ui/`, so users never need
+  Node; contributors run Vite in dev.
+- Hand-written payload types make UI/server drift a compile error.
+- Exit criterion: a side-by-side parity walk, then the vanilla `index.html`
+  is retired. One frontend, one truth.
+
+## 0.7 — AI sandbox (investigate)
 
 A containerized agent runtime: log in with a Claude or Codex subscription
 and the app dispatches analysis, drafting, and validation work to a headless
-agent in a Docker sandbox. Because agents already use the human API, this
-changes where the agent runs, not what it can do.
+agent in a Docker sandbox, interacted with through the webapp. Because agents
+already use the human API, this changes where the agent runs, not what it can
+do.
 
 Open questions to answer before committing: subscription auth passthrough,
 and preserving conversational back-and-forth (evidence interviews are
@@ -98,6 +126,8 @@ inherently interactive; agent SDKs support streaming chat, which may be
 enough).
 
 ## Later
+
+React feature work over the same API:
 
 - Insights, as dashboard views over the index: funnel analytics by discovery
   method and referral, keyword gap report, evidence coverage report.

@@ -832,6 +832,8 @@ class Handler(BaseHTTPRequestHandler):
                 if job is None:
                     raise RequestError(404, "unknown job")
                 self._json(job)
+            elif route.startswith("/assets/"):
+                self._serve_asset(urllib.parse.unquote(route[len("/assets/"):]))
             elif route.startswith("/file/"):
                 self._serve_file(urllib.parse.unquote(route[len("/file/"):]))
             else:
@@ -841,6 +843,23 @@ class Handler(BaseHTTPRequestHandler):
         except Exception:
             traceback.print_exc()
             self._json({"error": "internal error; see the terminal"}, 500)
+
+    def _serve_asset(self, relative: str) -> None:
+        """Serve one of the built frontend's hashed asset files.
+
+        These are the bundle's own JS and CSS, shipped beside index.html; they
+        carry no token and no vault data, so they are served verbatim.
+        """
+        assets = (UI_DIR / "assets").resolve()
+        target = (assets / relative).resolve()
+        try:
+            target.relative_to(assets)
+        except ValueError:
+            raise RequestError(404, "no such route")
+        if not target.is_file():
+            raise RequestError(404, "no such route")
+        kind = mimetypes.guess_type(target.name)[0] or "application/octet-stream"
+        self._send(200, target.read_bytes(), kind)
 
     def _serve_file(self, relative: str) -> None:
         """Serve a preview image or PDF from inside the vault, read-only."""

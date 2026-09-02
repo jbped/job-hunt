@@ -29,3 +29,6 @@ __pycache__/
 !/.claude/skills/new-person
 !/.claude/skills/resume-pdf
 /skills-lock.json
+
+# The React frontend workspace; the built bundle in server/assets/ui/ is committed.
+ui/node_modules/

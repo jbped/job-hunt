@@ -14,6 +14,29 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: ui/package-lock.json
+
+      - name: Install the UI workspace
+        run: npm ci
+        working-directory: ui
+
+      - name: Check the UI
+        run: npm run typecheck && npm test
+        working-directory: ui
+
+      - name: Rebuild the committed bundle
+        run: npm run build
+        working-directory: ui
+
+      # Users never run Node: server/assets/ui/ is served as committed, so a
+      # bundle that no longer matches its source is a broken release.
+      - name: Fail on bundle drift
+        run: git diff --exit-code server/assets/ui/
+
       - name: Run safety tests
         run: python3 server/test_safety.py
 

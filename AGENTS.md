@@ -15,6 +15,18 @@ operation: scaffolding notes, capturing postings, rendering PDFs, indexing,
 and the audit. Run its scripts from the repository root as
 `python3 server/<script>.py`.
 
+## The frontend
+
+The dashboard is a React 18 + TypeScript app; its source is `ui/` and its
+built bundle is committed to `server/assets/ui/`, which is what the server
+serves. Never hand-edit the bundle — change `ui/` and rebuild with
+`cd ui && npm run build`, committing the output alongside the source. Users
+need no Node; contributors run `npm run dev`, which proxies `/api` and
+`/file` to the Python server. The built `index.html` keeps the
+`__SESSION_TOKEN__` placeholder that `serve.py` substitutes on every `GET /`
+— every occurrence of that literal is replaced, so nothing else in the page
+may spell it.
+
 ## The skill
 
 The `career-evidence` skill is the heart of the repo and lives at

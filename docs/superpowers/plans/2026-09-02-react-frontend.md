@@ -184,20 +184,20 @@ Port: Now's `#upcoming/#todo/#pipeline` panels; Interviews (`renderCalendar` —
 
 ### Task C1: Merge B branches; serve the hashed bundle
 
-- [ ] Merge `0.6-views-apps`, `0.6-views-board-leads`, `0.6-views-rest` (in that order; conflicts should be nil — disjoint files — investigate any that appear). `npm run typecheck`, `npm test`, `python3 server/test_safety.py` all green.
-- [ ] Extend `server/serve.py` `do_GET`: for paths under `/assets/`, serve the file from `UI_DIR / path` (guard: resolved path must stay inside `UI_DIR`; 404 otherwise; mimetypes via `mimetypes.guess_type`; no token replacement). Keep `/` exactly as-is. Add nothing else. This is the one sanctioned server change in 0.6 — `test_safety.py` must still pass unweakened.
-- [ ] Commit `Merge the view ports and serve hashed bundle assets`.
+- [x] Merge `0.6-views-apps`, `0.6-views-board-leads`, `0.6-views-rest` (in that order; conflicts should be nil — disjoint files — investigate any that appear). `npm run typecheck`, `npm test`, `python3 server/test_safety.py` all green.
+- [x] Extend `server/serve.py` `do_GET`: for paths under `/assets/`, serve the file from `UI_DIR / path` (guard: resolved path must stay inside `UI_DIR`; 404 otherwise; mimetypes via `mimetypes.guess_type`; no token replacement). Keep `/` exactly as-is. Add nothing else. This is the one sanctioned server change in 0.6 — `test_safety.py` must still pass unweakened.
+- [x] Commit `Merge the view ports and serve hashed bundle assets`.
 
 ### Task C2: Build, parity walk, retire the vanilla page
 
-- [ ] `cd ui && npm run build` — this **replaces** `server/assets/ui/index.html` with the built page (and writes `server/assets/ui/assets/*`). The vanilla page is gone from the working tree at this moment; it survives in git history.
-- [ ] Serve the demo vault (`python3 demo/build_demo.py --force`, then `python3 server/serve.py --vault demo/vault --no-browser --port 8766`) and walk every view against the checklist: each of the 8 views renders its data; create a lead; promote it; board drag (or select fallback) moves status; open + edit + save a note; force a fingerprint conflict (edit the file on disk mid-edit) and see the conflict toast; archive + restore; schedule an interview; add a person + contact; render a PDF; wikilink navigation (application-owned and overlay cases); Obsidian link present; audit banner shows; token gate (POST without token → 403 — automatic via the shared client, verify by curl). Compare against the vanilla page from git (`git show HEAD~1:server/assets/ui/index.html > /tmp/.../old.html` served however convenient, or read it) where a behavior is in doubt.
-- [ ] Fix findings, rebuild, re-walk until clean. Commit `Ship the React frontend bundle` (the built output is part of this commit).
+- [x] `cd ui && npm run build` — this **replaces** `server/assets/ui/index.html` with the built page (and writes `server/assets/ui/assets/*`). The vanilla page is gone from the working tree at this moment; it survives in git history.
+- [x] Serve the demo vault (`python3 demo/build_demo.py --force`, then `python3 server/serve.py --vault demo/vault --no-browser --port 8766`) and walk every view against the checklist: each of the 8 views renders its data; create a lead; promote it; board drag (or select fallback) moves status; open + edit + save a note; force a fingerprint conflict (edit the file on disk mid-edit) and see the conflict toast; archive + restore; schedule an interview; add a person + contact; render a PDF; wikilink navigation (application-owned and overlay cases); Obsidian link present; audit banner shows; token gate (POST without token → 403 — automatic via the shared client, verify by curl). Compare against the vanilla page from git (`git show HEAD~1:server/assets/ui/index.html > /tmp/.../old.html` served however convenient, or read it) where a behavior is in doubt.
+- [x] Fix findings, rebuild, re-walk until clean. Commit `Ship the React frontend bundle` (the built output is part of this commit).
 
 ### Task C3: CI drift gate + docs
 
-- [ ] `.github/workflows/release.yml`: before the Python steps add setup-node (`node-version: 22`), `npm ci` + `npm run build` in `ui/`, then `git diff --exit-code server/assets/ui/` (fails the build on a stale committed bundle).
-- [ ] Docs: README gains a two-line "Developing the UI" note (`cd ui && npm run dev`, Vite proxies to the Python server; users need no Node); CONTRIBUTING.md likewise; AGENTS.md gains one paragraph: `ui/` is the React source, the committed bundle lives in `server/assets/ui/`, never hand-edit the bundle.
-- [ ] `python3 server/package_app.py` — confirm the zip picks up the new bundle (it lives under `server/`, so no packaging change should be needed; verify `server/assets/ui/assets/` files are in the zip).
-- [ ] Full gate: `npm run typecheck`, `npm test`, `python3 server/test_safety.py`, `python3 server/audit_vault.py` exit 0. Commit `Gate CI on bundle drift and document the UI workspace`.
-- [ ] Write `docs/superpowers/plans/2026-09-02-react-frontend-verification.md` recording the parity-walk checklist results and all gate outputs. Commit. Stop — do not merge to main, do not push.
+- [x] `.github/workflows/release.yml`: before the Python steps add setup-node (`node-version: 22`), `npm ci` + `npm run build` in `ui/`, then `git diff --exit-code server/assets/ui/` (fails the build on a stale committed bundle).
+- [x] Docs: README gains a two-line "Developing the UI" note (`cd ui && npm run dev`, Vite proxies to the Python server; users need no Node); CONTRIBUTING.md likewise; AGENTS.md gains one paragraph: `ui/` is the React source, the committed bundle lives in `server/assets/ui/`, never hand-edit the bundle.
+- [x] `python3 server/package_app.py` — confirm the zip picks up the new bundle (it lives under `server/`, so no packaging change should be needed; verify `server/assets/ui/assets/` files are in the zip).
+- [x] Full gate: `npm run typecheck`, `npm test`, `python3 server/test_safety.py`, `python3 server/audit_vault.py` exit 0. Commit `Gate CI on bundle drift and document the UI workspace`.
+- [x] Write `docs/superpowers/plans/2026-09-02-react-frontend-verification.md` recording the parity-walk checklist results and all gate outputs. Commit. Stop — do not merge to main, do not push.

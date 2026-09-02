@@ -31,10 +31,19 @@ python3 server/test_safety.py    # safety-boundary tests, must pass
 python3 server/audit_vault.py    # must exit 0 against a vault built by init_vault.py
 ```
 
-If you touched the dashboard UI, sanity-check the JavaScript still parses
-(`node --check` on the extracted script block works) and confirm the server
-still binds `127.0.0.1` only and still requires the per-session token for
-writes. Those two properties are non-negotiable.
+If you touched the dashboard UI, work in `ui/` — the React source — never in
+the built bundle under `server/assets/ui/`. Run the Python server, then
+`cd ui && npm install && npm run dev`: Vite serves the UI on 5173 and proxies
+`/api` and `/file` to the server on 8765. Before opening the PR:
+
+```sh
+cd ui && npm run typecheck && npm test && npm run build
+```
+
+and commit the rebuilt bundle — CI rebuilds it and fails on drift, because
+users run the committed output and never install Node. Confirm too that the
+server still binds `127.0.0.1` only and still requires the per-session token
+for writes. Those two properties are non-negotiable.
 
 ## Style
 

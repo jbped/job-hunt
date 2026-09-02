@@ -118,17 +118,30 @@ button — see [extension/README.md](extension/README.md).
 
 ## What's in the repo
 
+- `server/` — the application: the Python 3 stdlib-only engine, API, and CLI,
+  with the served frontend bundle and the note templates under
+  `server/assets/`.
+- `ui/` — the React source the bundle is built from. Only contributors need
+  it; running the dashboard never requires Node.
 - `.agents/skills/` — the canonical skills: the `career-evidence` core and the
-  seven workflows, with the scripts, references, vault template, and dashboard
-  inside it. `.claude/skills/` symlinks these for Claude Code. (Windows: git
-  needs Developer Mode and `git config core.symlinks true` to recreate
-  symlinks, or use the release zip, which contains real files.)
+  seven workflows, with their references and the vault template.
+  `.claude/skills/` symlinks these for Claude Code. (Windows: git needs
+  Developer Mode and `git config core.symlinks true` to recreate symlinks, or
+  use the release zip, which contains real files.)
 - `extension/` — the browser capture extension, a plain no-build MV3 add-on.
 - `Dockerfile` + `compose.yaml` — optional local packaging for the dashboard;
   the vault mounts as a volume ([docs/setup.md](docs/setup.md#docker-any-os)).
 - `vault/` — your data, if you chose the default location. Yours, gitignored.
 - Your vault's `Preferences/` folder — standing instructions for the agent:
   tone, formatting tastes, workflow defaults.
+
+## Developing the UI
+
+The dashboard is a React app whose built bundle is committed to
+`server/assets/ui/`, so running the app needs no Node. To work on it, run the
+Python server as usual and `cd ui && npm install && npm run dev` beside it —
+Vite serves the UI on 5173 and proxies `/api` and `/file` to the server on
+8765. `npm run build` refreshes the committed bundle; CI fails if it drifts.
 
 ## Rules that are not negotiable
 

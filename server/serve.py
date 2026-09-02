@@ -848,7 +848,10 @@ class Handler(BaseHTTPRequestHandler):
         """Serve one of the built frontend's hashed asset files.
 
         These are the bundle's own JS and CSS, shipped beside index.html; they
-        carry no token and no vault data, so they are served verbatim.
+        carry no token and no vault data, so they are served verbatim. There is
+        deliberately no extension allowlist as on /file/: that guards a vault
+        directory the user fills, while this serves build output the repo ships
+        — the escape guard is what matters here.
         """
         assets = (UI_DIR / "assets").resolve()
         target = (assets / relative).resolve()

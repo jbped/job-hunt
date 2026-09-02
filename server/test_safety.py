@@ -13,6 +13,7 @@ from __future__ import annotations
 
 from http.server import ThreadingHTTPServer
 from pathlib import Path
+import http.client
 import json
 import os
 import tempfile
@@ -594,6 +595,63 @@ class SafetyTest(unittest.TestCase):
             source = inspect.getsource(handler)
             for call in ("unlink", "rmtree", "rmdir", "remove("):
                 self.assertNotIn(call, source, f"{handler.__name__} uses {call}")
+
+    def test_assets_are_served_only_from_the_ui_bundle(self):
+        """/assets/ hands out the built frontend and nothing else.
+
+        The handler joins an unsanitised path segment, so the escape guard is
+        the only thing between a request and the rest of the disk.
+        """
+        serve.Handler.vault = self.vault
+        serve.Handler.token = "test-token-value"
+        ui = Path(self._tmp.name) / "ui-bundle"
+        (ui / "assets").mkdir(parents=True, exist_ok=True)
+        (ui / "assets" / "index-abc123.js").write_text("export const ok = 1;\n",
+                                                       encoding="utf-8")
+        (ui / "index.html").write_text("BUNDLE INDEX", encoding="utf-8")
+        outside = Path(self._tmp.name) / "outside.txt"
+        outside.write_text("PRIVATE", encoding="utf-8")
+
+        original_ui_dir = serve.UI_DIR
+        serve.UI_DIR = ui
+        server = ThreadingHTTPServer(("127.0.0.1", 0), serve.Handler)
+        port = server.server_address[1]
+        thread = threading.Thread(target=server.serve_forever, daemon=True)
+        thread.start()
+        try:
+            def get(path):
+                # http.client, not urllib: urllib collapses "/a/../b" before it
+                # ever reaches the server, which would test nothing.
+                connection = http.client.HTTPConnection("127.0.0.1", port)
+                connection.request("GET", path)
+                response = connection.getresponse()
+                body = response.read()
+                connection.close()
+                return response.status, body
+
+            status, body = get("/assets/index-abc123.js")
+            self.assertEqual(status, 200)
+            self.assertIn(b"export const ok", body)
+
+            escapes = [
+                "/assets/../index.html",
+                "/assets/%2e%2e/index.html",
+                "/assets/../../outside.txt",
+                "/assets/%2e%2e%2f%2e%2e%2foutside.txt",
+                f"/assets/{outside}",                      # absolute path
+                f"/assets/..%2f..%2f{outside.name}",
+            ]
+            for path in escapes:
+                status, body = get(path)
+                self.assertEqual(status, 404, path)
+                self.assertNotIn(b"PRIVATE", body, path)
+                self.assertNotIn(b"BUNDLE INDEX", body, path)
+
+            self.assertEqual(get("/assets/missing.js")[0], 404)
+        finally:
+            serve.UI_DIR = original_ui_dir
+            server.shutdown()
+            server.server_close()
 
     def test_posts_require_session_token(self):
         serve.Handler.vault = self.vault

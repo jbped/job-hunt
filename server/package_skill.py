@@ -14,9 +14,9 @@ import argparse
 import zipfile
 from pathlib import Path
 
-from vaultlib import SKILL_ROOT, REPO_ROOT
+from vaultlib import SERVER_ROOT, REPO_ROOT
 
-SKILLS_ROOT = SKILL_ROOT.parent
+SKILLS_ROOT = REPO_ROOT / ".agents" / "skills"
 EXCLUDED_DIRS = {"__pycache__", ".cache", ".git", "vault"}
 EXCLUDED_FILES = {".DS_Store", ".env"}
 

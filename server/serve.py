@@ -58,7 +58,7 @@ import new_role
 import schema
 import vaultlib as v
 
-UI_DIR = Path(__file__).resolve().parent.parent / "assets" / "ui"
+UI_DIR = Path(__file__).resolve().parent / "assets" / "ui"
 
 # Background render jobs, keyed by id. Bounded by how many times someone can
 # click a button, so a plain dict is fine.

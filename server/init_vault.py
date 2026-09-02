@@ -22,8 +22,8 @@ import sys
 
 from vaultlib import DEFAULT_VAULT
 
-SKILL_ROOT = Path(__file__).resolve().parent.parent
-TEMPLATE = SKILL_ROOT / "assets" / "vault-template"
+SERVER_ROOT = Path(__file__).resolve().parent
+TEMPLATE = SERVER_ROOT / "assets" / "vault-template"
 
 # The note Obsidian seeds into every brand-new vault. Removed only on an exact
 # (whitespace-normalized) match — an edited or translated note is user content.

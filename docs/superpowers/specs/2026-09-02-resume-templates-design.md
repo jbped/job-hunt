@@ -23,6 +23,19 @@ Decisions made in brainstorming (user, 2026-09-02):
   ships independently); upload→clone→preview through the webapp after
   the 0.7 sandbox exists (2b).
 
+### Amendment (2026-09-02, post-inventory)
+
+The code inventory corrected a premise: today's `.ps` files contribute
+only a style prologue (fonts, colors, icons, PDF metadata); all layout —
+margins, coordinates, section order, densities — is computed in Python
+by `render_pdf.py`, and the template body past the `brand`/`HB` marker
+is discarded unread. Decision (user, 2026-09-02): templates carry
+**style + declared layout parameters** — a parameter block (margins,
+column positions, section order, sizes, density) that the layout engine
+reads in place of its hardcoded constants, with the engine's logic
+staying in Python. This is 2a's real scope, and it is what makes 2b's
+design cloning able to honor a resume's layout, not just its styling.
+
 ## Part 2a — Template registry and picker (ships now)
 
 ### Registry

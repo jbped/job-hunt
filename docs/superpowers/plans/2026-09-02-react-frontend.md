@@ -35,7 +35,7 @@
 **Interfaces:**
 - Produces: `npm run dev` (Vite, proxies `/api` and `/file` to `http://127.0.0.1:8765`), `npm run build` (outputs to `../server/assets/ui`), `npm test` (vitest). All later tasks assume these.
 
-- [ ] **Step 1: Scaffold**
+- [x] **Step 1: Scaffold**
 
 ```bash
 cd ui 2>/dev/null || mkdir ui && cd ui
@@ -48,7 +48,7 @@ npm install @tanstack/react-query
 npm install -D vitest @testing-library/react @testing-library/user-event jsdom @testing-library/jest-dom
 ```
 
-- [ ] **Step 2: vite.config.ts**
+- [x] **Step 2: vite.config.ts**
 
 ```ts
 import { defineConfig } from "vite";
@@ -69,7 +69,7 @@ export default defineConfig({
 
 (vitest config inline via `vite.config.ts` needs `/// <reference types="vitest/config" />` at top or `defineConfig` from `vitest/config` — use `vitest/config`.)
 
-- [ ] **Step 3: tsconfig strict; index.html token bootstrap**
+- [x] **Step 3: tsconfig strict; index.html token bootstrap**
 
 Ensure `"strict": true` in `ui/tsconfig.json` (the template default — verify). Replace `ui/index.html` body with:
 
@@ -91,15 +91,15 @@ Ensure `"strict": true` in `ui/tsconfig.json` (the template default — verify).
 
 The inline script survives the Vite build verbatim — that is the placeholder `serve.py` replaces. Delete the Vite template boilerplate (logos, App.css, demo counter).
 
-- [ ] **Step 4: .gitignore entries**
+- [x] **Step 4: .gitignore entries**
 
 `ui/.gitignore`: `node_modules/`. Repo root `.gitignore`: add `ui/node_modules/`. Do NOT ignore `server/assets/ui/` — the bundle is committed.
 
-- [ ] **Step 5: package.json scripts** — `"dev": "vite"`, `"build": "tsc -b && vite build"`, `"test": "vitest run"`, `"typecheck": "tsc -b"`.
+- [x] **Step 5: package.json scripts** — `"dev": "vite"`, `"build": "tsc -b && vite build"`, `"test": "vitest run"`, `"typecheck": "tsc -b"`.
 
-- [ ] **Step 6: Verify** — `npm run typecheck` clean; `npm test` runs (0 tests OK); **do not run `npm run build` yet** (it would overwrite the vanilla page — the build first runs in phase C). `python3 ../server/test_safety.py` passes.
+- [x] **Step 6: Verify** — `npm run typecheck` clean; `npm test` runs (0 tests OK); **do not run `npm run build` yet** (it would overwrite the vanilla page — the build first runs in phase C). `python3 ../server/test_safety.py` passes.
 
-- [ ] **Step 7: Commit** — `git checkout -b react-frontend-0.6`, commit `Scaffold the React frontend workspace`.
+- [x] **Step 7: Commit** — `git checkout -b react-frontend-0.6`, commit `Scaffold the React frontend workspace`.
 
 ### Task A2: Global stylesheet + API types + client
 
@@ -111,7 +111,7 @@ The inline script survives the Vite build verbatim — that is the placeholder `
   - `types.ts`: `VaultIndex`, `Schema`, `SchemaForm`, `SchemaFormField`, `NotePayload { path: string; name: string; text: string; fingerprint: string; readonly: boolean }`, `StateResponse { state: string }`, `AuditReport { errors: string[]; warnings: string[] }`, `JobStatus`, and one request/response pair per POST route (`FieldSave`, `NoteSave`, `EntryAppend`, `InterviewCreate`, `ApplicationCreate`, `PersonCreate`, `RoleCreate`, `AccomplishmentCreate`, `LeadCreate`, `CaptureRequest`, `ArchiveRequest`, `UnarchiveRequest`, `RenderRequest`) — field names exactly per the inventory's route table. Type `VaultIndex` by reading `server/export_index.py`'s `build()` output shape; do not guess.
   - `client.ts`: `api<T>(path: string, opts?: { method?: "GET" | "POST"; body?: unknown }): Promise<T>` — JSON fetch; on POST sets `Content-Type: application/json` and `X-Session-Token`; token = `window.__SESSION_TOKEN__` unless it still equals the literal placeholder, then `import.meta.env.VITE_SESSION_TOKEN` (dev mode). Non-2xx: throw `ApiError` with `.status` and `.message` from the body's `error` key. Export `class ApiError extends Error { status: number }`.
 
-- [ ] Port the CSS verbatim (keep the custom-property names and the `prefers-color-scheme` block byte-identical; import from `main.tsx`). Write the types. Write the client. `npm run typecheck` clean; commit `Port the stylesheet and type the API surface`.
+- [x] Port the CSS verbatim (keep the custom-property names and the `prefers-color-scheme` block byte-identical; import from `main.tsx`). Write the types. Write the client. `npm run typecheck` clean; commit `Port the stylesheet and type the API surface`.
 
 ### Task A3: Query layer, vault-state poll, hash-view hook, app shell
 
@@ -127,7 +127,7 @@ The inline script survives the Vite build verbatim — that is the placeholder `
   - `views/`: `NowView.tsx`, `LeadsView.tsx`, `ApplicationsView.tsx`, `BoardView.tsx`, `InterviewsView.tsx`, `PeopleView.tsx`, `EvidenceView.tsx`, `ArchivedView.tsx` — each a stub `export default function XView() { return <section data-view="…" data-active="" /> }` so B workers touch only their own files.
   - `App.tsx`: header + nav (labels and order per the inventory table; button per view with `aria-current` handling), renders the active view component, mounts `useVaultStatePoll`, audit banners from `useAuditQuery` (port `renderAudit()`, index.html:711).
 
-- [ ] Implement; `npm run typecheck` + `npm test` clean; write one vitest for `useHashView` (mount with `location.hash = "#board"` → view `board`; `setView("leads")` calls replaceState). Commit `Add the query layer, state poll, hash routing, and app shell`.
+- [x] Implement; `npm run typecheck` + `npm test` clean; write one vitest for `useHashView` (mount with `location.hash = "#board"` → view `board`; `setView("leads")` calls replaceState). Commit `Add the query layer, state poll, hash routing, and app shell`.
 
 ### Task A4: Shared note components, markdown renderer, wikilinks, modals, inline editor
 
@@ -145,10 +145,10 @@ The inline script survives the Vite build verbatim — that is the placeholder `
   - `Modal.tsx`: `openModal(spec)` equivalent of `modal()` (index.html:1576) as a `<dialog>` component with a promise-based API: `useModal(): (fields: ModalField[], opts: { title: string; submit: string }) => Promise<Record<string, string> | null>`.
   - `FormModal.tsx`: `useFormModal(): (formKey: "application" | "person" | "role" | "accomplishment" | "lead") => Promise<void>` — builds fields from `schema.forms[formKey]` (`widget`/`enum`/`required`/`placeholder` honored), POSTs to the form's `endpoint`, toasts, `invalidateAfterWrite` (index.html:1613).
 
-- [ ] Tests (write first, watch them fail, then implement):
+- [x] Tests (write first, watch them fail, then implement):
   - `FormModal.test.tsx`: given a schema fixture with a `lead` form (one required text, one select with `enum`), the dialog renders those fields, refuses submit with the required field empty, and on submit POSTs the exact payload to the form's `endpoint` (mock `fetch`).
   - `NoteViewer.test.tsx`: mock `/api/note` then a 409 on `/api/note/save` with `{"error":"note changed on disk"}` — asserts the toast fires and the index query is invalidated (fingerprint-conflict contract).
-- [ ] `npm run typecheck` + `npm test` green; `python3 server/test_safety.py` green; commit `Add shared note, modal, and field-editor components`.
+- [x] `npm run typecheck` + `npm test` green; `python3 server/test_safety.py` green; commit `Add shared note, modal, and field-editor components`.
 
 **Phase A exit:** stub app runs under `npm run dev` against a live Python server (manual check: nav switches stubs, audit banner shows, toast works). Report back for phase B dispatch.
 

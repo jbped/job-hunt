@@ -1,7 +1,17 @@
+import { useEffect } from "react";
 import { useAuditQuery, useIndexQuery, useSchemaQuery } from "./api/queries";
 import { useHashView, type View } from "./hooks/useHashView";
 import { useVaultStatePoll } from "./hooks/useVaultStatePoll";
 import type { AuditReport } from "./api/types";
+import { useFormModal } from "./components/FormModal";
+import { useModal } from "./components/Modal";
+import { useToast } from "./components/Toast";
+import { sessionToken } from "./api/client";
+import {
+  requestApplication,
+  subscribeApplicationRequest,
+  useWikilinkDelegation,
+} from "./lib/wikilink";
 import NowView from "./views/NowView";
 import LeadsView from "./views/LeadsView";
 import ApplicationsView from "./views/ApplicationsView";
@@ -64,7 +74,48 @@ export default function App() {
   const index = useIndexQuery();
   const schema = useSchemaQuery();
   const audit = useAuditQuery();
+  const openForm = useFormModal();
+  const modal = useModal();
+  const toast = useToast();
   useVaultStatePoll();
+  useWikilinkDelegation();
+
+  // A request to show one application arrives from a wikilink or from creating
+  // one; the view switch is App's to make, the selection the view's.
+  useEffect(() => subscribeApplicationRequest(() => setView("applications")), [setView]);
+
+  async function newApplication() {
+    const created = await openForm("application");
+    if (created) requestApplication(created.path);
+  }
+
+  /** The token is per-vault and survives restarts; pairing is a one-time act
+   *  unless the token is deliberately re-rolled (--new-token). */
+  async function pairExtension() {
+    await modal(
+      [
+        {
+          key: "token",
+          label:
+            "Write token — paste it into the extension's settings. " +
+            "It survives restarts; re-roll it with serve.py --new-token.",
+          value: sessionToken(),
+        },
+      ],
+      {
+        title: "Pair the browser extension",
+        submit: "Copy",
+        onSubmit: async () => {
+          try {
+            await navigator.clipboard.writeText(sessionToken());
+            toast("Token copied");
+          } catch {
+            toast("Copy it from the field above", "error");
+          }
+        },
+      },
+    );
+  }
 
   const loadError = index.error ?? schema.error;
   const ActiveView = SECTIONS[view];
@@ -87,6 +138,16 @@ export default function App() {
               {item.label}
             </button>
           ))}
+          <button
+            id="pairExtension"
+            title="Show the session token the browser extension needs"
+            onClick={() => void pairExtension()}
+          >
+            Pair extension
+          </button>
+          <button className="btn-primary" id="newApp" onClick={() => void newApplication()}>
+            New application
+          </button>
         </nav>
       </header>
 

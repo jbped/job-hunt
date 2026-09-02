@@ -3,6 +3,8 @@ import { createRoot } from "react-dom/client";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import App from "./App";
 import { ToastProvider } from "./components/Toast";
+import { ModalProvider } from "./components/Modal";
+import { NoteOverlayProvider } from "./components/NoteOverlay";
 import "./styles.css";
 
 /** No background refetching of its own: the vault-state poll is the single
@@ -20,7 +22,11 @@ createRoot(host).render(
   <StrictMode>
     <QueryClientProvider client={queryClient}>
       <ToastProvider>
-        <App />
+        <NoteOverlayProvider>
+          <ModalProvider>
+            <App />
+          </ModalProvider>
+        </NoteOverlayProvider>
       </ToastProvider>
     </QueryClientProvider>
   </StrictMode>,

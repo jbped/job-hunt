@@ -25,6 +25,15 @@ APPLICATION_STATUS = [
 TERMINAL_STATUS = {"rejected", "withdrawn", "closed"}
 ACTIVE_STATUS = [s for s in APPLICATION_STATUS if s not in TERMINAL_STATUS]
 
+# Note kinds that may move to Archive/. Archival is the only removal flow the
+# API offers — there is no delete. People are deliberately absent for now: they
+# carry the most inbound wikilinks and the least clutter pressure.
+ARCHIVABLE_KINDS = ["application", "lead"]
+
+# Frontmatter an archived anchor note carries. `archived_from` is the original
+# vault-relative path (posix separators), which makes unarchiving deterministic.
+ARCHIVE_FIELDS = ["archived", "archive_reason", "archived_from"]
+
 # Pre-application interest. A lead needs only a company; promotion scaffolds
 # the real application and links back, and a passed lead keeps its reason —
 # that is funnel data, not garbage.
@@ -195,6 +204,9 @@ NOTE_TYPES = {
             "experience_level_stated",
             "next_action",
             "next_action_date",
+            "archived",
+            "archive_reason",
+            "archived_from",
             "tags",
         ],
     },
@@ -216,6 +228,9 @@ NOTE_TYPES = {
             "next_follow_up",
             "passed_reason",
             "application",
+            "archived",
+            "archive_reason",
+            "archived_from",
             "tags",
         ],
     },

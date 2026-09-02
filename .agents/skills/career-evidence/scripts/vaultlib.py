@@ -352,6 +352,36 @@ def _render_scalar(value) -> str:
     return text
 
 
+def drop_frontmatter_field(text: str, key: str) -> str:
+    """Remove one frontmatter key (and any indented continuation lines).
+
+    The inverse of set_frontmatter_field, with the same surgical contract:
+    every other byte is left alone. Returns the text unchanged if the key is
+    absent.
+    """
+    if not text.startswith(FRONTMATTER_FENCE):
+        return text
+    lines = text.split("\n")
+    close = next(
+        (i for i in range(1, len(lines)) if lines[i].strip() == FRONTMATTER_FENCE),
+        None,
+    )
+    if close is None:
+        return text
+    for i in range(1, close):
+        line = lines[i]
+        if line.startswith((" ", "\t")):
+            continue
+        name, sep, _ = line.partition(":")
+        if sep and name.strip() == key:
+            end = i + 1
+            while end < close and lines[end].startswith((" ", "\t")):
+                end += 1
+            del lines[i:end]
+            return "\n".join(lines)
+    return text
+
+
 def append_section_entry(text: str, heading: str, entry: str) -> str:
     """Append a block under `heading`, before the next same-or-higher heading.
 

@@ -37,6 +37,10 @@ VAULT_ROOT/
 │   │   └── <Full Name>.md         (one note per person, in exactly one folder)
 │   ├── Recruiters/                (agency and in-house recruiters)
 │   └── Job Hunt/                  (targets, interviewers, company contacts)
+├── Archive/                       (created lazily by the first archive)
+│   ├── Applications/
+│   │   └── <Company>/<Role>/      (whole folder, moved untouched)
+│   └── Leads/
 ├── Preferences/
 │   └── README.md                  (+ the user's standing instructions)
 ├── Resources/
@@ -73,6 +77,20 @@ ownership boundaries below.
 `Resources/` is the ingress point for source documents — old resumes, diplomas,
 certificates. A file there is a source, not evidence: extract facts into notes
 whose provenance lines point back at it, and never edit an ingested document.
+
+`Archive/` mirrors the live layout and holds units that are done but not
+deleted — archival over destruction is the rule, and the tools offer no delete
+at all. Only applications and leads archive, and only as whole units: an
+application folder moves with its checksummed posting, interviews, and
+artifacts intact. Before the move, the anchor note (`Application Brief.md`, or
+the lead note itself) gains `archived: YYYY-MM-DD`, optional `archive_reason`,
+and `archived_from` — the original vault-relative path, which is what makes
+restoring deterministic. The folder is created lazily by the first archive.
+Wikilinks by leaf name keep resolving after a move (both Obsidian and the
+tools match names vault-wide); a link written as a full path goes stale and
+the audit flags it as unresolved — fix it by hand, guided by `archived_from`.
+The `.base` tables filter `Archive/` out so archived rows do not mix into the
+live views.
 
 ## Formatting
 

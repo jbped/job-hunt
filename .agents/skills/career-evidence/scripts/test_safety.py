@@ -23,6 +23,7 @@ import zipfile
 
 import audit_vault
 import capture_jd
+import export_index
 import init_vault
 import new_application
 import package_skill
@@ -478,6 +479,79 @@ class SafetyTest(unittest.TestCase):
         finally:
             bystander.kill()
             bystander.wait()
+
+    def test_archive_moves_the_whole_unit_and_is_reversible(self):
+        result = serve.create_capture(self.vault, {
+            "company": "Archco", "position": "Dev",
+            "url": "https://jobs.example.com/a", "text": "Posting body"})
+        rel = result["path"]
+        jd_before = (self.vault / rel / "Job Description.md").read_bytes()
+
+        archived = serve.archive_unit(self.vault, {
+            "kind": "application", "path": rel, "reason": "position filled"})
+        self.assertFalse((self.vault / rel).exists())
+        moved = self.vault / archived["archived"]
+        self.assertEqual(archived["archived"], f"Archive/{rel}")
+        # The checksummed capture moved with its folder, byte-identical.
+        self.assertEqual((moved / "Job Description.md").read_bytes(), jd_before)
+        fm, _ = v.read_note(moved / "Application Brief.md")
+        self.assertEqual(fm.get("archived_from"), rel)
+        self.assertEqual(fm.get("archive_reason"), "position filled")
+        self.assertTrue(fm.get("archived"))
+
+        index = export_index.build(self.vault)
+        self.assertNotIn(rel, [a["path"] for a in index["applications"]])
+        entry = next(e for e in index["archived"] if e["archived_from"] == rel)
+        self.assertEqual(entry["kind"], "application")
+
+        report = audit_vault.audit(self.vault)
+        self.assertEqual([e for e in report.errors if "Archive" in e], [])
+        # A name-only wikilink to an archived note still resolves.
+        serve.create_lead(self.vault, {"company": "Linkco"})
+        serve.archive_unit(self.vault, {"kind": "lead", "path": "Leads/Linkco.md"})
+        resolved = serve.resolve_wikilink(self.vault, "Linkco")
+        self.assertEqual(resolved["path"], "Archive/Leads/Linkco.md")
+
+        restored = serve.unarchive_unit(self.vault,
+                                        {"path": archived["archived"]})
+        self.assertEqual(restored["restored"], rel)
+        self.assertTrue((self.vault / rel / "Application Brief.md").exists())
+        fm, _ = v.read_note(self.vault / rel / "Application Brief.md")
+        for field in schema.ARCHIVE_FIELDS:
+            self.assertIsNone(fm.get(field), field)
+
+    def test_archive_restores_refuse_an_occupied_destination(self):
+        serve.create_lead(self.vault, {"company": "Occupyco"})
+        archived = serve.archive_unit(self.vault, {
+            "kind": "lead", "path": "Leads/Occupyco.md"})
+        serve.create_lead(self.vault, {"company": "Occupyco"})
+        with self.assertRaises(serve.RequestError):
+            serve.unarchive_unit(self.vault, {"path": archived["archived"]})
+
+    def test_archive_refuses_evidence_and_bad_targets(self):
+        with self.assertRaises(serve.RequestError):  # unknown kind
+            serve.archive_unit(self.vault, {"kind": "person",
+                                            "path": "People/Network/Sam Test.md"})
+        with self.assertRaises(serve.RequestError):  # evidence is not a unit
+            serve.archive_unit(self.vault, {
+                "kind": "lead",
+                "path": "Applications/Testco/Tester/Job Description.md"})
+        with self.assertRaises(serve.RequestError):  # a single file inside an app
+            serve.archive_unit(self.vault, {
+                "kind": "application",
+                "path": "Applications/Testco/Tester/Analysis.md"})
+        with self.assertRaises(serve.RequestError):  # escape attempt
+            serve.archive_unit(self.vault, {"kind": "lead", "path": "../x.md"})
+        with self.assertRaises(serve.RequestError):  # restores stay inside Archive/
+            serve.unarchive_unit(self.vault, {"path": "Leads"})
+
+    def test_no_destructive_route_exists(self):
+        import inspect
+        self.assertEqual([r for r in serve.HANDLERS if "delete" in r], [])
+        for handler in (serve.archive_unit, serve.unarchive_unit):
+            source = inspect.getsource(handler)
+            for call in ("unlink", "rmtree", "rmdir", "remove("):
+                self.assertNotIn(call, source, f"{handler.__name__} uses {call}")
 
     def test_posts_require_session_token(self):
         serve.Handler.vault = self.vault

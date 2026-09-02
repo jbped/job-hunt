@@ -81,6 +81,38 @@ def _entries(text: str, under: str | None = None) -> list[dict]:
     return [e for e in out if e["fields"]]
 
 
+def _archived(vault: Path) -> list[dict]:
+    """Anchor notes under Archive/, mirrored from the live layout.
+
+    Archived units drop out of every live section because those globs only
+    scan the live folders; this section keeps them countable and restorable
+    instead of invisible.
+    """
+    out = []
+    archive = vault / "Archive"
+    anchors = [
+        *((p, "application") for p in
+          sorted((archive / "Applications").glob("*/*/Application Brief.md"))),
+        *((p, "lead") for p in sorted((archive / "Leads").glob("*.md"))),
+    ] if archive.is_dir() else []
+    for note, kind in anchors:
+        fm, _ = v.read_note(note)
+        unit = note.parent if kind == "application" else note
+        out.append({
+            "kind": kind,
+            "company": fm.get("company"),
+            "position": fm.get("position") or fm.get("role"),
+            "status": fm.get("status"),
+            "archived": fm.get("archived"),
+            "archive_reason": fm.get("archive_reason"),
+            "archived_from": fm.get("archived_from"),
+            "path": str(unit.relative_to(vault)),
+            "brief": str(note.relative_to(vault)),
+            "fingerprint": v.fingerprint(note),
+        })
+    return out
+
+
 def build(vault: Path) -> dict:
     applications, contacts, interviews, people, evidence = [], [], [], [], []
     leads = []
@@ -249,6 +281,7 @@ def build(vault: Path) -> dict:
         "generated_note": "Derived from the markdown notes. Never edit; regenerate with export_index.py.",
         "applications": applications,
         "leads": leads,
+        "archived": _archived(vault),
         "contacts": contacts,
         "interviews": interviews,
         "people": people,

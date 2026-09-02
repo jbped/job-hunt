@@ -565,6 +565,111 @@ def create_capture(vault: Path, payload: dict) -> dict:
             "sha256": digest}
 
 
+ARCHIVE_DIR = "Archive"
+
+
+def _archive_anchor(kind: str, target: Path) -> Path:
+    """The note that carries the archive frontmatter for a unit being moved."""
+    if kind == "application":
+        anchor = target / "Application Brief.md"
+        if not target.is_dir() or not anchor.is_file():
+            raise RequestError(400, "an application archives as its whole folder — "
+                                    "pass Applications/<Company>/<Role>")
+    else:
+        anchor = target
+        if not target.is_file():
+            raise RequestError(400, "a lead archives as its single note")
+    return anchor
+
+
+def _stamp(vault: Path, anchor: Path, fields: dict, drop: list[str],
+           expect: str | None) -> None:
+    """Rewrite the anchor's archive frontmatter, guarded like every other write."""
+    _, text = v.read_note(anchor)
+    expect = expect or v.fingerprint(anchor)
+    for key in drop:
+        text = v.drop_frontmatter_field(text, key)
+    for key, value in fields.items():
+        text = v.set_frontmatter_field(text, key, value)
+    try:
+        v.atomic_write(anchor, text, expect=expect, vault=vault)
+    except v.ConflictError as error:
+        raise RequestError(409, str(error))
+
+
+def archive_unit(vault: Path, payload: dict) -> dict:
+    """Move an application folder or lead note into the Archive/ mirror.
+
+    Archival is the only removal flow the API offers; nothing here deletes.
+    The unit moves whole — for an application that includes the checksummed
+    posting, untouched — and the anchor note records where it came from so
+    unarchiving is deterministic.
+    """
+    kind = str(payload.get("kind", "")).strip()
+    if kind not in schema.ARCHIVABLE_KINDS:
+        raise RequestError(400, f"kind must be one of: "
+                                f"{', '.join(schema.ARCHIVABLE_KINDS)}")
+    relative = str(payload.get("path", "")).strip().strip("/")
+    parts = Path(relative).parts
+    expected_root = {"application": "Applications", "lead": "Leads"}[kind]
+    depth = {"application": 3, "lead": 2}[kind]
+    if len(parts) != depth or parts[0] != expected_root:
+        raise RequestError(400, f"a {kind} lives directly under {expected_root}/")
+    target = resolve(vault, relative)
+
+    anchor = _archive_anchor(kind, target)
+    fm, _ = v.read_note(anchor)
+    if fm.get("type") != kind:
+        raise RequestError(400, f"{relative} is not a {kind} note")
+
+    _stamp(vault, anchor, {
+        "archived": time.strftime("%Y-%m-%d"),
+        "archive_reason": str(payload.get("reason", "")).strip() or None,
+        "archived_from": Path(relative).as_posix(),
+    }, drop=[], expect=payload.get("fingerprint"))
+
+    dest = vault / ARCHIVE_DIR / relative
+    if dest.exists():
+        stem, suffix = (dest.stem, dest.suffix) if target.is_file() else (dest.name, "")
+        dest = dest.with_name(f"{stem} (archived {time.strftime('%Y-%m-%d')}){suffix}")
+    if dest.exists():
+        raise RequestError(409, f"{dest.relative_to(vault)} already exists")
+    dest.parent.mkdir(parents=True, exist_ok=True)
+    target.rename(dest)
+    return {"changed": True, "archived": str(dest.relative_to(vault)),
+            "from": relative}
+
+
+def unarchive_unit(vault: Path, payload: dict) -> dict:
+    """Move an archived unit back to the path its frontmatter recorded."""
+    relative = str(payload.get("path", "")).strip().strip("/")
+    if Path(relative).parts[:1] != (ARCHIVE_DIR,):
+        raise RequestError(400, f"only paths under {ARCHIVE_DIR}/ can be restored")
+    target = resolve(vault, relative)
+    kind = "application" if target.is_dir() else "lead"
+
+    anchor = _archive_anchor(kind, target)
+    fm, _ = v.read_note(anchor)
+    original = str(fm.get("archived_from") or "").strip().strip("/")
+    if not original:
+        raise RequestError(400, "the note records no archived_from path — "
+                                "restore it by hand in Obsidian")
+    dest = (vault / original).resolve()
+    try:
+        dest.relative_to(vault.resolve())
+    except ValueError:
+        raise RequestError(403, "archived_from points outside the vault")
+    if dest.exists():
+        raise RequestError(409, f"{original} already exists — a new {kind} has "
+                                "taken that path since this one was archived")
+
+    _stamp(vault, anchor, {}, drop=list(schema.ARCHIVE_FIELDS),
+           expect=payload.get("fingerprint"))
+    dest.parent.mkdir(parents=True, exist_ok=True)
+    target.rename(dest)
+    return {"changed": True, "restored": original}
+
+
 def start_render(vault: Path, payload: dict) -> dict:
     """Kick off a PDF render on a worker thread and return a job id to poll.
 
@@ -620,6 +725,8 @@ HANDLERS = {
     "/api/accomplishment": create_accomplishment,
     "/api/lead": create_lead,
     "/api/capture": create_capture,
+    "/api/archive": archive_unit,
+    "/api/unarchive": unarchive_unit,
     "/api/render": start_render,
 }
 
@@ -644,6 +751,7 @@ def api_schema(vault: Path) -> dict:
         "reference_permission": schema.REFERENCE_PERMISSION,
         "contact_audience": schema.CONTACT_AUDIENCE,
         "editable": schema.UI_EDITABLE,
+        "archivable": schema.ARCHIVABLE_KINDS,
         "forms": schema.FORMS,
         "vault_name": vault.name,
     }

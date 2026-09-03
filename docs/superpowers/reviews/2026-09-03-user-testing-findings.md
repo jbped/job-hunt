@@ -222,3 +222,14 @@ Review notes:
 - Effort/model vocab differs per provider and per CLI version — the
   registry of options should come from the server (queried from each
   installed CLI where possible), not be hardcoded in the UI.
+
+## Status (Docker mode verified, 09:40)
+
+User-driven probe from inside the containerized AI Interview confirmed
+the specced boundary: exactly Read/Write/Edit/Glob/Grep, no shell or
+network tool exposed at all; `/app` readable (skills + server source,
+needed for the workflow) but write refused with EROFS (read-only
+rootfs); `/vault` the designated write target. Finding 10 therefore
+stands as a **host-mode-only** defect; Docker mode is the sandbox as
+specced. (`.env` is not in the image — `.dockerignore` admits only
+`server/`, `.agents/skills/`, `docker/`.)

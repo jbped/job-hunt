@@ -48,6 +48,7 @@ import urllib.request
 import uuid
 import webbrowser
 
+import agent_sessions
 import audit_vault
 import capture_jd
 import export_index
@@ -831,6 +832,60 @@ def start_render(vault: Path, payload: dict) -> dict:
     return {"job": job_id}
 
 
+# --------------------------------------------------------------------------
+# The AI sandbox
+# --------------------------------------------------------------------------
+# The agent is a subprocess, not a library: it reads and writes the vault
+# through its own file tools under `--restricted`, and this server relays turns
+# to it. Nothing here builds a command line out of user text — the session id
+# is the only value that reaches argv and it must parse as a UUID first.
+
+def _session_id(raw) -> str:
+    candidate = str(raw or "").strip()
+    try:
+        return str(uuid.UUID(candidate))
+    except ValueError:
+        raise RequestError(400, "session_id must be a UUID")
+
+
+def agent_interview(vault: Path, payload: dict) -> dict:
+    """Start or continue an interview turn. Answers as soon as the agent is up."""
+    if payload.get("close"):
+        session_id = _session_id(payload.get("session_id"))
+        return {"session_id": session_id, "closed": agent_sessions.close(session_id),
+                "changed": False}
+
+    message = str(payload.get("message") or "").strip()
+    if not message:
+        raise RequestError(400, "a message is required")
+    application = str(payload.get("application") or "").strip()
+
+    raw = str(payload.get("session_id") or "").strip()
+    if raw:
+        session_id = _session_id(raw)
+        resume = agent_sessions.known(vault, session_id)
+    else:
+        session_id, resume = agent_sessions.new_id(), False
+
+    session = agent_sessions.live(session_id)
+    try:
+        if session is None:
+            session = agent_sessions.spawn(vault, session_id, resume=resume)
+            session.submit(message)
+            # A fresh process has to prove it is alive before this answers,
+            # so an uninstalled or signed-out CLI is an error, not a hang.
+            session.wait_for_start()
+        else:
+            session.submit(message)
+    except agent_sessions.AgentUnavailable as error:
+        raise RequestError(502, str(error))
+
+    entry = agent_sessions.record_turn(vault, session_id, message, application)
+    # Deliberately not `changed`: the turn has only just started, and the agent
+    # writes notes itself. The index is rebuilt on the next ordinary write.
+    return {"session_id": session_id, "title": entry["title"], "changed": False}
+
+
 # POST routes and their handlers. Module-level so the whole write surface is
 # auditable in one glance, and testable against the endpoints schema.FORMS names.
 HANDLERS = {
@@ -848,6 +903,7 @@ HANDLERS = {
     "/api/archive": archive_unit,
     "/api/unarchive": unarchive_unit,
     "/api/render": start_render,
+    "/api/agent/interview": agent_interview,
 }
 
 
@@ -954,6 +1010,10 @@ class Handler(BaseHTTPRequestHandler):
             elif route == "/api/audit":
                 report = audit_vault.audit(self.vault)
                 self._json({"errors": report.errors, "warnings": report.warnings})
+            elif route == "/api/agent/sessions":
+                self._json({"sessions": agent_sessions.load_index(self.vault)})
+            elif route == "/api/agent/stream":
+                self._stream_agent(urllib.parse.parse_qs(parsed.query))
             elif route.startswith("/api/job/"):
                 with JOBS_LOCK:
                     job = JOBS.get(route.rsplit("/", 1)[-1])
@@ -971,6 +1031,55 @@ class Handler(BaseHTTPRequestHandler):
         except Exception:
             traceback.print_exc()
             self._json({"error": "internal error; see the terminal"}, 500)
+
+    def _stream_agent(self, query: dict) -> None:
+        """Relay one conversation's agent events as server-sent events.
+
+        This GET carries no token — `EventSource` cannot set a header — so the
+        unguessable session id is the capability, and the connection is refused
+        outright for any cross-origin request. That is stricter than the other
+        GETs, which answer extensions too: agent output is conversation, not
+        the vault projection the extension already reads.
+        """
+        origin = self.headers.get("Origin")
+        if origin:
+            parts = urllib.parse.urlparse(origin)
+            if parts.hostname not in ("127.0.0.1", "localhost"):
+                raise RequestError(403, "cross-origin reads are not allowed")
+        session_id = (query.get("session") or [""])[0]
+        try:
+            session_id = str(uuid.UUID(session_id))
+        except ValueError:
+            raise RequestError(404, "unknown session")
+        session = agent_sessions.live(session_id)
+        if session is None and not agent_sessions.known(self.vault, session_id):
+            raise RequestError(404, "unknown session")
+        try:
+            start = max(0, int((query.get("from") or ["0"])[0] or 0))
+        except ValueError:
+            start = 0
+
+        self.send_response(200)
+        self.send_header("Content-Type", "text/event-stream")
+        self.send_header("Cache-Control", "no-store")
+        self.send_header("Connection", "close")
+        self.end_headers()
+
+        def write(chunk: str) -> None:
+            self.wfile.write(chunk.encode("utf-8"))
+            self.wfile.flush()
+
+        try:
+            if session is None:
+                # Known but not running: the client resumes it by posting a turn.
+                write("data: " + json.dumps({"type": "idle"}) + "\n\n")
+                write("data: " + json.dumps({"type": "done"}) + "\n\n")
+                return
+            for event in session.follow(start):
+                write(": keepalive\n\n" if event is None
+                      else "data: " + json.dumps(event) + "\n\n")
+        except (BrokenPipeError, ConnectionResetError):
+            pass  # the tab went away; the conversation keeps its place
 
     def _serve_asset(self, relative: str) -> None:
         """Serve one of the built frontend's hashed asset files.

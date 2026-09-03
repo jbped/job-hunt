@@ -24,6 +24,7 @@ import unittest
 import urllib.request
 import zipfile
 
+import agent_sessions
 import audit_vault
 import capture_jd
 import export_index
@@ -857,6 +858,194 @@ class SafetyTest(unittest.TestCase):
         finally:
             server.shutdown()
             server.server_close()
+
+# --------------------------------------------------------------------------
+# The AI sandbox: the agent never gets a shell, and never leaves the vault
+# --------------------------------------------------------------------------
+
+STUB_AGENT = Path(__file__).resolve().parent / "testdata" / "stub_agent.py"
+
+
+class AgentSessionTest(unittest.TestCase):
+    """The agent boundary, exercised against a stub CLI.
+
+    The real `claude` binary is never spawned here: it costs money, needs
+    credentials, and answers differently every time. `stub_agent.py` speaks the
+    same stream-json shape, which is all the relay cares about.
+    """
+
+    def setUp(self):
+        self._tmp = tempfile.TemporaryDirectory()
+        self.vault = Path(self._tmp.name) / "vault"
+        (self.vault / ".cache").mkdir(parents=True)
+        self._bin = os.environ.get("CAREER_EVIDENCE_AGENT_BIN")
+        os.environ["CAREER_EVIDENCE_AGENT_BIN"] = str(STUB_AGENT)
+        self.addCleanup(self._restore_bin)
+        self.addCleanup(agent_sessions.close_all)
+        self.addCleanup(self._tmp.cleanup)
+
+    def _restore_bin(self):
+        if self._bin is None:
+            os.environ.pop("CAREER_EVIDENCE_AGENT_BIN", None)
+        else:
+            os.environ["CAREER_EVIDENCE_AGENT_BIN"] = self._bin
+
+    # -- the spawn boundary --------------------------------------------
+
+    def test_every_spawn_is_restricted_and_confined_to_the_vault(self):
+        for resume in (False, True):
+            args = agent_sessions.build_args(self.vault, "the-id", resume=resume)
+            self.assertIn("--restricted", args)
+            self.assertEqual(args.count("--add-dir"), 1)
+            self.assertEqual(args[args.index("--add-dir") + 1], str(self.vault))
+            # Nothing may hand the agent a shell or turn off the guard rails.
+            self.assertNotIn("--dangerously-skip-permissions", args)
+            self.assertNotIn("bypassPermissions", args)
+            self.assertNotIn("--allow-dangerously-skip-permissions", args)
+            self.assertEqual(args[args.index("--permission-mode") + 1], "acceptEdits")
+        self.assertIn("--session-id",
+                      agent_sessions.build_args(self.vault, "x", resume=False))
+        self.assertIn("--resume",
+                      agent_sessions.build_args(self.vault, "x", resume=True))
+
+    def test_a_live_spawn_carries_the_same_guard_rails(self):
+        session = agent_sessions.spawn(self.vault, agent_sessions.new_id(),
+                                       resume=False)
+        self.addCleanup(session.close)
+        self.assertIn("--restricted", session.proc.args)
+        self.assertEqual(session.proc.args[session.proc.args.index("--add-dir") + 1],
+                         str(self.vault))
+        self.assertEqual(session.proc.args[0], str(STUB_AGENT))
+
+    def test_the_agent_is_never_handed_to_a_shell(self):
+        import inspect
+        source = inspect.getsource(agent_sessions)
+        self.assertNotIn("shell=True", source)
+        self.assertNotIn("os.system", source)
+        for name in ("agent_interview", "_session_id"):
+            self.assertNotIn("shell=True", inspect.getsource(getattr(serve, name)))
+        self.assertNotIn("shell=True", inspect.getsource(serve.Handler._stream_agent))
+
+    # -- the index -----------------------------------------------------
+
+    def test_the_index_persists_and_survives_corruption(self):
+        first = agent_sessions.new_id()
+        agent_sessions.record_turn(self.vault, first,
+                                   "Tell me about the migration project")
+        second = agent_sessions.new_id()
+        agent_sessions.record_turn(self.vault, second, "Second conversation",
+                                   application="Applications/Testco/Tester")
+
+        entries = agent_sessions.load_index(self.vault)
+        self.assertEqual({e["id"] for e in entries}, {first, second})
+        by_id = {e["id"]: e for e in entries}
+        self.assertEqual(by_id[first]["title"],
+                         "Tell me about the migration project")
+        self.assertEqual(by_id[second]["application"],
+                         "Applications/Testco/Tester")
+        self.assertTrue(agent_sessions.known(self.vault, first))
+        self.assertFalse(agent_sessions.known(self.vault, agent_sessions.new_id()))
+
+        agent_sessions.index_path(self.vault).write_text("{not json", encoding="utf-8")
+        self.assertEqual(agent_sessions.load_index(self.vault), [])
+        agent_sessions.index_path(self.vault).unlink()
+        self.assertEqual(agent_sessions.load_index(self.vault), [])
+
+    def test_a_long_first_message_becomes_a_short_title(self):
+        self.assertEqual(agent_sessions.title_from("  hello   there  "),
+                         "hello there")
+        self.assertLessEqual(len(agent_sessions.title_from("word " * 100)), 60)
+
+    # -- the routes ----------------------------------------------------
+
+    def _serving(self):
+        serve.Handler.vault = self.vault
+        serve.Handler.token = "test-token-value"
+        server = ThreadingHTTPServer(("127.0.0.1", 0), serve.Handler)
+        threading.Thread(target=server.serve_forever, daemon=True).start()
+        self.addCleanup(server.server_close)
+        self.addCleanup(server.shutdown)
+        return server.server_address[1]
+
+    @staticmethod
+    def _post(port, payload, token="test-token-value"):
+        headers = {"Content-Type": "application/json"}
+        if token is not None:
+            headers["X-Session-Token"] = token
+        request = urllib.request.Request(
+            f"http://127.0.0.1:{port}/api/agent/interview",
+            data=json.dumps(payload).encode(), headers=headers, method="POST")
+        try:
+            with urllib.request.urlopen(request) as response:
+                return response.status, json.loads(response.read())
+        except urllib.error.HTTPError as error:
+            return error.code, json.loads(error.read())
+
+    @staticmethod
+    def _stream(port, session_id, limit=20):
+        """Read SSE events until the turn's sentinel arrives."""
+        connection = http.client.HTTPConnection("127.0.0.1", port, timeout=15)
+        connection.request("GET", f"/api/agent/stream?session={session_id}")
+        response = connection.getresponse()
+        events = []
+        try:
+            if response.status != 200:
+                return response.status, events
+            while len(events) < limit:
+                line = response.fp.readline().decode("utf-8").strip()
+                if not line.startswith("data: "):
+                    continue
+                event = json.loads(line[len("data: "):])
+                events.append(event)
+                if event.get("type") == "done":
+                    break
+        finally:
+            connection.close()
+        return response.status, events
+
+    def test_the_interview_route_is_token_gated(self):
+        self.assertIs(serve.HANDLERS["/api/agent/interview"], serve.agent_interview)
+        port = self._serving()
+        self.assertEqual(self._post(port, {"message": "hi"}, token=None)[0], 403)
+        self.assertEqual(self._post(port, {"message": "hi"}, token="wrong")[0], 403)
+
+    def test_a_turn_streams_the_agents_events_then_the_sentinel(self):
+        port = self._serving()
+        status, body = self._post(port, {"message": "What did I ship last year?"})
+        self.assertEqual(status, 200)
+        session_id = body["session_id"]
+
+        status, events = self._stream(port, session_id)
+        self.assertEqual(status, 200)
+        texts = [e["message"]["content"][0]["text"] for e in events
+                 if e.get("type") == "assistant"]
+        self.assertEqual(texts, ["You said: What did I ship last year?",
+                                 "(stub turn 1)"])
+        self.assertEqual([e["type"] for e in events][-2:], ["result", "done"])
+
+        # The conversation is listed for the chat UI.
+        with urllib.request.urlopen(
+                f"http://127.0.0.1:{port}/api/agent/sessions") as response:
+            listed = json.loads(response.read())["sessions"]
+        self.assertEqual([e["id"] for e in listed], [session_id])
+        self.assertEqual(listed[0]["title"], "What did I ship last year?")
+
+    def test_an_unknown_or_malformed_session_is_refused(self):
+        port = self._serving()
+        self.assertEqual(self._stream(port, agent_sessions.new_id())[0], 404)
+        self.assertEqual(self._stream(port, "not-a-uuid")[0], 404)
+        self.assertEqual(self._post(port, {"message": "hi",
+                                           "session_id": "not-a-uuid"})[0], 400)
+        self.assertEqual(self._post(port, {"message": "  "})[0], 400)
+
+    def test_a_dead_agent_is_reported_not_hung(self):
+        os.environ["CAREER_EVIDENCE_AGENT_BIN"] = str(
+            Path(__file__).resolve().parent / "testdata" / "failing_agent.sh")
+        port = self._serving()
+        status, body = self._post(port, {"message": "hi"})
+        self.assertEqual(status, 502)
+        self.assertIn("docs/setup.md", body["error"])
+
 
 # --------------------------------------------------------------------------
 # The golden rule: a render with no template chosen is byte-identical to the

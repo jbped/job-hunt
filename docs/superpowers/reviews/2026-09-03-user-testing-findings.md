@@ -134,3 +134,40 @@ be able to read `.env` at all (covered by finding 10).
   yet exercised by the user.
 - Nothing was written to the live vault during this test (blocked by
   `--restricted`); a full vault backup from 08:50 today exists.
+
+## 12. Templates: no discoverable default or ingress
+
+It is unclear in the UI where to set a default template for generated
+documents, or where to provide a new one. Today: per-application pickers
+only (no vault-wide default), and new templates are added by dropping
+`.ps` files into `Resources/Templates/` — nothing in the webapp says so
+or offers an ingress. Review: a vault-level default (settings surface,
+finding 3), and an in-app "add template" path — which is where 2b's
+upload→clone flow lands, but even before 2b the *location* needs to be
+visible.
+
+## 13. "AI Interview" is the wrong frame — this should be an AI companion
+
+The evidence interview is one workflow, not the product's AI experience.
+The intended shape is a companion that lives as its own widget on the
+page and can talk about anything in the webapp: leads, applications,
+what's next, what to plan, who to follow up with — and can trigger the
+app's automations from the context of the conversation. The evidence
+interview stays a phenomenal feature to *surface* from it: e.g. the app
+flags experience the user is claiming (from a resume/LinkedIn-style
+import — an implied feature, not built) that has not yet been interviewed
+into evidence journals, and the companion offers to run that interview.
+
+Standing principle preserved: minimize token usage by automating
+everything deterministic; the companion channels, directs, and answers,
+and triggers automations rather than doing deterministic work itself.
+
+This reframes 0.7's UI and seeding (currently a single "AI Interview"
+view with an interview-only system prompt) and connects directly to
+finding 8 (the "what next / where am I working" layer) and finding 4
+(UI iteration): the companion may well be the primary answer to
+finding 8. Needs ideation — vision-level, not a patch.
+
+Implied new concept to review alongside: "claims" — imported/asserted
+experience not yet backed by evidence, so the app can show what remains
+to be interviewed.

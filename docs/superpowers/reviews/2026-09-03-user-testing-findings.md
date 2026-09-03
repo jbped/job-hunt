@@ -267,3 +267,12 @@ while a field had focus? a rename/move the mtime hash misses? a view
 that doesn't re-derive from the index?), and whether the poll should
 become server-pushed (the SSE plumbing from 0.7 could carry vault-change
 events) rather than polled.
+
+## Decision (user, 2026-09-03): real vault stays untouched
+
+The real Obsidian vault will not be pointed at the epic until the
+findings above are worked through — too many changes pending. Everything
+in this epic stays on the demo vault. (Backup of the real vault from
+08:50 today exists regardless.) The release-zip check is the only
+remaining item from the original test list; everything else is either
+passed or captured as a finding.

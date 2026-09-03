@@ -1,0 +1,4 @@
+/* The app entry: web fonts plus the design system. Tooling that consumes
+   the component library imports design-system.css directly. */
+@import "@fontsource-variable/inter";
+@import "./design-system.css";

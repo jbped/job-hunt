@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, type JSX } from "react";
 import { useAuditQuery, useIndexQuery, useSchemaQuery } from "./api/queries";
 import { useHashView, type View } from "./hooks/useHashView";
 import { useVaultStatePoll } from "./hooks/useVaultStatePoll";
@@ -6,6 +6,7 @@ import type { AuditReport } from "./api/types";
 import { useFormModal } from "./components/FormModal";
 import { useModal } from "./components/Modal";
 import { useToast } from "./components/Toast";
+import AppearanceControl from "./components/AppearanceControl";
 import { sessionToken } from "./api/client";
 import {
   requestApplication,
@@ -151,6 +152,7 @@ export default function App() {
           <button className="btn-primary" id="newApp" onClick={() => void newApplication()}>
             New application
           </button>
+          <AppearanceControl />
         </nav>
       </header>
 

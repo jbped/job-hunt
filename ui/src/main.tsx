@@ -5,6 +5,8 @@ import App from "./App";
 import { ToastProvider } from "./components/Toast";
 import { ModalProvider } from "./components/Modal";
 import { NoteOverlayProvider } from "./components/NoteOverlay";
+import { startAppearance } from "./lib/theme";
+import "./index.css";
 import "./styles.css";
 
 /** No background refetching of its own: the vault-state poll is the single
@@ -14,6 +16,8 @@ const queryClient = new QueryClient({
     queries: { refetchOnWindowFocus: false, retry: false, staleTime: Infinity },
   },
 });
+
+startAppearance();
 
 const host = document.getElementById("root");
 if (!host) throw new Error("missing #root");

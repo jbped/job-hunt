@@ -1,0 +1,17 @@
+{
+  "extends": "./tsconfig.app.json",
+  "compilerOptions": {
+    "composite": false,
+    "noEmit": false,
+    "declaration": true,
+    "emitDeclarationOnly": true,
+    "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.lib.tsbuildinfo"
+  },
+  "include": [
+    "src/components/ui",
+    "src/hooks/use-mobile.ts",
+    "src/hooks/useAppearance.ts",
+    "src/lib/utils.ts",
+    "src/lib/theme.ts"
+  ]
+}

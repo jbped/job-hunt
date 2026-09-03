@@ -17,6 +17,10 @@ export interface EditableFieldProps {
   enumKey?: VocabularyKey;
   /** An explicit option list, when the vocabulary is not one of the schema's. */
   values?: string[];
+  /** What the empty option reads as in a select. Defaults to an em dash. */
+  emptyLabel?: string;
+  /** An accessible name, for controls whose FieldRow label is not associated. */
+  ariaLabel?: string;
   fingerprint?: string;
   type?: string;
   placeholder?: string;
@@ -28,6 +32,8 @@ export default function EditableField({
   value,
   enumKey,
   values,
+  emptyLabel,
+  ariaLabel,
   fingerprint,
   type,
   placeholder,
@@ -64,10 +70,14 @@ export default function EditableField({
 
   if (allowed)
     return (
-      <select value={current} onChange={(event) => void commit(event.target.value)}>
+      <select
+        aria-label={ariaLabel}
+        value={current}
+        onChange={(event) => void commit(event.target.value)}
+      >
         {["", ...allowed].map((option) => (
           <option key={option} value={option}>
-            {option || "—"}
+            {option || emptyLabel || "—"}
           </option>
         ))}
       </select>
@@ -77,6 +87,7 @@ export default function EditableField({
   // blur and on Enter, never per keystroke.
   return (
     <input
+      aria-label={ariaLabel}
       type={type ?? "text"}
       placeholder={placeholder ?? ""}
       value={current}

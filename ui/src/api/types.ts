@@ -43,6 +43,8 @@ export interface Application {
   experience_level_stated: string | null;
   next_action: string | null;
   next_action_date: string | null;
+  resume_template: string | null;
+  cover_letter_template: string | null;
   archived: string | null;
   archive_reason: string | null;
   archived_from: string | null;
@@ -235,6 +237,10 @@ export interface Schema extends SchemaVocabularies {
   editable: Record<string, string[]>;
   archivable: string[];
   forms: Record<FormKey, SchemaForm>;
+  /** Render kind → the template registry's names. Computed per request from
+   *  what exists, so it is not one of the fixed vocabularies. Absent when the
+   *  server predates the registry. */
+  templates?: Record<"resume" | "cover-letter", string[]>;
   vault_name: string;
 }
 

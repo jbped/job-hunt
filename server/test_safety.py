@@ -13,6 +13,7 @@ from __future__ import annotations
 
 from http.server import ThreadingHTTPServer
 from pathlib import Path
+import hashlib
 import http.client
 import json
 import os
@@ -855,6 +856,117 @@ class SafetyTest(unittest.TestCase):
         finally:
             server.shutdown()
             server.server_close()
+
+# --------------------------------------------------------------------------
+# The golden rule: a render with no template chosen is byte-identical to the
+# output this repo has always produced. The hash below is that promise. If a
+# change to the layout engine moves it, the change is a regression until the
+# author proves otherwise — so never "update the expected hash" casually.
+# --------------------------------------------------------------------------
+
+GOLDEN_RESUME = """---
+type: submission
+company: Globex Corporation
+position: Software Engineer II
+status: draft
+---
+
+# Globex Corporation | Software Engineer II
+
+## Header
+
+Avery Demoson
+Software Engineer
+Springfield, USA · avery@example.com · 555-0134 · linkedin.com/in/avery
+
+## Summary
+
+Software engineer with four years building web applications and the data pipelines behind them, including a dashboard rewrite serving 40 client teams.
+
+## Experience
+
+### Software Engineer | Acme Analytics | Mar 2022 - Jun 2024
+
+- Rewrote the legacy reporting dashboard as a TypeScript single-page app, cutting median page load from 6 seconds to 2 seconds across 40 client teams.
+- Added alerting to the order pipeline, cutting mean time to detect failures from hours to under 10 minutes.
+
+### Junior Developer | Initech Labs | Jan 2020 - Feb 2022
+
+- Maintained internal reporting scripts and stabilized the nightly data import that previously failed about once a week.
+
+## Additional Experience
+
+Volunteer Mentor | Code Club | 2021 — Coached six students through their first web projects.
+
+## Education
+
+- B.S. Computer Science | State University | 2019
+
+## Technical Skills
+
+TypeScript, Node, Python, SQL, Docker
+"""
+
+GOLDEN_RESUME_SHA256 = "40940944f45c46d5ac1ae60a2fde2bf20c29c87c844970b8770d39cd3538fc5c"
+
+
+def golden_postscript() -> str:
+    """The PostScript the default path produces for a fixed resume."""
+    template = v.TEMPLATES_DIR / "PDF" / "Resume - Figma Inspired.ps"
+    data = render_pdf.parse_resume(GOLDEN_RESUME)
+    page = render_pdf.fit(data, "resume", 1)
+    return render_pdf.build_postscript(
+        template, data, page, "Software Engineer II",
+        data["name"], "Globex Corporation")
+
+
+class GoldenRenderTest(unittest.TestCase):
+    def test_default_render_is_byte_identical(self):
+        digest = hashlib.sha256(
+            golden_postscript().encode("utf-8")).hexdigest()
+        self.assertEqual(
+            digest, GOLDEN_RESUME_SHA256,
+            "The default PDF render changed. A template-less render must stay "
+            "byte-identical to what this repo has always produced.")
+
+
+
+
+class TemplateParamsTest(unittest.TestCase):
+    def test_declared_parameters_replace_the_defaults(self):
+        params = render_pdf.parse_params(
+            "% ce-param: left 72\n"
+            "% ce-param: section_order summary, skills, experience\n")
+        self.assertEqual(params.left, 72.0)
+        self.assertEqual(params.section_order, ("summary", "skills", "experience"))
+        # Everything undeclared stays at the shipped value.
+        self.assertEqual(params.right, render_pdf.Params().right)
+
+    def test_a_prologue_without_a_block_is_the_default(self):
+        self.assertEqual(render_pdf.parse_params("%!PS-Adobe-3.0\n"),
+                         render_pdf.Params())
+
+    def test_an_unknown_parameter_is_refused_with_the_valid_keys(self):
+        with self.assertRaises(SystemExit) as caught:
+            render_pdf.parse_params("% ce-param: margin_left 72\n")
+        self.assertIn("margin_left", str(caught.exception))
+        self.assertIn("left", str(caught.exception))
+
+    def test_a_malformed_value_is_refused(self):
+        for line in ("% ce-param: left wide\n",
+                     "% ce-param: section_order summary, nonsense\n",
+                     "% ce-param: body_font Comic Sans\n"):
+            with self.assertRaises(SystemExit):
+                render_pdf.parse_params(line)
+
+    def test_declared_parameters_reach_the_rendered_postscript(self):
+        data = render_pdf.parse_resume(GOLDEN_RESUME)
+        params = render_pdf.parse_params("% ce-param: left 72\n")
+        page = render_pdf.fit(data, "resume", 1, params=params)
+        text = render_pdf.build_postscript(
+            v.TEMPLATES_DIR / "PDF" / "Resume - Figma Inspired.ps", data, page,
+            "Software Engineer II", data["name"], "Globex Corporation", params)
+        self.assertIn("ink 72 y moveto title show", text)
 
 
 if __name__ == "__main__":

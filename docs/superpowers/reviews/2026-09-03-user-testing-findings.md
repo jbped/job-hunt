@@ -76,3 +76,61 @@ the UI iteration should be built around whatever this produces.
 - Obsidian ↔ webapp round-trip: works (finding 6).
 - Company questions: entry works, post-entry edit gap (finding 7).
 - AI sandbox, zip, PDFs, live vault: not yet reported.
+
+## 9. AI Interview: "New interview" gives no feedback
+
+Clicking "New interview" produces no interaction and no indicator. By
+design a session is inert until the first message is sent, but nothing
+tells the user that — no prompt, no state, no streaming/thinking
+indicator once a turn starts. Needs a first-run affordance and a live
+"agent is working" indicator.
+
+## 10. SEVERITY HIGH — the sandbox only exists in Docker; host mode runs the agent against the repo checkout
+
+Observed (host mode, `serve.py` on the host, no container running):
+- Tool confinement held: exactly Read/Write/Edit/Glob/Grep, no shell.
+- `--restricted` held: the agent was hard-blocked from the live vault.
+- BUT the allowed root was the repo checkout (cwd, chosen so the agent
+  can read the skill reference). Inside it the agent could read and
+  write `server/`, `.agents/skills/`, `demo/`, and read `.env`. In Docker
+  `/app` is a read-only rootfs, so the container is tight; on the host
+  it is not.
+- The webapp offers "AI Interview" identically in both modes, so a
+  normal non-Docker user gets an un-containerized agent with write
+  access to the application's own source and skills — a prompt-injection
+  surface the spec explicitly set out to prevent ("Claude Code running
+  inside the app's Docker container").
+
+Process note: the implementer recorded this as a host-mode limitation
+and the orchestrator relayed it as such instead of treating it as a
+spec violation. That was the wrong call.
+
+Fix directions for review (not started):
+a. Gate the agent routes and the UI entry to container mode only
+   (server detects it is in the image, e.g. an env flag set by the
+   Dockerfile), with a clear "AI Interview needs the Docker app" message
+   on the host; and/or
+b. Make host mode vault-confined: cwd = the vault (or a scratch dir),
+   `--add-dir` = the vault only, and the interview reference injected at
+   spawn from its single source file (read by the server and passed as
+   system-prompt content — not a copied fork) so the repo is never a
+   working directory.
+Either way, add a safety test asserting the agent's allowed roots never
+include the repo checkout.
+
+## 11. Agent silently works against whichever vault it is given
+
+The agent noticed `.env` names the live vault while its allowed root
+held only `demo/vault` (the server had been started with the demo
+vault) and fell back to demo data without saying so. Two sub-issues:
+the agent should be told explicitly which vault it is operating on in
+the seeded prompt and say so in its first message; and it should never
+be able to read `.env` at all (covered by finding 10).
+
+## Status (updated)
+
+- AI sandbox host mode: functional but NOT sandboxed as specced
+  (finding 10 — highest priority item on this list). Docker mode: not
+  yet exercised by the user.
+- Nothing was written to the live vault during this test (blocked by
+  `--restricted`); a full vault backup from 08:50 today exists.

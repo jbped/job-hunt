@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { screen, waitFor } from "@testing-library/react";
+import { act, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import InterviewChatView from "../../InterviewChatView";
 import { renderWithProviders } from "../../../components/__tests__/testUtils";
@@ -42,6 +42,12 @@ class FakeEventSource {
   close(): void {
     this.closed = true;
   }
+}
+
+/** An SSE event arrives outside React's knowledge, exactly as it does in a
+ *  browser; act() is what tells the test renderer to flush the state it sets. */
+function emit(stream: FakeEventSource, payload: unknown): void {
+  act(() => stream.emit(payload));
 }
 
 function assistant(text: string) {
@@ -102,17 +108,17 @@ describe("the interview chat", () => {
     const stream = FakeEventSource.instances[0];
     expect(stream.url).toContain("session=33333333-3333-4333-8333-333333333333");
 
-    stream.emit({
+    emit(stream, {
       type: "stream_event",
       event: { type: "content_block_delta", delta: { type: "text_delta", text: "What was " } },
     });
     await screen.findByText(/What was/);
-    stream.emit(assistant("What was the **denominator**?"));
+    emit(stream, assistant("What was the **denominator**?"));
     await screen.findByText("denominator");
 
     expect(screen.getByLabelText("Message")).toBeDisabled();
-    stream.emit({ type: "result", is_error: false });
-    stream.emit({ type: "done" });
+    emit(stream, { type: "result", is_error: false });
+    emit(stream, { type: "done" });
     await waitFor(() => expect(screen.getByLabelText("Message")).not.toBeDisabled());
   });
 
@@ -128,6 +134,21 @@ describe("the interview chat", () => {
     await user.click(screen.getByRole("button", { name: "Send" }));
     await waitFor(() => expect(posts).toHaveLength(1));
     expect(posts[0].body).toEqual({ message: "Carrying on", session_id: SESSIONS[1].id });
+  });
+
+  it("still renders when the server has no sessions route at all", async () => {
+    // An older server answers 404 here. The chat is one tab of a dashboard
+    // that must keep working, so this degrades to the empty state.
+    vi.stubGlobal("fetch", async (input: RequestInfo) => {
+      if (String(input).startsWith("/api/agent/sessions")) {
+        return new Response(JSON.stringify({ error: "no such route" }), { status: 404 });
+      }
+      return new Response("{}", { status: 200 });
+    });
+    renderWithProviders(<InterviewChatView />);
+    await screen.findByText("No interviews yet. Ask the first question.");
+    expect(document.querySelectorAll("#interviewSessions .pick")).toHaveLength(0);
+    expect(screen.getByLabelText("Message")).not.toBeDisabled();
   });
 
   it("shows an agent failure instead of hanging with the input disabled", async () => {

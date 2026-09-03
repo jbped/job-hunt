@@ -188,3 +188,37 @@ next step, not rendering.
 Deterministic detection is cheap: the scaffold's placeholder markers
 (the same `^(YYYY|<|\{\{)`-style placeholders the index already skips)
 still present in the draft ⇒ not drafted.
+
+## 15. Stale session token is only discovered on the first write
+
+After the server restarts (or a different server takes the port), an
+already-open tab holds a dead token and the user learns only when a
+write fails ("missing or invalid session token; reload the page") —
+e.g. after typing a chat message. The state poll already runs on every
+focus/visibility change and could detect the 403 (or a token-epoch
+mismatch in `/api/state`) and prompt a reload before any input is lost.
+Same class as finding 9 (no feedback).
+
+## 16. AI provider, model, and effort selection
+
+The sandbox hardcodes Claude Code. Requirement: the user can choose the
+AI type — Claude, Codex, Gemini — and, within each, the model and the
+effort/reasoning level, from the app (settings surface, finding 3, with
+a per-conversation override in the companion, finding 13).
+
+Review notes:
+- 0.7 was deliberately scoped to Claude Code only, so the spawn layer,
+  stream relay, and tool confinement are Claude-specific. Multi-provider
+  means a small provider adapter per CLI: argv shape, streaming/JSON
+  mode, session-resume mechanism, and — critically — the equivalent of
+  `--restricted --tools ... --strict-mcp-config` for each (Codex:
+  `--sandbox` modes + approval policy; Gemini: to be investigated). The
+  investigation doc recorded that Codex/Gemini flags were never verified
+  against installed binaries.
+- Auth per provider is its own mount/seed path (investigation §1).
+- The confinement guarantee (finding 10) must hold identically for every
+  provider before it is offered; a provider without an enforceable
+  files-in-vault-only mode does not ship.
+- Effort/model vocab differs per provider and per CLI version — the
+  registry of options should come from the server (queried from each
+  installed CLI where possible), not be hardcoded in the UI.

@@ -700,6 +700,35 @@ class SafetyTest(unittest.TestCase):
             server.shutdown()
             server.server_close()
 
+    def test_question_banks_are_projected_and_audited(self):
+        app = "Applications/Testco/Tester"
+        serve.create_or_update_question(self.vault, {
+            "company": "Projected Co", "question": "What draws you here?",
+            "answer": "The problem, mostly.", "asked_on": app, "char_limit": 250})
+        index = export_index.build(self.vault)
+        banked = [q for q in index["company_questions"]
+                  if q["company"] == "Projected Co"]
+        self.assertEqual(len(banked), 1)
+        self.assertEqual(banked[0]["question"], "What draws you here?")
+        self.assertEqual(banked[0]["answer"], "The problem, mostly.")
+        self.assertEqual(banked[0]["path"],
+                         "Applications/Projected Co/Company Questions.md")
+        self.assertEqual(banked[0]["fields"]["char_limit"], "250")
+
+        # A dangling `Asked on` link and a non-numeric limit are warnings, not
+        # errors: a bank is the user's note and must never fail the audit.
+        note = self.vault / banked[0]["path"]
+        note.write_text(note.read_text(encoding="utf-8")
+                        .replace(f"[[{app}]]", "[[Applications/Gone/Nowhere]]")
+                        .replace("- Char limit: 250", "- Char limit: about 250"),
+                        encoding="utf-8")
+        report = audit_vault.audit(self.vault, check_wikilinks=False)
+        self.assertEqual(report.errors, [])
+        self.assertTrue([w for w in report.warnings
+                         if "Company Questions.md" in w and "Applications/Gone" in w])
+        self.assertTrue([w for w in report.warnings
+                         if "Company Questions.md" in w and "Char limit" in w])
+
     def test_no_destructive_route_exists(self):
         import inspect
         self.assertEqual([r for r in serve.HANDLERS if "delete" in r], [])

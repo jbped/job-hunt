@@ -123,7 +123,7 @@ def _archived(vault: Path) -> list[dict]:
 
 def build(vault: Path) -> dict:
     applications, contacts, interviews, people, evidence = [], [], [], [], []
-    leads = []
+    leads, company_questions = [], []
 
     leads_dir = vault / "Leads"
     if leads_dir.is_dir():
@@ -143,6 +143,21 @@ def build(vault: Path) -> dict:
                 "application": fm.get("application"),
                 "path": str(note.relative_to(vault)),
                 "fingerprint": v.fingerprint(note),
+            })
+
+    # One bank per company folder — a level above the applications themselves,
+    # which is the whole point: the answers outlive any one application.
+    for bank in sorted((vault / "Applications").glob("*/Company Questions.md")):
+        company = bank.parent.name
+        rel = str(bank.relative_to(vault))
+        _, btext = v.read_note(bank)
+        for entry in _entries(btext):
+            company_questions.append({
+                "company": company,
+                "path": rel,
+                "question": entry["title"],
+                "fields": entry["fields"],
+                "answer": entry["body"],
             })
 
     for brief in sorted((vault / "Applications").glob("*/*/Application Brief.md")):
@@ -290,6 +305,7 @@ def build(vault: Path) -> dict:
         "applications": applications,
         "leads": leads,
         "archived": _archived(vault),
+        "company_questions": company_questions,
         "contacts": contacts,
         "interviews": interviews,
         "people": people,

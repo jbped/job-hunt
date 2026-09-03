@@ -18,6 +18,7 @@ import json
 import re
 import sys
 
+import export_index
 import schema
 import vaultlib as v
 from capture_jd import find_posting, checksum
@@ -55,6 +56,7 @@ TEMPLATES = [
     "Role.md",
     "Accomplishment.md",
     "Lead.md",
+    "Company Questions.md",
     "PDF/Resume - Figma Inspired.ps",
     "PDF/Cover Letter - Figma Inspired.ps",
 ]
@@ -125,6 +127,25 @@ def check_person(report: Report, note: Path, vault: Path, fm: dict, text: str) -
             if value and value not in schema.CONTACT_RELATIONSHIP:
                 report.error(f"{rel}: application role '{value}' is not one of "
                              f"{', '.join(schema.CONTACT_RELATIONSHIP)}")
+
+
+def check_company_questions(report: Report, note: Path, vault: Path,
+                            fm: dict, text: str) -> None:
+    """A company's question bank is the user's own record, so every finding
+    here is a warning: a half-filled entry is a note in progress, not a fault."""
+    rel = note.relative_to(vault)
+    for entry in export_index._entries(text):
+        where = f"{rel} / {entry['title']}"
+        asked_on = entry["fields"].get("asked_on", "")
+        for link in WIKILINK.findall(asked_on):
+            target = link.strip()
+            if not (vault / target).exists() and not (vault / f"{target}.md").exists():
+                report.warn(f"{where}: 'Asked on' link [[{target}]] resolves to nothing")
+        limit = entry["fields"].get("char_limit", "")
+        if limit and not limit.isdigit():
+            report.warn(f"{where}: 'Char limit' is '{limit}', which is not a number")
+        if not entry["body"]:
+            report.warn(f"{where}: no answer recorded yet")
 
 
 def _live_parts(rel: Path) -> tuple[str, ...]:
@@ -299,6 +320,8 @@ def audit(vault: Path, check_wikilinks: bool = True) -> Report:
             check_interview(report, note, vault, fm)
         if fm.get("type") == "contact-profile":
             check_contact_profile(report, note, vault, fm)
+        if fm.get("type") == "company-questions":
+            check_company_questions(report, note, vault, fm, text)
         if check_wikilinks:
             check_links(report, note, vault, text)
 

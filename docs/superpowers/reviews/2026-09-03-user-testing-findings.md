@@ -276,3 +276,143 @@ in this epic stays on the demo vault. (Backup of the real vault from
 08:50 today exists regardless.) The release-zip check is the only
 remaining item from the original test list; everything else is either
 passed or captured as a finding.
+
+## Review outcome (2026-09-03, Jacob + orchestrator)
+
+Status: **reviewed and decomposed**. The findings above graduate into
+the initiatives below; each initiative gets its own brainstorm → spec →
+plan cycle before any code. Decisions recorded here are binding on
+those specs.
+
+### Purpose hierarchy (governing statement)
+
+The product exists to get the user a job. Beneath that outcome, in
+priority order:
+
+1. **The evidence interview** — an AI conversation over the user's past
+   experience that produces evidence journals (roles, accomplishments)
+   holding depth a resume cannot, from which resumes and cover letters
+   are later tailored.
+2. **Applications and everything around them** — open applications,
+   relationships, generated documents, the posting, and all supporting
+   detail, organised so the user can digest, act, apply, and interview
+   fast. A one-stop shop.
+
+Target user: low technical expertise, "click install, follow minimal
+instructions". They may never open Obsidian; the webapp must be a
+complete editor of its own vault. Obsidian remains the optional
+anywhere-view over a synced vault.
+
+### Architecture decisions
+
+- **Computed-first "what next".** The schema already carries the state
+  (application `status` + `next_action*`, lead status, role
+  `needs-interview | source-verified | documented`, accomplishment
+  status, `Interview Queue.md`). Finding 8 is a derivation/UI gap, not a
+  schema gap. A **signals engine** in the server computes next actions,
+  incongruencies (e.g. brief still `preparing` after a render and
+  submission notes exist), and document states (scaffold / drafted /
+  rendered / stale) deterministically on index; nothing derived is
+  persisted as truth. `next_action` stays as a manual override. The app
+  **highlights** incongruencies rather than silently correcting them.
+  "Claims" (finding 13) = roles at `source-verified`/`needs-interview`;
+  no new concept needed, only a first-class surface.
+- **Companion proposes, user executes (option A).** The companion emits
+  structured CTAs from conversation context; each maps to an existing
+  token-gated server route; the UI renders buttons; the user clicks.
+  The CTA vocabulary is a closed list the server validates. The agent
+  never executes anything itself. A narrow first-party MCP tool is the
+  recorded upgrade path if this proves too clicky.
+- **Deployment doctrine.** Docker is preferred and is the hardened path
+  (outer wall regardless of CLI). Host mode is the expected common case
+  and therefore the *primary* confinement boundary; it must be
+  vault-confined and verified from inside per provider, as Docker mode
+  was. A provider without a verified files-in-vault-only mode on the
+  host is not offered on the host, and the UI says so. Install
+  automation (launcher: find Python, find/create vault, detect CLIs,
+  open browser) is a **later initiative**.
+- **Providers are a launch requirement**: Claude, Codex, Gemini, each a
+  parallel worker task behind its own verification gate (flags checked
+  against the installed binary; confinement probed from inside).
+  "Provider" = harness + model source; model and effort options come
+  from the server, queried from each CLI where possible. **Ollama /
+  local models deferred**: later spike on whether Codex's local-model
+  mode carries it (harness + sandbox intact); in-house loop only if not.
+- **Freshness.** Server-side vault change watcher pushing events over
+  the 0.7 SSE plumbing. All non-edited views update live. A field being
+  edited gets a "changed on disk" banner with reload/keep. The
+  skip-poll-while-focused rule is removed (it is the likely desync case
+  in finding 17).
+- **Editing.** Forms for every vocabulary/frontmatter field; a light
+  markdown editor (textarea + live preview) for prose, chosen so a
+  richer editor can replace it without touching the data path. No
+  WYSIWYG-to-markdown now. The UI never makes the user think in
+  markdown.
+- **Document flow per application**, each step with visible state:
+  captured → brief filled → analysis (AI, companion workflow) → resume
+  and cover letter drafted (AI, companion workflows; the existing draft
+  skills are the workflow text) → rendered (deterministic; template from
+  brief field or vault default) → submitted. Render is **blocked** while
+  a draft is still scaffold (placeholder markers present). Templates:
+  vault-wide default per kind in settings; "add template" ingress shows
+  and explains `Resources/Templates/` now, becomes 2b's clone flow later.
+- **Skill customization = overlays.** Defaults stay read-only in the
+  repo; the user's customization is appended guidance composed at spawn.
+  Levels: global voice, per workflow (analysis, resume draft, cover
+  letter draft, interview), and **per company** ("company voice", filed
+  beside Company Questions, highlighted in the UI). Style-by-example via
+  references to `Resources/` files. Settings shows default (read-only),
+  overlay (editable), reset, and a composed-prompt preview. Open for
+  the spec: whether the agent may write overlays at all (leaning
+  read-only) and how the audit detects overlay tampering.
+- **Companion placement.** One drawer, on every page, never its own
+  page. Every conversation carries a scope (general / evidence / company
+  / application) set from where it was opened and changeable; scope
+  seeds context and files the conversation, so record pages list their
+  own chats and the drawer history filters by current scope.
+- **Landing page is a setting**: what's next or applications.
+- **Extension capture arrives complete.** Inferable fields populated
+  (date found = today, URL, posting source from domain, schema.org
+  JobPosting JSON-LD where present); user-only fields (discovery method
+  and detail) required in the popup as vocabulary dropdowns served from
+  the schema route; everything else optional. Editable preview before
+  submit. Pairing/reachability checked on popup open. Firefox is the
+  same extension packaged for it.
+
+### Initiatives, in build order
+
+**Now — bounded fixes, before anything else**
+- Finding 10: host-mode vault confinement (cwd in vault, `--add-dir`
+  vault only, interview reference injected from the skill file at
+  spawn), safety test that allowed roots never include the checkout.
+- Finding 15: state poll detects a stale token and prompts reload
+  before input is lost.
+- Finding 9: "agent is working" indicator and a first-message prompt.
+
+**Initiative 1 — Signals engine** (findings 8, 14). Server-side
+deterministic checks → next actions, incongruencies, document states;
+served on the index; consumed by audit, rail, what's next, companion.
+
+**Initiative 2 — Companion** (findings 13, 16, 11, skill overlays).
+Harness seam with Claude/Codex/Gemini adapters behind verification
+gates; CTA protocol; conversation scopes; four workflows (interview,
+analysis, resume draft, cover letter draft); overlays at global /
+workflow / company level; the agent is told its vault and states it.
+
+**Initiative 3 — UI redesign** (findings 4, 3, 6, 7, 12, 17). Design
+brief → Claude Design mocks → React. Structure: what's next, evidence,
+applications (board + detail), leads, people, companion drawer,
+settings (landing page, templates default + ingress, providers/model/
+effort, AI workflows, pairing). Forms + light editor; live freshness;
+company questions editable in place.
+
+**Initiative 4 — Extension** (findings 1, 2, 5). Pairing check on open,
+structured extraction, complete-on-arrival form, Firefox build.
+Independent; runs in parallel from day one.
+
+**Later**: install automation; Ollama harness spike; 2b template
+cloning through the companion; richer editor.
+
+Dependencies: 1 before 3's what-next view; 2's CTA contract before 3's
+drawer; the design brief and mocks start immediately
+(`docs/superpowers/specs/2026-09-03-ui-design-brief.md`).

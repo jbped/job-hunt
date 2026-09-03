@@ -22,6 +22,7 @@ VAULT_ROOT/
 │   └── <Company> - <Role>.md      (pre-application interest; company alone is enough)
 ├── Applications/
 │   └── <Company>/
+│       ├── Company Questions.md    <- the user's; created on first use
 │       └── <Role>/
 │           ├── Application Brief.md    <- the user's
 │           ├── Analysis.md             <- the agent's
@@ -110,6 +111,9 @@ vault.
 - One employer's posting, analysis, contacts, interviews, and artifacts live in
   that application's folder.
 - `Application Brief.md` is hand-maintained: update fields, never restructure.
+- `Company Questions.md` is the user's record of what they submitted. Tools and
+  agents may add a question, append an application to an existing entry, and
+  read the answers for context. No agent writes, drafts, or rewords an answer.
 - `Analysis.md` is agent-generated: rewrite it freely.
 - Templates ship with the skill (`assets/templates/`), not the vault; a
   submitted artifact is never a template's only copy.
@@ -249,6 +253,38 @@ Contacts are sections within `Contacts.md`, not separate notes:
 facts (the person's own details live on their `People/` note), each followed by
 `- Field: value` bullets. The note ends with an `## Entry format` section
 documenting its own shape; the tools skip it and insert new entries above it.
+
+### Company questions
+
+One bank per company, at `Applications/<Company>/Company Questions.md`, holding
+the short-form questions that company asks and the answers the user submitted.
+It sits a level above the individual applications because that is what makes it
+reusable: a second application to the same employer inherits every answer
+already given.
+
+```yaml
+type: company-questions
+company:
+```
+
+The note is created on first use and never exists in a fresh vault, so the
+four-places rule is satisfied without a `vault-template/` entry — the template
+in `assets/templates/Company Questions.md` is the only structural copy.
+
+Each entry is a `## <question text>` heading followed by `- Field: value`
+bullets and then the answer as prose:
+
+- `Asked on` — the application folders the question appeared on, as wikilinks,
+  comma-separated and appended as the question recurs
+- `Date` — when it was last asked
+- `Char limit` — optional; short-form portals commonly cap the length
+- the body — the answer exactly as submitted
+
+Like `Contacts.md`, the note ends with an `## Entry format` section documenting
+its own shape; the tools skip it and insert new entries above it. The audit only
+warns here — a dangling `Asked on` link, a non-numeric `Char limit`, an entry
+with no answer yet — because the bank is the user's own note and a half-written
+entry is work in progress, not a fault.
 
 ### Interview
 

@@ -85,6 +85,14 @@ This split is the thing to get right. Inside an application folder:
 - **`Job Description.md` is neither.** It is evidence, checksummed. Never edit a
   captured posting; a changed posting is a new dated capture.
 
+One note sits a level up, beside the role folders:
+
+- **`Applications/<Company>/Company Questions.md` is the user's**, and its
+  answers are their submission record — the words they actually sent that
+  employer. Read them for context, add a question they dictate, note that a
+  banked question was asked again on another application. Never write, draft,
+  reword, or tidy an answer, and never fill a blank one in.
+
 The same idea holds vault-wide: `Career Evidence/` records what happened,
 everything else interprets it.
 

@@ -203,6 +203,36 @@ def build(force: bool = False) -> Path:
                next_action="Follow up with the recruiter",
                next_action_date="2026-08-24")
 
+    app1b = new_application.create(vault, "Globex Corporation", "Senior Web Engineer",
+                                   url="https://example.com/globex/senior-web",
+                                   discovery="company-site", detail="Globex careers page")
+    capture_jd.capture(app1b / "Job Description.md",
+                       "Globex Corporation is hiring a Senior Web Engineer.\n\n"
+                       "- Lead delivery of customer-facing web features\n"
+                       "- Improve frontend performance and accessibility\n\n"
+                       "Salary range: $120,000 - $145,000 (annual)")
+    set_fields(app1b / "Application Brief.md", status="preparing",
+               compensation_status="listed-in-posting",
+               compensation_min="120000", compensation_max="145000",
+               compensation_period="annual", work_model="hybrid",
+               location="Springfield, USA")
+
+    first_globex = str(app1.relative_to(vault))
+    serve.create_or_update_question(vault, {
+        "company": "Globex Corporation",
+        "question": "Why do you want to work at Globex?",
+        "answer": "I want to bring my experience improving customer-facing web applications and order-pipeline reliability to a team solving both problems at meaningful scale.",
+        "asked_on": first_globex,
+        "char_limit": 300,
+    })
+    serve.create_or_update_question(vault, {
+        "company": "Globex Corporation",
+        "question": "Describe a project you are proud of.",
+        "answer": "I led a TypeScript dashboard rewrite that cut median page load time from six seconds to two for 40 client teams while reducing support tickets by half quarter over quarter.",
+        "asked_on": first_globex,
+        "char_limit": 300,
+    })
+
     app2 = new_application.create(vault, "Hooli Systems", "Frontend Engineer",
                                   url="https://example.com/hooli/frontend",
                                   discovery="job-board", detail="Example job board")

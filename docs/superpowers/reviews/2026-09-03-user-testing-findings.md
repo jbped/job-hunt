@@ -241,3 +241,29 @@ feature's core moment); cover-letter PDF generation; container → vault →
 Obsidian sync (immediate). Resume PDF passed earlier (finding 14 aside).
 Remaining untested: release zip (run + docker build from the unzipped
 root), a render with a `vault:` template selected, live vault.
+
+## Status (10:10) — vault template selection verified
+
+Measured from the rendered PDFs (`pdftotext -bbox-layout`): both resumes
+rendered with `vault:Wide Margins` selected sit at left 54pt / right
+558pt — the template's declared `ce-param` values — versus the engine
+defaults of 38 / 570. The registry → brief field → engine path works.
+The two cover letters rendered at the default 38pt: the demo ships no
+cover-letter vault template (`Wide Margins.ps` is `ce-kind: resume`) and
+no `cover_letter_template` was set, so the "alternative template" cover
+letter was in fact the built-in — which is finding 12 again from the
+other side: nothing told the user the picker had nothing alternative to
+offer for that kind.
+
+## 17. Obsidian → UI desync; expect hot-reload-grade freshness
+
+The user observed the webapp falling out of sync with Obsidian edits in
+at least one case (specific case to be captured at review), and expects
+React-era freshness: vault changes should show up live without the user
+noticing a refresh cycle. Today's mechanism is the 3-second `/api/state`
+fingerprint poll (skipped while an input has focus or a dialog is open)
+plus focus/visibility triggers. Review: which case desynced (an edit
+while a field had focus? a rename/move the mtime hash misses? a view
+that doesn't re-derive from the index?), and whether the poll should
+become server-pushed (the SSE plumbing from 0.7 could carry vault-change
+events) rather than polled.

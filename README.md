@@ -16,7 +16,11 @@ verbatim and checksummed so analysis can't quietly reshape it.
   recommended; everything is plain markdown either way.
 - **An AI agent** — Claude Code picks the skills up automatically when you
   open this repo. Other agents can be pointed at `.agents/skills/` — see
-  [docs/host-adapters.md](docs/host-adapters.md).
+  [docs/host-adapters.md](docs/host-adapters.md). The Docker image carries the
+  Claude Code CLI, so the dashboard can run the evidence interview itself in
+  its **AI Interview** tab — the agent reads and writes vault markdown and
+  nothing else, with no shell and no web access
+  ([docs/setup.md](docs/setup.md#the-ai-interview-docker)).
 - **Ghostscript + Poppler** — only for PDF rendering:
   `pacman -S ghostscript poppler` (Arch), `apt install ghostscript
   poppler-utils` (Debian/Ubuntu), `brew install ghostscript poppler` (macOS),
@@ -129,8 +133,9 @@ button — see [extension/README.md](extension/README.md).
   Developer Mode and `git config core.symlinks true` to recreate symlinks, or
   use the release zip, which contains real files.)
 - `extension/` — the browser capture extension, a plain no-build MV3 add-on.
-- `Dockerfile` + `compose.yaml` — optional local packaging for the dashboard;
-  the vault mounts as a volume ([docs/setup.md](docs/setup.md#docker-any-os)).
+- `Dockerfile` + `compose.yaml` — optional local packaging for the dashboard,
+  and where the sandboxed AI interview runs; the vault mounts as a volume
+  ([docs/setup.md](docs/setup.md#docker-any-os)).
 - `vault/` — your data, if you chose the default location. Yours, gitignored.
 - Your vault's `Preferences/` folder — standing instructions for the agent:
   tone, formatting tastes, workflow defaults.

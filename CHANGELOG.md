@@ -5,6 +5,16 @@ loosely; versions are git tags.
 
 ## Unreleased
 
+- AI interview in the dashboard: an **AI Interview** tab runs the evidence
+  interview through the Claude Code CLI the Docker image now carries. The
+  server spawns one agent per conversation and relays its events over SSE;
+  past conversations are listed and resumable, and none of them runs until
+  you send it a message. The agent is confined to reading and writing
+  markdown inside your vault — no shell, no web access, no MCP servers — in
+  a container with dropped capabilities and a read-only root filesystem.
+  Credentials are either copied once from your host `~/.claude` or created
+  in the container with `claude setup-token`; `docs/setup.md` states the
+  trade-off.
 - Setup and adapter docs: `docs/setup.md` covers Linux/macOS/Windows (the
   symlink, Ghostscript, and PATH gotchas) and the Docker route, ending in a
   verification checklist; `docs/host-adapters.md` writes down the host-neutral

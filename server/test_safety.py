@@ -952,6 +952,8 @@ class AgentSessionTest(unittest.TestCase):
         self.assertEqual(by_id[second]["application"],
                          "Applications/Testco/Tester")
         self.assertTrue(agent_sessions.known(self.vault, first))
+        # UTC, so entries written by the host and by the container sort together.
+        self.assertTrue(by_id[first]["created"].endswith("Z"))
         self.assertFalse(agent_sessions.known(self.vault, agent_sessions.new_id()))
 
         agent_sessions.index_path(self.vault).write_text("{not json", encoding="utf-8")

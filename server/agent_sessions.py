@@ -110,7 +110,10 @@ def save_index(vault: Path, entries: list[dict]) -> None:
 
 
 def _now() -> str:
-    return time.strftime("%Y-%m-%dT%H:%M:%S")
+    # UTC, always: the same vault is written by the host server and by the one
+    # in the container, and local timestamps from the two would sort wrongly
+    # against each other.
+    return time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
 
 
 def title_from(message: str, limit: int = 60) -> str:

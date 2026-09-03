@@ -45,7 +45,9 @@ VAULT_ROOT/
 ├── Preferences/
 │   └── README.md                  (+ the user's standing instructions)
 ├── Resources/
-│   └── README.md                  (+ ingested source documents)
+│   ├── README.md                  (+ ingested source documents)
+│   └── Templates/
+│       └── README.md              (+ the user's own PDF templates, *.ps)
 ├── Working Notes/
 │   ├── Open Questions.md
 │   └── Field Reference.md         (generated from server/schema.py)
@@ -78,6 +80,11 @@ ownership boundaries below.
 `Resources/` is the ingress point for source documents — old resumes, diplomas,
 certificates. A file there is a source, not evidence: extract facts into notes
 whose provenance lines point back at it, and never edit an ingested document.
+`Resources/Templates/` is the one exception to "source, not evidence": `.ps`
+files there are PDF templates the renderer uses, registered as `vault:<name>`
+and selected per application by the brief's `resume_template` /
+`cover_letter_template`. The contract they must honour is in
+`document-generation.md`.
 
 `Archive/` mirrors the live layout and holds units that are done but not
 deleted — archival over destruction is the rule, and the tools offer no delete

@@ -588,6 +588,153 @@ class SafetyTest(unittest.TestCase):
         token_file.write_text("", encoding="utf-8")
         self.assertNotEqual(serve.load_or_create_token(self.vault), first)
 
+    def test_question_bank_scaffolds_and_upserts(self):
+        app = "Applications/Testco/Tester"
+        second = new_application.create(self.vault, "Testco", "Senior Tester")
+        second_rel = str(second.relative_to(self.vault))
+
+        with self.assertRaises(serve.RequestError):  # a bank needs a company
+            serve.create_or_update_question(self.vault, {"company": " ",
+                                                         "question": "Why us?"})
+        with self.assertRaises(serve.RequestError):  # one that survives sanitising
+            serve.create_or_update_question(self.vault, {"company": ".",
+                                                         "question": "Why us?"})
+        with self.assertRaises(serve.RequestError):  # and a question needs text
+            serve.create_or_update_question(self.vault, {"company": "Testco",
+                                                         "question": "  "})
+        with self.assertRaises(serve.RequestError) as rejected:
+            serve.create_or_update_question(self.vault, {
+                "company": "Testco", "question": "Why us?",
+                "answer": "First paragraph.\n## Accidental heading\nLast paragraph."})
+        self.assertEqual(rejected.exception.status, 400)
+        self.assertIn("headings aren't allowed", str(rejected.exception))
+        # A traversal attempt sanitises into a plain folder name; nothing lands
+        # outside Applications/.
+        escaped = serve.create_or_update_question(self.vault, {
+            "company": "../../Escapeco", "question": "Why us?",
+            "answer": "Because.", "asked_on": app})
+        self.assertTrue(escaped["path"].startswith("Applications/"), escaped["path"])
+        self.assertTrue((self.vault / escaped["path"]).is_file())
+        self.assertFalse((self.vault.parent / "Escapeco").exists())
+
+        result = serve.create_or_update_question(self.vault, {
+            "company": "Testco", "question": "Why do you want to work here?",
+            "answer": "Because the work is real.", "asked_on": app,
+            "char_limit": 300})
+        self.assertEqual(result["path"], "Applications/Testco/Company Questions.md")
+        note = self.vault / result["path"]
+        fm, text = v.read_note(note)
+        self.assertEqual(fm.get("type"), "company-questions")
+        self.assertEqual(fm.get("company"), "Testco")
+        self.assertNotIn("No questions recorded.", text)
+        self.assertIn("## Entry format", text)
+
+        # The same question asked again on another application appends the link
+        # rather than forking a second entry, and the answer already given stands.
+        serve.create_or_update_question(self.vault, {
+            "company": "Testco", "question": "Why do you want to work here?",
+            "answer": "", "asked_on": second_rel})
+        _, text = v.read_note(note)
+        self.assertEqual(text.count("## Why do you want to work here?"), 1)
+        entries = export_index._entries(text)
+        self.assertEqual(len(entries), 1)
+        entry = entries[0]
+        self.assertIn(f"[[{app}]]", entry["fields"]["asked_on"])
+        self.assertIn(f"[[{second_rel}]]", entry["fields"]["asked_on"])
+        self.assertEqual(entry["fields"]["char_limit"], "300")
+        # The answer round-trips as the entry body, verbatim and unedited.
+        self.assertEqual(entry["body"], "Because the work is real.")
+
+        # A resubmitted answer replaces the old one, and the link set stays
+        # deduplicated when a question recurs where it was already asked.
+        serve.create_or_update_question(self.vault, {
+            "company": "Testco", "question": "Why do you want to work here?",
+            "answer": "Because the work is real, and the team is too.",
+            "asked_on": app})
+        entry = export_index._entries(v.read_note(note)[1])[0]
+        self.assertEqual(entry["body"],
+                         "Because the work is real, and the team is too.")
+        self.assertEqual(entry["fields"]["asked_on"].count("[["), 2)
+
+    def test_question_upsert_never_rewrites_the_note(self):
+        company = "Handwritten Co"
+        serve.create_or_update_question(self.vault, {
+            "company": company, "question": "First question?",
+            "answer": "First answer.", "asked_on": "Applications/Testco/Tester"})
+        note = self.vault / "Applications" / company / "Company Questions.md"
+        note.write_text(
+            note.read_text(encoding="utf-8").replace(
+                "## Entry format",
+                "## My own notes\n\nHand-written prose.\n\n## Entry format"),
+            encoding="utf-8")
+        serve.create_or_update_question(self.vault, {
+            "company": company, "question": "Second question?",
+            "answer": "Second answer.", "asked_on": "Applications/Testco/Tester"})
+        text = note.read_text(encoding="utf-8")
+        self.assertIn("Hand-written prose.", text)
+        self.assertIn("## First question?", text)
+        self.assertIn("First answer.", text)
+        self.assertLess(text.index("## Second question?"), text.index("## Entry format"))
+        # Scaffolding happens once: a second call never re-creates the note.
+        self.assertEqual(text.count("type: company-questions"), 1)
+        # And the write is fingerprint-guarded like every other one.
+        with self.assertRaises(serve.RequestError):
+            serve.create_or_update_question(self.vault, {
+                "company": company, "question": "Third?", "answer": "x",
+                "fingerprint": "stale-fingerprint"})
+
+    def test_question_route_is_registered_and_token_gated(self):
+        self.assertIs(serve.HANDLERS["/api/question"],
+                      serve.create_or_update_question)
+        serve.Handler.vault = self.vault
+        serve.Handler.token = "test-token-value"
+        server = ThreadingHTTPServer(("127.0.0.1", 0), serve.Handler)
+        port = server.server_address[1]
+        threading.Thread(target=server.serve_forever, daemon=True).start()
+        try:
+            request = urllib.request.Request(
+                f"http://127.0.0.1:{port}/api/question",
+                data=json.dumps({"company": "Testco", "question": "Q",
+                                 "answer": "A"}).encode(),
+                headers={"Content-Type": "application/json"}, method="POST")
+            try:
+                status = urllib.request.urlopen(request).status
+            except urllib.error.HTTPError as error:
+                status = error.code
+            self.assertEqual(status, 403)
+        finally:
+            server.shutdown()
+            server.server_close()
+
+    def test_question_banks_are_projected_and_audited(self):
+        app = "Applications/Testco/Tester"
+        serve.create_or_update_question(self.vault, {
+            "company": "Projected Co", "question": "What draws you here?",
+            "answer": "The problem, mostly.", "asked_on": app, "char_limit": 250})
+        index = export_index.build(self.vault)
+        banked = [q for q in index["company_questions"]
+                  if q["company"] == "Projected Co"]
+        self.assertEqual(len(banked), 1)
+        self.assertEqual(banked[0]["question"], "What draws you here?")
+        self.assertEqual(banked[0]["answer"], "The problem, mostly.")
+        self.assertEqual(banked[0]["path"],
+                         "Applications/Projected Co/Company Questions.md")
+        self.assertEqual(banked[0]["fields"]["char_limit"], "250")
+
+        # A dangling `Asked on` link and a non-numeric limit are warnings, not
+        # errors: a bank is the user's note and must never fail the audit.
+        note = self.vault / banked[0]["path"]
+        note.write_text(note.read_text(encoding="utf-8")
+                        .replace(f"[[{app}]]", "[[Applications/Gone/Nowhere]]")
+                        .replace("- Char limit: 250", "- Char limit: about 250"),
+                        encoding="utf-8")
+        report = audit_vault.audit(self.vault, check_wikilinks=False)
+        self.assertEqual(report.errors, [])
+        self.assertTrue([w for w in report.warnings
+                         if "Company Questions.md" in w and "Applications/Gone" in w])
+        self.assertTrue([w for w in report.warnings
+                         if "Company Questions.md" in w and "Char limit" in w])
+
     def test_no_destructive_route_exists(self):
         import inspect
         self.assertEqual([r for r in serve.HANDLERS if "delete" in r], [])

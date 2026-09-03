@@ -86,3 +86,21 @@
 - [ ] **Step 2: Demo seed.** In `build_demo.py`: add a second Globex Corporation application (reuse the existing app-seeding pattern), then seed a bank via the new handler (direct call, `serve.create_or_update_question(vault, {...})`) with two questions answered on the first Globex application. Rebuild: `python3 demo/build_demo.py --force`.
 - [ ] **Step 3: Full verification.** `python3 server/test_safety.py`; `python3 server/audit_vault.py` against the demo vault exits 0; `cd ui && npm run typecheck && npm test && npm run build` (commit the rebuilt bundle — drift gate); manual API smoke against the demo vault: serve, fetch `/api/index`, confirm `company_questions` present; POST `/api/question` for the second Globex app and confirm the upsert added the link without duplicating the entry.
 - [ ] **Step 4: Commit** `Document, seed, and verify company questions`, and write a short verification section at the bottom of this plan file (what ran, results). Stop — no push, no merge.
+
+## Task 4 verification
+
+Run by the implementing agent:
+
+- Updated the host-neutral ownership and schema documentation for Company Questions.
+- Rebuilt the demo vault with a second Globex Corporation application and two questions seeded through `serve.create_or_update_question`.
+- `cd ui && npm run typecheck` — passed.
+- `cd ui && npm test` — passed: 8 test files, 26 tests.
+- `cd ui && npm run build` — passed; rebuilt bundle committed under `server/assets/ui/`.
+- `git diff --check` — passed.
+
+Run by the orchestrator from an unsandboxed shell in the same worktree:
+
+- `python3 server/test_safety.py` — passed: 41 tests, `OK`.
+- API smoke against `demo/vault` with `serve.py --port 8768` — `GET /api/index` exposed two seeded Globex `company_questions` entries with `asked_on` links. Posting `/api/question` with the exact seeded title `Why do you want to work at Globex?`, an empty answer, and `asked_on: Applications/Globex Corporation/Platform Engineer` kept the exact-title entry count at one, appended the second application link, and preserved the existing answer.
+- Rebuilt with `python3 demo/build_demo.py --force`.
+- `python3 server/audit_vault.py --vault demo/vault` — passed: 0 errors, 0 warnings.

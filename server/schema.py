@@ -293,6 +293,14 @@ NOTE_TYPES = {
         "required": ["type", "company", "position"],
         "optional": ["tags"],
     },
+    # One bank per company folder, created on first use. Each entry is a
+    # question the company asked and the answer the user submitted, kept as
+    # prose so it can be reused verbatim on the next application there.
+    "company-questions": {
+        "file": "Company Questions.md",
+        "required": ["type", "company"],
+        "optional": ["tags"],
+    },
     # One note per interview, in the application's Interviews/ folder. The
     # structured fields live here so the dashboard can edit them in place;
     # Preparation and Outcome are body prose.

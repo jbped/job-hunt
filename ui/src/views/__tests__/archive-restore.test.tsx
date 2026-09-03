@@ -35,6 +35,7 @@ const LEAD_INDEX: VaultIndex = {
     },
   ],
   archived: [],
+  company_questions: [],
   contacts: [],
   interviews: [],
   people: [],

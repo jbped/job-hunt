@@ -3,7 +3,7 @@ import { api } from "../api/client";
 import { useIndexQuery, useSchemaQuery } from "../api/queries";
 import { useModal } from "../components/Modal";
 import { useToast } from "../components/Toast";
-import type { Application, CreatedPath } from "../api/types";
+import type { Application, CreatedPath, QuestionCreate } from "../api/types";
 import { peopleFor } from "./people";
 
 /** The vault's hand-built write actions — the modals the vanilla page did not
@@ -79,6 +79,50 @@ export function useAddContact(): (app: Application) => Promise<void> {
       );
     },
     [modal, schema.data, toast],
+  );
+}
+
+/** A question a company asked, banked with the answer that was given. The
+ *  answer is the user's own writing: it travels to `/api/question` exactly as
+ *  typed, and nothing here or on the server drafts or rewords it. */
+export function useAddQuestion(): (
+  company: string,
+  appPath: string,
+) => Promise<void> {
+  const modal = useModal();
+  const toast = useToast();
+
+  return useCallback(
+    async (company, appPath) => {
+      await modal(
+        [
+          { key: "question", label: "Question", multiline: true },
+          { key: "answer", label: "Your answer, as submitted", multiline: true },
+          {
+            key: "char_limit",
+            label: "Character limit (optional)",
+            placeholder: "e.g. 300",
+          },
+        ],
+        {
+          title: `Add a question for ${company}`,
+          submit: "Add",
+          onSubmit: async (values) => {
+            if (!values.question) throw new Error("The question is required.");
+            const body: QuestionCreate = {
+              company,
+              question: values.question,
+              answer: values.answer,
+              asked_on: appPath,
+            };
+            if (values.char_limit) body.char_limit = values.char_limit;
+            await api("/api/question", { method: "POST", body });
+            toast("Question banked");
+          },
+        },
+      );
+    },
+    [modal, toast],
   );
 }
 

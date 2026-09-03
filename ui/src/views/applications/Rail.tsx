@@ -8,6 +8,7 @@ import { ReferencePill } from "../../components/Pills";
 import { involvementMatches, peopleFor } from "../../lib/people";
 import { NOTE_ORDER, type DocSelection } from "./helpers";
 import { useAddContact, useAddInterview, useLinkPerson } from "../../lib/actions";
+import QuestionsPanel from "./QuestionsPanel";
 
 /** `docButton()`, index.html:1012. The selection is marked from the path each
  *  button carries rather than its label, so duplicate names cannot confuse it
@@ -39,6 +40,13 @@ function DocButton({
       {children}
     </button>
   );
+}
+
+/** The company folder an application sits in. The bank is keyed by that folder
+ *  name, which is the sanitised company — `app.company` is the frontmatter
+ *  spelling and can differ from it. */
+function companyFolder(app: Application): string {
+  return app.path.split("/")[1] ?? app.company;
 }
 
 /** `buildRail()`, index.html:870 — navigation, this application's people and
@@ -77,6 +85,9 @@ export default function Rail({
       ((NOTE_ORDER.indexOf(a[0]) + 1) || 99) - ((NOTE_ORDER.indexOf(b[0]) + 1) || 99),
   );
   const pdfs = (app.artifacts || []).filter((a) => a.name.endsWith(".pdf"));
+  // The bank belongs to the company, not the application — which is the point:
+  // a second application here inherits every answer already given.
+  const questions = index.company_questions.filter((q) => q.company === companyFolder(app));
 
   return (
     <>
@@ -386,6 +397,12 @@ export default function Rail({
           />
         </FieldRow>
       </div>
+
+      <QuestionsPanel
+        company={companyFolder(app)}
+        appPath={app.path}
+        questions={questions}
+      />
     </>
   );
 }

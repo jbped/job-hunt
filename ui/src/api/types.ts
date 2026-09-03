@@ -86,6 +86,28 @@ export interface Contact {
   [field: string]: string | undefined;
 }
 
+/** One `## question` of a company's `Company Questions.md`, flattened by
+ *  export_index.build(). `answer` is the prose the user submitted, kept
+ *  verbatim; `fields` holds the entry's bullets (`asked_on`, `date`,
+ *  `char_limit`), whose keys are free-form markdown. */
+export interface CompanyQuestion {
+  company: string;
+  path: string;
+  question: string;
+  fields: Record<string, string>;
+  answer: string;
+}
+
+/** The POST body `/api/question` upserts from. An empty `answer` leaves the
+ *  banked one standing — that is how "asked here too" is recorded. */
+export interface QuestionCreate {
+  company: string;
+  question: string;
+  answer: string;
+  asked_on: string;
+  char_limit?: string;
+}
+
 export interface Interview {
   company: string;
   position: string;
@@ -159,6 +181,7 @@ export interface VaultIndex {
   applications: Application[];
   leads: Lead[];
   archived: ArchivedUnit[];
+  company_questions: CompanyQuestion[];
   contacts: Contact[];
   interviews: Interview[];
   people: Person[];

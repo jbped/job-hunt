@@ -67,7 +67,7 @@
 - Modify: `App.tsx` + `useHashView` (`View` union gains `"agent"`, nav label "AI Interview"), `ui/src/api/types.ts`
 
 - [ ] Failing tests: session list renders from a `/api/agent/sessions` fixture; sending a message POSTs `{message, session_id?}`; incoming SSE events render as assistant bubbles (mock `EventSource`); a `done` sentinel re-enables the input.
-- [ ] Implement: left column = previous conversations (from the sessions route, newest first) + "New interview"; main column = chat bubbles (assistant markdown through the existing renderer, user plain), streaming text as partial events arrive, input disabled while a turn is open; reopening a listed session resumes it. Reuse existing classes (`.split .rail .pick .card .stack`) — no new visual language.
+- [ ] Implement: left column = previous conversations (from the sessions route, newest first) + "New interview"; main column = chat bubbles (assistant markdown through the existing renderer, user plain), streaming text as partial events arrive, input disabled while a turn is open; a listed session is inert when opened — no subprocess spawns until the user sends a message (or hits an explicit Resume), which is what triggers the `--resume` spawn. Nothing auto-resumes on server restart. Reuse existing classes (`.split .rail .pick .card .stack`) — no new visual language.
 - [ ] `npm run typecheck` + `npm test` green; commit `Add the interview chat view`.
 
 ### Task 4: Docker — CLI, auth seeding, hardening

@@ -39,7 +39,12 @@ questions:
    `.cache/` so the chat UI lists all previous conversations and can
    reopen any of them; the CLI's own session storage lives on a
    persistent volume in Docker so `--resume` survives container
-   restarts. Caveat recorded: chat transcripts are supporting material,
+   restarts. Correction (user, 2026-09-02): nothing resumes
+   automatically on restart — listed conversations are inert (no
+   subprocess) until the user explicitly triggers a resume by opening
+   one and sending a message (or an explicit Resume action); only then
+   does the server spawn with `--resume`. Caveat recorded: chat
+   transcripts are supporting material,
    not vault truth — markdown notes remain the only source of truth,
    and wiping `.cache/` loses the chat list, never career data.
 6. **Egress: deferred hardening.** The container keeps ordinary outbound

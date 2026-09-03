@@ -233,3 +233,11 @@ rootfs); `/vault` the designated write target. Finding 10 therefore
 stands as a **host-mode-only** defect; Docker mode is the sandbox as
 specced. (`.env` is not in the image — `.dockerignore` admits only
 `server/`, `.agents/skills/`, `docker/`.)
+
+## Status (10:00)
+
+Passed by the user: Company Questions reuse across applications (the
+feature's core moment); cover-letter PDF generation; container → vault →
+Obsidian sync (immediate). Resume PDF passed earlier (finding 14 aside).
+Remaining untested: release zip (run + docker build from the unzipped
+root), a render with a `vault:` template selected, live vault.

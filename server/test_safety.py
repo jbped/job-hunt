@@ -969,5 +969,151 @@ class TemplateParamsTest(unittest.TestCase):
         self.assertIn("ink 72 y moveto title show", text)
 
 
+
+# A minimal template honouring the prologue contract: the three tokens, the
+# procedures the engine expects, and the literal `brand` / `HB` marker.
+SAMPLE_TEMPLATE = """%!PS-Adobe-3.0
+%%Pages: 1
+%%EndComments
+% ce-kind: resume
+% ce-param: left 44
+[ /Title ({{FULL_NAME}} - {{POSITION}})
+  /Subject ({{COMPANY}})
+  /DOCINFO pdfmark
+/HB /Helvetica-Bold findfont def
+/HR /Helvetica findfont def
+/brand { 0 0 0.5 setrgbcolor } def
+/ink { 0 0 0 setrgbcolor } def
+/muted { 0.3 0.3 0.3 setrgbcolor } def
+/Rshow { dup stringwidth pop neg 0 rmoveto show } def
+/phoneIcon { pop pop } def
+/pinIcon { pop pop } def
+/mailIcon { pop pop } def
+/linkedinIcon { pop pop } def
+
+brand
+HB 10 scalefont setfont
+"""
+
+
+class TemplateRegistryTest(unittest.TestCase):
+    def setUp(self):
+        self._tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(self._tmp.cleanup)
+        self.vault = Path(self._tmp.name) / "vault"
+        self.templates = self.vault / "Resources" / "Templates"
+        self.templates.mkdir(parents=True)
+
+    def write(self, name: str, text: str = SAMPLE_TEMPLATE) -> Path:
+        path = self.templates / name
+        path.write_text(text, encoding="utf-8")
+        return path
+
+    def names(self, kind: str) -> list[str]:
+        return [entry["name"] for entry in render_pdf.registry(self.vault)[kind]]
+
+    def test_built_ins_are_always_registered(self):
+        self.assertIn("built-in:Resume - Figma Inspired", self.names("resume"))
+        self.assertIn("built-in:Cover Letter - Figma Inspired",
+                      self.names("cover-letter"))
+
+    def test_a_vault_template_joins_its_declared_kind(self):
+        self.write("Sample.ps")
+        self.assertIn("vault:Sample", self.names("resume"))
+        self.assertNotIn("vault:Sample", self.names("cover-letter"))
+
+    def test_a_template_without_a_kind_is_skipped_not_fatal(self):
+        self.write("Nameless.ps", SAMPLE_TEMPLATE.replace("% ce-kind: resume\n", ""))
+        self.assertNotIn("vault:Nameless", self.names("resume"))
+        self.assertNotIn("vault:Nameless", self.names("cover-letter"))
+
+    def test_a_missing_templates_folder_is_simply_empty(self):
+        bare = Path(self._tmp.name) / "bare"
+        bare.mkdir()
+        self.assertEqual(
+            [n for n in (e["name"] for e in render_pdf.registry(bare)["resume"])
+             if n.startswith("vault:")], [])
+
+    def test_the_registry_never_follows_a_link_out_of_the_vault(self):
+        outside = Path(self._tmp.name) / "outside"
+        outside.mkdir()
+        (outside / "Evil.ps").write_text(SAMPLE_TEMPLATE, encoding="utf-8")
+        try:
+            (self.templates / "Evil.ps").symlink_to(outside / "Evil.ps")
+        except OSError:
+            self.skipTest("this filesystem does not support symlinks")
+        self.assertNotIn("vault:Evil", self.names("resume"))
+
+    def test_no_name_resolves_to_todays_default(self):
+        self.assertEqual(
+            render_pdf.resolve_template(self.vault, "resume", None),
+            v.TEMPLATES_DIR / "PDF" / "Resume - Figma Inspired.ps")
+
+    def test_an_unknown_name_is_refused_with_the_available_names(self):
+        self.write("Sample.ps")
+        with self.assertRaises(SystemExit) as caught:
+            render_pdf.resolve_template(self.vault, "resume", "vault:Nope")
+        self.assertIn("vault:Sample", str(caught.exception))
+
+    def test_a_template_of_the_wrong_kind_is_refused(self):
+        self.write("Sample.ps")
+        with self.assertRaises(SystemExit):
+            render_pdf.resolve_template(self.vault, "cover-letter", "vault:Sample")
+
+    def test_a_template_missing_a_token_is_refused(self):
+        path = self.write("Broken.ps",
+                          SAMPLE_TEMPLATE.replace("{{FULL_NAME}}", "Someone"))
+        with self.assertRaises(SystemExit) as caught:
+            render_pdf.check_template(path, "resume")
+        self.assertIn("{{FULL_NAME}}", str(caught.exception))
+
+    def test_a_template_without_the_marker_is_refused(self):
+        path = self.write("Marker.ps", SAMPLE_TEMPLATE.replace("\nbrand\nHB", "\n"))
+        with self.assertRaises(SystemExit):
+            render_pdf.check_template(path, "resume")
+
+    def test_a_template_with_a_bad_parameter_is_refused(self):
+        path = self.write("Bad.ps",
+                          SAMPLE_TEMPLATE.replace("% ce-param: left 44",
+                                                  "% ce-param: left sideways"))
+        with self.assertRaises(SystemExit):
+            render_pdf.check_template(path, "resume")
+
+    def test_a_sound_template_passes_and_yields_its_parameters(self):
+        path = self.write("Sample.ps")
+        self.assertEqual(render_pdf.check_template(path, "resume").left, 44.0)
+
+
+class ResolveWithinTest(unittest.TestCase):
+    def setUp(self):
+        self._tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(self._tmp.cleanup)
+        self.root = Path(self._tmp.name) / "root"
+        (self.root / "sub").mkdir(parents=True)
+        (self.root / "sub" / "file.txt").write_text("ok", encoding="utf-8")
+
+    def test_an_inside_path_resolves(self):
+        self.assertEqual(v.resolve_within(self.root, "sub/file.txt"),
+                         (self.root / "sub" / "file.txt").resolve())
+
+    def test_every_way_out_is_refused(self):
+        outside = Path(self._tmp.name) / "outside.txt"
+        outside.write_text("secret", encoding="utf-8")
+        for relative in ("../outside.txt", "sub/../../outside.txt",
+                         str(outside), "sub/../../"):
+            with self.assertRaises(ValueError):
+                v.resolve_within(self.root, relative)
+
+    def test_a_symlink_out_of_the_root_is_refused(self):
+        outside = Path(self._tmp.name) / "outside.txt"
+        outside.write_text("secret", encoding="utf-8")
+        try:
+            (self.root / "link.txt").symlink_to(outside)
+        except OSError:
+            self.skipTest("this filesystem does not support symlinks")
+        with self.assertRaises(ValueError):
+            v.resolve_within(self.root, "link.txt")
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)

@@ -79,13 +79,11 @@ class RequestError(Exception):
 
 def resolve(vault: Path, relative: str) -> Path:
     """Resolve a vault-relative path, refusing anything that escapes the vault."""
-    if not relative:
-        raise RequestError(400, "no path given")
-    target = (vault / relative).resolve()
     try:
-        target.relative_to(vault.resolve())
+        target = v.resolve_within(vault, relative)
     except ValueError:
-        raise RequestError(403, "path is outside the vault")
+        raise RequestError(403 if relative else 400,
+                           "path is outside the vault" if relative else "no path given")
     if not target.exists():
         raise RequestError(404, f"not found: {relative}")
     if target.name in schema.UI_READONLY_FILES:
@@ -975,10 +973,8 @@ class Handler(BaseHTTPRequestHandler):
         directory the user fills, while this serves build output the repo ships
         — the escape guard is what matters here.
         """
-        assets = (UI_DIR / "assets").resolve()
-        target = (assets / relative).resolve()
         try:
-            target.relative_to(assets)
+            target = v.resolve_within(UI_DIR / "assets", relative)
         except ValueError:
             raise RequestError(404, "no such route")
         if not target.is_file():
@@ -988,9 +984,8 @@ class Handler(BaseHTTPRequestHandler):
 
     def _serve_file(self, relative: str) -> None:
         """Serve a preview image or PDF from inside the vault, read-only."""
-        target = (self.vault / relative).resolve()
         try:
-            target.relative_to(self.vault.resolve())
+            target = v.resolve_within(self.vault, relative)
         except ValueError:
             raise RequestError(403, "outside the vault")
         if not target.is_file():

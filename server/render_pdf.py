@@ -678,6 +678,108 @@ def prologue(template: Path) -> str:
     return text[:index]
 
 
+# --------------------------------------------------------------------------
+# The template registry
+# --------------------------------------------------------------------------
+
+# What a template of each kind must carry, beyond the prologue marker. These
+# are the tokens `build_postscript` substitutes; a template missing one would
+# ship a PDF whose metadata names the wrong person or role.
+REQUIRED_TOKENS = ("{{FULL_NAME}}", "{{POSITION}}", "{{COMPANY}}")
+
+KINDS = ("resume", "cover-letter")
+
+DEFAULT_TEMPLATES = {
+    "resume": "Resume - Figma Inspired",
+    "cover-letter": "Cover Letter - Figma Inspired",
+}
+
+VAULT_TEMPLATES = ("Resources", "Templates")
+
+
+def _declared_kind(text: str) -> str | None:
+    match = re.search(r"^%\s*ce-kind:\s*(\S+)\s*$", text, re.MULTILINE)
+    return match.group(1) if match else None
+
+
+def registry(vault: Path) -> dict[str, list[dict]]:
+    """Every template the user may pick, per kind.
+
+    Two roots and no others: the built-ins this repo ships, and `.ps` files the
+    user drops in their vault. Names are namespaced so the two can never
+    collide and a vault template can never shadow a built-in.
+    """
+    found: dict[str, list[dict]] = {kind: [] for kind in KINDS}
+
+    built_in = v.TEMPLATES_DIR / "PDF"
+    for kind, stem in DEFAULT_TEMPLATES.items():
+        found[kind].append({"name": f"built-in:{stem}",
+                            "path": built_in / f"{stem}.ps"})
+    for path in sorted(built_in.glob("*.ps")):
+        if path.stem in DEFAULT_TEMPLATES.values():
+            continue
+        kind = _declared_kind(path.read_text(encoding="utf-8", errors="replace"))
+        if kind in KINDS:
+            found[kind].append({"name": f"built-in:{path.stem}", "path": path})
+
+    root = vault / VAULT_TEMPLATES[0] / VAULT_TEMPLATES[1]
+    if root.is_dir():
+        for path in sorted(root.glob("*.ps")):
+            try:
+                # A symlink out of the vault is not a template the user put
+                # there; refuse it rather than reading whatever it points at.
+                resolved = v.resolve_within(vault, str(path.relative_to(vault)))
+            except ValueError:
+                print(f"note: ignoring {path.name}, which points outside the vault",
+                      file=sys.stderr)
+                continue
+            kind = _declared_kind(resolved.read_text(encoding="utf-8", errors="replace"))
+            if kind not in KINDS:
+                print(f"note: ignoring {path.name}, which declares no "
+                      "'% ce-kind: resume' or '% ce-kind: cover-letter' line",
+                      file=sys.stderr)
+                continue
+            found[kind].append({"name": f"vault:{path.stem}", "path": resolved})
+
+    return found
+
+
+def resolve_template(vault: Path, kind: str, name: str | None) -> Path:
+    """Turn a registry name into a path. No name means today's default."""
+    entries = registry(vault)[kind]
+    if not name:
+        return v.TEMPLATES_DIR / "PDF" / f"{DEFAULT_TEMPLATES[kind]}.ps"
+    for entry in entries:
+        if entry["name"] == name:
+            return entry["path"]
+    raise SystemExit(
+        f"No {kind} template named '{name}'.\nAvailable: "
+        + ", ".join(entry["name"] for entry in entries)
+    )
+
+
+def check_template(path: Path, kind: str) -> Params:
+    """Prove a template can be rendered before anything is rendered with it.
+
+    A template is never transformed to make it fit — it is refused, with the
+    thing that is missing named, so the person who wrote it can fix it.
+    """
+    if not path.is_file():
+        raise SystemExit(f"Missing template: {path}")
+    text = path.read_text(encoding="utf-8")
+
+    missing = [token for token in REQUIRED_TOKENS if token not in text]
+    if missing:
+        raise SystemExit(
+            f"{path.name} is missing the required token(s) {', '.join(missing)}.\n"
+            "A template must carry all of " + ", ".join(REQUIRED_TOKENS)
+            + " in its PDF metadata block."
+        )
+
+    head = prologue(path)
+    return parse_params(head)
+
+
 def contact_icon(value: str) -> str:
     """Match the icon to what the value actually is.
 

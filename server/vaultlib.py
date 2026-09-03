@@ -129,6 +129,24 @@ def require_vault(start: Path | str | None = None) -> Path:
     return vault
 
 
+def resolve_within(root: Path, relative: str) -> Path:
+    """Resolve `relative` under `root`, refusing anything that leaves it.
+
+    `..`, an absolute path, and a symlink pointing outside are all the same
+    mistake, so they get the same answer. Resolving both sides first is what
+    makes the symlink case work: comparing the unresolved paths would accept a
+    link inside the root that lands anywhere on the disk.
+    """
+    if not relative:
+        raise ValueError("no path given")
+    target = (root / relative).resolve()
+    try:
+        target.relative_to(root.resolve())
+    except ValueError:
+        raise ValueError(f"path is outside {root}: {relative}")
+    return target
+
+
 # --------------------------------------------------------------------------
 # Frontmatter reading
 # --------------------------------------------------------------------------

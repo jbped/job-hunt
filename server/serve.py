@@ -29,6 +29,7 @@ from __future__ import annotations
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 import argparse
+import datetime
 import hashlib
 import json
 import mimetypes
@@ -193,6 +194,10 @@ def _drop_placeholder(text: str, heading: str) -> str:
     sentence = PLACEHOLDERS.get(heading.strip().lower())
     if not sentence:
         return text
+    return _drop_sentence(text, sentence)
+
+
+def _drop_sentence(text: str, sentence: str) -> str:
     lines = text.split("\n")
     for i, line in enumerate(lines):
         if line.strip() == sentence:
@@ -334,6 +339,120 @@ def append_entry(vault: Path, payload: dict) -> dict:
         raise RequestError(409, str(error))
     return {"changed": True, "fingerprint": fingerprint}
 
+
+QUESTIONS_FILE = "Company Questions.md"
+QUESTIONS_PLACEHOLDER = "No questions recorded."
+QUESTION_LINK = re.compile(r"\[\[([^\]|#]+)(?:[#|][^\]]*)?\]\]")
+
+
+def _question_span(lines: list[str], question: str) -> tuple[int, int] | None:
+    """Locate an existing `## question` block as a [start, end) line range."""
+    key = question.strip().lower()
+    start = None
+    for i, line in enumerate(lines):
+        stripped = line.strip()
+        if not stripped.startswith("## ") or stripped.startswith("###"):
+            continue
+        if start is not None:
+            return start, i
+        if stripped[3:].strip().lower() == key:
+            start = i
+    return (start, len(lines)) if start is not None else None
+
+
+def _question_block(question: str, links: list[str], date: str,
+                    char_limit: str, answer: str) -> str:
+    lines = [f"## {question}",
+             f"- Asked on: {', '.join(links) if links else 'Unknown'}",
+             f"- Date: {date}"]
+    if char_limit:
+        lines.append(f"- Char limit: {char_limit}")
+    if answer:
+        lines.extend(["", answer.rstrip()])
+    return "\n".join(lines)
+
+
+def _scaffold_questions(folder: Path, company: str) -> Path:
+    """Create a company's question bank from its template — once, never over it."""
+    target = folder / QUESTIONS_FILE
+    if target.exists():
+        return target
+    template = v.TEMPLATES_DIR / QUESTIONS_FILE
+    if not template.exists():
+        raise RequestError(500, f"missing template: {QUESTIONS_FILE}")
+    text = v.set_frontmatter_field(template.read_text(encoding="utf-8"),
+                                   "company", company)
+    text = text.replace("# Company | Questions", f"# {company} | Questions", 1)
+    folder.mkdir(parents=True, exist_ok=True)
+    target.write_text(text, encoding="utf-8")
+    return target
+
+
+def create_or_update_question(vault: Path, payload: dict) -> dict:
+    """Upsert one question in a company's bank, with the answer that was given.
+
+    The answer is the user's own writing and is stored exactly as it arrives:
+    nothing here drafts, trims, or rewords it. A question already in the bank
+    keeps its answer unless a new, non-empty one is sent — asking it again on
+    another application only adds that application to its `Asked on` links.
+    """
+    company = str(payload.get("company", "")).strip()
+    question = " ".join(str(payload.get("question", "")).split())
+    answer = str(payload.get("answer") or "")
+    asked_on = str(payload.get("asked_on") or "").strip().strip("/")
+    char_limit = str(payload.get("char_limit") or "").strip()
+
+    folder_name = new_application.safe_name(company)
+    if not folder_name:
+        raise RequestError(400, "a question bank needs a company name")
+    if not question:
+        raise RequestError(400, "a question needs its text")
+
+    # safe_name already defuses separators; this is the same containment check
+    # every other write path makes, applied to the folder it lands in.
+    root = (vault / "Applications").resolve()
+    folder = (root / folder_name).resolve()
+    try:
+        folder.relative_to(root)
+    except ValueError:
+        raise RequestError(403, "path is outside the vault")
+
+    target = _scaffold_questions(folder, company)
+    expect = payload.get("fingerprint") or v.fingerprint(target)
+    _, text = v.read_note(target)
+
+    lines = text.split("\n")
+    span = _question_span(lines, question)
+    links: list[str] = []
+    if span is not None:
+        previous = export_index._entries("\n".join(lines[span[0]:span[1]]))
+        fields = previous[0]["fields"] if previous else {}
+        links = [f"[[{link}]]" for link
+                 in QUESTION_LINK.findall(fields.get("asked_on", ""))]
+        answer = answer or (previous[0]["body"] if previous else "")
+        char_limit = char_limit or fields.get("char_limit", "")
+    if asked_on and f"[[{asked_on}]]" not in links:
+        links.append(f"[[{asked_on}]]")
+
+    entry = _question_block(question, links,
+                            datetime.date.today().isoformat(), char_limit, answer)
+    if span is not None:
+        end = span[1]
+        while end > span[0] + 1 and not lines[end - 1].strip():
+            end -= 1
+        lines[span[0]:end] = entry.split("\n")
+        updated = "\n".join(lines)
+    else:
+        updated = _append_before_reference(
+            _drop_sentence(text, QUESTIONS_PLACEHOLDER), entry)
+
+    try:
+        fingerprint = v.atomic_write(target, updated, expect=expect, vault=vault)
+    except v.ConflictError as error:
+        raise RequestError(409, str(error))
+    return {"changed": True,
+            "path": str(target.relative_to(vault.resolve())),
+            "fingerprint": fingerprint}
 
 def create_interview(vault: Path, payload: dict) -> dict:
     """Scaffold an interview note. Everything after creation — reschedule,
@@ -718,6 +837,7 @@ HANDLERS = {
     "/api/field": set_field,
     "/api/note/save": save_note,
     "/api/entry": append_entry,
+    "/api/question": create_or_update_question,
     "/api/interview": create_interview,
     "/api/application": create_application,
     "/api/person": create_person,

@@ -40,6 +40,8 @@ def _entries(text: str, under: str | None = None) -> list[dict]:
     """Parse `## Name` / `### Name` blocks of `- Field: value` bullets.
 
     Contacts and reference logs share this shape, so one parser covers them.
+    Prose written under an entry's bullets is kept as its `body` — the company
+    question banks answer in prose, and an answer is the point of the entry.
     Returns [] for the placeholder text the templates ship with
     ("No contacts recorded.").
     """
@@ -68,16 +70,22 @@ def _entries(text: str, under: str | None = None) -> list[dict]:
                 if title.lower() in IGNORED_HEADINGS or PLACEHOLDER.match(title):
                     current = None
                     continue
-                current = {"title": title, "fields": {}}
+                current = {"title": title, "fields": {}, "body": []}
                 out.append(current)
                 continue
             if depth < level:
                 current = None
             continue
+        if current is None:
+            continue
         match = BULLET.match(line)
-        if match and current is not None:
+        if match:
             key = match.group(1).strip().lower().replace(" ", "_")
             current["fields"][key] = match.group(2).strip()
+            continue
+        current["body"].append(line)
+    for entry in out:
+        entry["body"] = "\n".join(entry["body"]).strip()
     return [e for e in out if e["fields"]]
 
 

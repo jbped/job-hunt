@@ -351,7 +351,7 @@ def _question_span(lines: list[str], question: str) -> tuple[int, int] | None:
     start = None
     for i, line in enumerate(lines):
         stripped = line.strip()
-        if not stripped.startswith("## ") or stripped.startswith("###"):
+        if not stripped.startswith("## "):
             continue
         if start is not None:
             return start, i
@@ -407,6 +407,8 @@ def create_or_update_question(vault: Path, payload: dict) -> dict:
         raise RequestError(400, "a question bank needs a company name")
     if not question:
         raise RequestError(400, "a question needs its text")
+    if any(line.startswith("#") for line in answer.splitlines()):
+        raise RequestError(400, "headings aren't allowed in question answers")
 
     # safe_name already defuses separators; this is the same containment check
     # every other write path makes, applied to the folder it lands in.

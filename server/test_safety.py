@@ -602,6 +602,12 @@ class SafetyTest(unittest.TestCase):
         with self.assertRaises(serve.RequestError):  # and a question needs text
             serve.create_or_update_question(self.vault, {"company": "Testco",
                                                          "question": "  "})
+        with self.assertRaises(serve.RequestError) as rejected:
+            serve.create_or_update_question(self.vault, {
+                "company": "Testco", "question": "Why us?",
+                "answer": "First paragraph.\n## Accidental heading\nLast paragraph."})
+        self.assertEqual(rejected.exception.status, 400)
+        self.assertIn("headings aren't allowed", str(rejected.exception))
         # A traversal attempt sanitises into a plain folder name; nothing lands
         # outside Applications/.
         escaped = serve.create_or_update_question(self.vault, {

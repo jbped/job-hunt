@@ -82,6 +82,44 @@ restarts, so the browser extension pairs once. Re-roll it by running
 disposable. The token is also printed nowhere; copy it from the dashboard's
 **Pair extension** button or the file itself.
 
+## The AI interview (Docker)
+
+The image also carries the Claude Code CLI, and the dashboard's **AI
+Interview** tab runs the evidence interview through it. The agent works your
+vault directly — it reads and writes markdown under `/vault` and has nothing
+else: no shell, no web access, no MCP servers, and a read-only container
+filesystem outside the vault. What it writes is checked the same way anything
+hand-written is, by `python3 server/audit_vault.py` and the audit banner.
+
+It needs credentials, and there are two ways to give it some. Pick one
+deliberately — the difference is real:
+
+1. **Mount your host credentials (the default).** `compose.yaml` mounts
+   `~/.claude` read-only at `/host-claude`, and the entrypoint copies one
+   file — `.credentials.json` — into the container's own volume the first
+   time it starts. Convenient, and it survives rebuilds. The trade-off:
+   a live, long-lived credential for your Claude subscription now exists
+   inside the container. The controls above are what keep it there, and
+   Anthropic's own dev-container guidance says the same thing — don't mount
+   other secrets (SSH keys, cloud credentials) beside it. Point
+   `CAREER_EVIDENCE_CLAUDE_DIR` at a different directory if your config
+   lives elsewhere.
+2. **Log in inside the container instead.** Point
+   `CAREER_EVIDENCE_CLAUDE_DIR` at an empty directory so nothing is copied,
+   then run `docker compose exec dashboard claude setup-token` and follow
+   the prompts. No host credential ever enters the container; the token it
+   creates lives on the `agent-home` volume and survives restarts, but you
+   repeat this if you remove the volume.
+
+Either way the agent's config and its conversation storage live on the
+`agent-home` volume, which is why a conversation you closed yesterday is
+still there today. Nothing resumes by itself: the dashboard lists past
+conversations, and opening one starts no process — sending a message is what
+resumes it.
+
+Without credentials the dashboard still runs; the AI Interview reports that
+the agent could not start and points back here.
+
 ## Custom PDF templates
 
 You can drop your own PostScript templates in `Resources/Templates/` in your vault; they appear in the dashboard's template pickers per application. A `.ps` file is a program, and rendering runs it in Ghostscript on your machine — so treat a template you were given the same way you would treat any other program someone sent you. The contract a template must honour is in the skill's `references/document-generation.md`, and `Resources/Templates/README.md` in your vault summarises it.

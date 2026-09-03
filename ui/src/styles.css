@@ -242,3 +242,28 @@ details.note[open] > summary { border-bottom: 1px solid var(--line); border-radi
   margin-top: 16px; padding-top: 10px; border-top: 1px dashed var(--line);
   font-size: 12px;
 }
+
+/* Interview chat — the same card, rail and pick as everywhere else; only the
+   bubbles are new, and they are a card with a side. */
+.chat-log { min-height: 45vh; max-height: 62vh; overflow-y: auto; }
+.chat-log > * + * { margin-top: 10px; }
+.bubble {
+  border: 1px solid var(--line); border-radius: var(--radius);
+  padding: 8px 12px; font-size: 14.5px;
+}
+.bubble p:first-child { margin-top: 0; }
+.bubble p:last-child { margin-bottom: 0; }
+.bubble.user { background: var(--brand-soft); border-color: var(--brand-soft);
+               margin-left: 15%; }
+.bubble.assistant { background: var(--bg); }
+.bubble.error { background: var(--bad-soft); border-color: var(--bad); color: var(--bad); }
+.bubble[data-streaming]::after {
+  content: "▍"; color: var(--muted); animation: blink 1s steps(2) infinite;
+}
+@keyframes blink { 50% { opacity: 0; } }
+.chat-input textarea {
+  width: 100%; resize: vertical; font: inherit; font-size: 14px;
+  padding: 8px 10px; border: 1px solid var(--line); border-radius: 8px;
+  background: var(--bg); color: var(--ink);
+}
+.chat-input .row { margin-top: 8px; align-items: center; }

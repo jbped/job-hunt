@@ -25,6 +25,9 @@ APP_TOP_LEVEL = [
     "server",
     "extension",
     "docs",
+    # The image's entrypoint lives here: without it `docker compose build`
+    # fails on an unzipped release, which is exactly the path this archive is.
+    "docker",
     "Dockerfile",
     "compose.yaml",
     ".dockerignore",

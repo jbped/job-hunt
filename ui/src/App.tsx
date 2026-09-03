@@ -20,6 +20,7 @@ import InterviewsView from "./views/InterviewsView";
 import PeopleView from "./views/PeopleView";
 import EvidenceView from "./views/EvidenceView";
 import ArchivedView from "./views/ArchivedView";
+import InterviewChatView from "./views/InterviewChatView";
 
 /** Nav order and labels are the contract: the hash token for Interviews stays
  *  `calendar` so existing deep-links keep working. */
@@ -31,6 +32,7 @@ const NAV: { view: View; label: string }[] = [
   { view: "calendar", label: "Interviews" },
   { view: "people", label: "People" },
   { view: "evidence", label: "Evidence" },
+  { view: "agent", label: "AI Interview" },
   { view: "archived", label: "Archived" },
 ];
 
@@ -42,6 +44,7 @@ const SECTIONS: Record<View, () => JSX.Element> = {
   calendar: InterviewsView,
   people: PeopleView,
   evidence: EvidenceView,
+  agent: InterviewChatView,
   archived: ArchivedView,
 };
 

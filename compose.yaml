@@ -6,6 +6,27 @@ services:
       - "127.0.0.1:8765:8765"
     volumes:
       - "${CAREER_EVIDENCE_VAULT_HOST:?set CAREER_EVIDENCE_VAULT_HOST to your vault's absolute path}:/vault"
+      # The agent CLI's config and session storage. A named volume, so a
+      # conversation stays resumable after the container is replaced.
+      - "agent-home:/agent-home"
+      # Your host credentials, read-only, copied once by the entrypoint. This
+      # is the convenience default and its trade-off is stated in
+      # docs/setup.md; point CAREER_EVIDENCE_CLAUDE_DIR at an empty directory
+      # and run `claude setup-token` inside the container to avoid it.
+      - "${CAREER_EVIDENCE_CLAUDE_DIR:-${HOME}/.claude}:/host-claude:ro"
     # Match the host user so vault files keep their ownership.
     user: "${UID:-1000}:${GID:-1000}"
+    # The agent runs in here. It has no shell and no web access of its own
+    # (`--restricted`), and the container gives it nothing else to reach: no
+    # capabilities, an immutable root filesystem, and only the vault and its
+    # own config directory writable.
+    cap_drop: [ALL]
+    security_opt:
+      - no-new-privileges:true
+    read_only: true
+    tmpfs:
+      - /tmp
     restart: unless-stopped
+
+volumes:
+  agent-home:

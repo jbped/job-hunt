@@ -52,6 +52,21 @@ for example, each entry in `.claude/skills/` is a symlink to a canonical skill,
 which keeps the commands scoped to this project checkout in Claude Code.
 `docs/host-adapters.md` is the written guide, with a worked non-Claude example.
 
+## The AI sandbox
+
+The dashboard can run the evidence interview itself, by spawning the Claude
+Code CLI per conversation and relaying its `stream-json` events to a chat
+panel over SSE (`server/agent_sessions.py`). The agent is confined on purpose:
+`--restricted --strict-mcp-config --tools Read,Write,Edit,Glob,Grep` with a
+single `--add-dir` pointing at the vault, so it can read and write vault
+markdown and do nothing else — no shell, no web, no MCP. Arguments are always
+a list handed to `Popen`; a captured job posting is text an attacker wrote,
+and it must never be able to reach a command line. The stance on what the
+agent writes is after the fact, not up front: there is no approval step,
+`audit_vault.py` is the check, exactly as it is for notes written by hand.
+Nothing resumes on its own — a listed conversation is inert until someone
+sends it a turn.
+
 ## Working on the tooling
 
 - Scripts are Python 3 **stdlib only** — no new dependencies. External

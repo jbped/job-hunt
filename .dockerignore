@@ -1,3 +1,5 @@
 *
 !server
+!docker
+!.agents/skills
 server/__pycache__

@@ -8,6 +8,7 @@ export const VIEWS = [
   "calendar",
   "people",
   "evidence",
+  "agent",
   "archived",
 ] as const;
 

@@ -24,6 +24,7 @@ import unittest
 import urllib.request
 import zipfile
 
+import agent_sessions
 import audit_vault
 import capture_jd
 import export_index
@@ -230,7 +231,10 @@ class SafetyTest(unittest.TestCase):
                          ".agents/skills/career-evidence/SKILL.md",
                          ".agents/skills/new-application/SKILL.md",
                          "Dockerfile",
-                         "compose.yaml"):
+                         "compose.yaml",
+                         # The image cannot be built without it, and the
+                         # unzipped archive is a supported way to build it.
+                         "docker/entrypoint.sh"):
             self.assertIn(required, names)
         self.assertFalse(any(".claude-plugin" in name for name in names))
         self.assertFalse(any(name.startswith("job-hunt/") for name in names))
@@ -243,6 +247,28 @@ class SafetyTest(unittest.TestCase):
             parts = {part.lower() for part in Path(name).parts}
             self.assertTrue(parts.isdisjoint(provider_names),
                             f"provider-specific archive path: {name}")
+
+    def test_the_image_ships_exactly_the_canonical_skills(self):
+        """No unscoped `.agents/skills` COPY, and the named set is the real one.
+
+        A contributor's checkout also holds personal skills and host adapters
+        under that directory. Copying it wholesale would put them in a shipped
+        image, so the Dockerfile names each canonical skill and this keeps the
+        two lists from drifting apart.
+        """
+        import re
+        dockerfile = (Path(__file__).resolve().parent.parent
+                      / "Dockerfile").read_text(encoding="utf-8")
+        copied = set(re.findall(r"^COPY \.agents/skills/([^\s/]+) ",
+                                dockerfile, re.MULTILINE))
+        self.assertEqual(copied, package_app.CANONICAL_SKILLS)
+        self.assertNotIn("COPY .agents/skills /", dockerfile)
+        self.assertNotIn("COPY .agents/skills/ ", dockerfile)
+        for skill in package_app.CANONICAL_SKILLS:
+            self.assertTrue((package_app.SKILLS_ROOT / skill / "SKILL.md").is_file(),
+                            f"{skill} is named in the Dockerfile but not in the repo")
+        # The entrypoint is executable even when an archive dropped the bit.
+        self.assertIn("chmod 0755 /usr/local/bin/entrypoint.sh", dockerfile)
 
     def test_create_person_is_bounded(self):
         with self.assertRaises(serve.RequestError):
@@ -857,6 +883,297 @@ class SafetyTest(unittest.TestCase):
         finally:
             server.shutdown()
             server.server_close()
+
+# --------------------------------------------------------------------------
+# The AI sandbox: the agent never gets a shell, and never leaves the vault
+# --------------------------------------------------------------------------
+
+STUB_AGENT = Path(__file__).resolve().parent / "testdata" / "stub_agent.py"
+
+
+class AgentSessionTest(unittest.TestCase):
+    """The agent boundary, exercised against a stub CLI.
+
+    The real `claude` binary is never spawned here: it costs money, needs
+    credentials, and answers differently every time. `stub_agent.py` speaks the
+    same stream-json shape, which is all the relay cares about.
+    """
+
+    def setUp(self):
+        self._tmp = tempfile.TemporaryDirectory()
+        self.vault = Path(self._tmp.name) / "vault"
+        (self.vault / ".cache").mkdir(parents=True)
+        self._bin = os.environ.get("CAREER_EVIDENCE_AGENT_BIN")
+        os.environ["CAREER_EVIDENCE_AGENT_BIN"] = str(STUB_AGENT)
+        self.addCleanup(self._restore_bin)
+        self.addCleanup(agent_sessions.close_all)
+        self.addCleanup(self._tmp.cleanup)
+
+    def _restore_bin(self):
+        if self._bin is None:
+            os.environ.pop("CAREER_EVIDENCE_AGENT_BIN", None)
+        else:
+            os.environ["CAREER_EVIDENCE_AGENT_BIN"] = self._bin
+
+    # -- the spawn boundary --------------------------------------------
+
+    def test_every_spawn_is_restricted_and_confined_to_the_vault(self):
+        for resume in (False, True):
+            args = agent_sessions.build_args(self.vault, "the-id", resume=resume)
+            self.assertIn("--restricted", args)
+            self.assertEqual(args.count("--add-dir"), 1)
+            self.assertEqual(args[args.index("--add-dir") + 1], str(self.vault))
+            # Nothing may hand the agent a shell or turn off the guard rails.
+            self.assertNotIn("--dangerously-skip-permissions", args)
+            self.assertNotIn("bypassPermissions", args)
+            self.assertNotIn("--allow-dangerously-skip-permissions", args)
+            self.assertEqual(args[args.index("--permission-mode") + 1], "acceptEdits")
+            # `--restricted` alone leaves WebSearch, the rest of the built-in
+            # set and the user's MCP servers in place, so the tools are named.
+            self.assertIn("--strict-mcp-config", args)
+            granted = args[args.index("--tools") + 1].split(",")
+            self.assertEqual(sorted(granted),
+                             ["Edit", "Glob", "Grep", "Read", "Write"])
+            for forbidden in ("Bash", "WebFetch", "WebSearch", "Task"):
+                self.assertNotIn(forbidden, granted)
+        self.assertIn("--session-id",
+                      agent_sessions.build_args(self.vault, "x", resume=False))
+        self.assertIn("--resume",
+                      agent_sessions.build_args(self.vault, "x", resume=True))
+
+    def test_a_live_spawn_carries_the_same_guard_rails(self):
+        session = agent_sessions.spawn(self.vault, agent_sessions.new_id(),
+                                       resume=False)
+        self.addCleanup(session.close)
+        self.assertIn("--restricted", session.proc.args)
+        self.assertEqual(session.proc.args[session.proc.args.index("--add-dir") + 1],
+                         str(self.vault))
+        self.assertEqual(session.proc.args[0], str(STUB_AGENT))
+
+    def test_the_agent_is_never_handed_to_a_shell(self):
+        import inspect
+        source = inspect.getsource(agent_sessions)
+        self.assertNotIn("shell=True", source)
+        self.assertNotIn("os.system", source)
+        for name in ("agent_interview", "_session_id"):
+            self.assertNotIn("shell=True", inspect.getsource(getattr(serve, name)))
+        self.assertNotIn("shell=True", inspect.getsource(serve.Handler._stream_agent))
+
+    # -- the index -----------------------------------------------------
+
+    def test_the_index_persists_and_survives_corruption(self):
+        first = agent_sessions.new_id()
+        agent_sessions.record_turn(self.vault, first,
+                                   "Tell me about the migration project")
+        second = agent_sessions.new_id()
+        agent_sessions.record_turn(self.vault, second, "Second conversation",
+                                   application="Applications/Testco/Tester")
+
+        entries = agent_sessions.load_index(self.vault)
+        self.assertEqual({e["id"] for e in entries}, {first, second})
+        by_id = {e["id"]: e for e in entries}
+        self.assertEqual(by_id[first]["title"],
+                         "Tell me about the migration project")
+        self.assertEqual(by_id[second]["application"],
+                         "Applications/Testco/Tester")
+        self.assertTrue(agent_sessions.known(self.vault, first))
+        # UTC, so entries written by the host and by the container sort together.
+        self.assertTrue(by_id[first]["created"].endswith("Z"))
+        self.assertFalse(agent_sessions.known(self.vault, agent_sessions.new_id()))
+
+        agent_sessions.index_path(self.vault).write_text("{not json", encoding="utf-8")
+        self.assertEqual(agent_sessions.load_index(self.vault), [])
+        agent_sessions.index_path(self.vault).unlink()
+        self.assertEqual(agent_sessions.load_index(self.vault), [])
+
+    def test_a_long_first_message_becomes_a_short_title(self):
+        self.assertEqual(agent_sessions.title_from("  hello   there  "),
+                         "hello there")
+        self.assertLessEqual(len(agent_sessions.title_from("word " * 100)), 60)
+
+    # -- the routes ----------------------------------------------------
+
+    def _serving(self):
+        serve.Handler.vault = self.vault
+        serve.Handler.token = "test-token-value"
+        server = ThreadingHTTPServer(("127.0.0.1", 0), serve.Handler)
+        threading.Thread(target=server.serve_forever, daemon=True).start()
+        self.addCleanup(server.server_close)
+        self.addCleanup(server.shutdown)
+        return server.server_address[1]
+
+    @staticmethod
+    def _post(port, payload, token="test-token-value"):
+        headers = {"Content-Type": "application/json"}
+        if token is not None:
+            headers["X-Session-Token"] = token
+        request = urllib.request.Request(
+            f"http://127.0.0.1:{port}/api/agent/interview",
+            data=json.dumps(payload).encode(), headers=headers, method="POST")
+        try:
+            with urllib.request.urlopen(request) as response:
+                return response.status, json.loads(response.read())
+        except urllib.error.HTTPError as error:
+            return error.code, json.loads(error.read())
+
+    @staticmethod
+    def _stream(port, session_id, limit=20):
+        """Read SSE events until the turn's sentinel arrives."""
+        connection = http.client.HTTPConnection("127.0.0.1", port, timeout=15)
+        connection.request("GET", f"/api/agent/stream?session={session_id}")
+        response = connection.getresponse()
+        events = []
+        try:
+            if response.status != 200:
+                return response.status, events
+            while len(events) < limit:
+                line = response.fp.readline().decode("utf-8").strip()
+                if not line.startswith("data: "):
+                    continue
+                event = json.loads(line[len("data: "):])
+                events.append(event)
+                if event.get("type") == "done":
+                    break
+        finally:
+            connection.close()
+        return response.status, events
+
+    def test_the_interview_route_is_token_gated(self):
+        self.assertIs(serve.HANDLERS["/api/agent/interview"], serve.agent_interview)
+        port = self._serving()
+        self.assertEqual(self._post(port, {"message": "hi"}, token=None)[0], 403)
+        self.assertEqual(self._post(port, {"message": "hi"}, token="wrong")[0], 403)
+
+    def test_a_turn_streams_the_agents_events_then_the_sentinel(self):
+        port = self._serving()
+        status, body = self._post(port, {"message": "What did I ship last year?"})
+        self.assertEqual(status, 200)
+        session_id = body["session_id"]
+
+        status, events = self._stream(port, session_id)
+        self.assertEqual(status, 200)
+        texts = [e["message"]["content"][0]["text"] for e in events
+                 if e.get("type") == "assistant"]
+        self.assertEqual(texts, ["You said: What did I ship last year?",
+                                 "(stub turn 1)"])
+        self.assertEqual([e["type"] for e in events][-2:], ["result", "done"])
+
+        # The conversation is listed for the chat UI.
+        with urllib.request.urlopen(
+                f"http://127.0.0.1:{port}/api/agent/sessions") as response:
+            listed = json.loads(response.read())["sessions"]
+        self.assertEqual([e["id"] for e in listed], [session_id])
+        self.assertEqual(listed[0]["title"], "What did I ship last year?")
+
+    def test_an_unknown_or_malformed_session_is_refused(self):
+        port = self._serving()
+        self.assertEqual(self._stream(port, agent_sessions.new_id())[0], 404)
+        self.assertEqual(self._stream(port, "not-a-uuid")[0], 404)
+        self.assertEqual(self._post(port, {"message": "hi",
+                                           "session_id": "not-a-uuid"})[0], 400)
+        self.assertEqual(self._post(port, {"message": "  "})[0], 400)
+
+    # -- seeding and lifecycle -----------------------------------------
+
+    def test_a_new_conversation_is_seeded_and_a_resumed_one_is_not(self):
+        session = agent_sessions.spawn(self.vault, agent_sessions.new_id(),
+                                       resume=False)
+        self.addCleanup(session.close)
+        args = session.proc.args
+        self.assertIn("--append-system-prompt", args)
+        prompt = args[args.index("--append-system-prompt") + 1]
+        self.assertIn(agent_sessions.INTERVIEW_SKILL, prompt)
+
+        resumed = agent_sessions.spawn(self.vault, agent_sessions.new_id(),
+                                       resume=True)
+        self.addCleanup(resumed.close)
+        self.assertNotIn("--append-system-prompt", resumed.proc.args)
+
+    def test_the_prompt_points_at_the_skill_instead_of_forking_it(self):
+        """The workflow text stays in the skill; the seed is a pointer."""
+        reference = (Path(__file__).resolve().parent.parent
+                     / agent_sessions.INTERVIEW_SKILL)
+        self.assertTrue(reference.is_file(), agent_sessions.INTERVIEW_SKILL)
+        self.assertLess(len(agent_sessions.INTERVIEW_PROMPT), 1200)
+        for heading in ("The seven dimensions", "Context —", "Adoption —"):
+            self.assertNotIn(heading, agent_sessions.INTERVIEW_PROMPT)
+
+    def test_closing_a_conversation_kills_the_process_and_keeps_the_index(self):
+        port = self._serving()
+        session_id = self._post(port, {"message": "first turn"})[1]["session_id"]
+        proc = agent_sessions.live(session_id).proc
+        self.assertIsNone(proc.poll())
+
+        status, body = self._post(port, {"session_id": session_id, "close": True})
+        self.assertEqual(status, 200)
+        self.assertTrue(body["closed"])
+        self.assertIsNotNone(proc.poll())
+        self.assertIsNone(agent_sessions.live(session_id))
+        # Closing ends the process, not the conversation.
+        self.assertTrue(agent_sessions.known(self.vault, session_id))
+
+        status, body = self._post(port, {"session_id": session_id,
+                                         "message": "second turn"})
+        self.assertEqual(status, 200)
+        self.assertEqual(body["session_id"], session_id)
+        respawned = agent_sessions.live(session_id)
+        self.assertIsNot(respawned.proc, proc)
+        self.assertIn("--resume", respawned.proc.args)
+        self.assertEqual(respawned.proc.args[respawned.proc.args.index("--resume") + 1],
+                         session_id)
+        # And one index entry, not two.
+        self.assertEqual(len(agent_sessions.load_index(self.vault)), 1)
+
+    def test_nothing_resumes_until_the_user_asks_for_it(self):
+        """A listed conversation is inert: no subprocess until a turn is sent.
+
+        Restarting the server must not wake a single agent, and opening one in
+        the chat must not either — resuming costs money and reads the vault, so
+        it happens only when the person says so.
+        """
+        import inspect
+        port = self._serving()
+        session_id = self._post(port, {"message": "first turn"})[1]["session_id"]
+        agent_sessions.close_all()          # stands in for a server restart
+        self.assertIsNone(agent_sessions.live(session_id))
+        self.assertTrue(agent_sessions.known(self.vault, session_id))
+
+        # Opening it: the stream says "idle" and ends, and still nothing runs.
+        status, events = self._stream(port, session_id)
+        self.assertEqual(status, 200)
+        self.assertEqual([e["type"] for e in events], ["idle", "done"])
+        self.assertIsNone(agent_sessions.live(session_id))
+
+        # Only a turn spawns anything, and it spawns a resume.
+        self._post(port, {"session_id": session_id, "message": "carry on"})
+        self.assertIn("--resume", agent_sessions.live(session_id).proc.args)
+
+        # And no startup path can reach a spawn behind the user's back.
+        for function in (serve.main, serve.Handler._stream_agent):
+            self.assertNotIn("agent_sessions.spawn", inspect.getsource(function))
+
+    def test_shutdown_reaps_every_live_conversation(self):
+        port = self._serving()
+        procs = [agent_sessions.live(self._post(port, {"message": f"turn {n}"})[1]
+                                     ["session_id"]).proc for n in range(2)]
+        self.assertTrue(all(p.poll() is None for p in procs))
+        agent_sessions.close_all()
+        self.assertTrue(all(p.poll() is not None for p in procs))
+        self.assertEqual(len(agent_sessions.load_index(self.vault)), 2)
+
+    def test_the_server_reaps_sessions_when_it_stops(self):
+        import inspect
+        source = inspect.getsource(serve.main)
+        self.assertIn("agent_sessions.close_all()", source)
+
+    def test_a_dead_agent_is_reported_not_hung(self):
+        os.environ["CAREER_EVIDENCE_AGENT_BIN"] = str(
+            Path(__file__).resolve().parent / "testdata" / "failing_agent.sh")
+        port = self._serving()
+        status, body = self._post(port, {"message": "hi"})
+        self.assertEqual(status, 502)
+        self.assertIn("docs/setup.md", body["error"])
+
 
 # --------------------------------------------------------------------------
 # The golden rule: a render with no template chosen is byte-identical to the

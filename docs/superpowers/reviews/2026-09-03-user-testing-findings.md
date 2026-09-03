@@ -171,3 +171,20 @@ finding 8. Needs ideation — vision-level, not a patch.
 Implied new concept to review alongside: "claims" — imported/asserted
 experience not yet backed by evidence, so the app can show what remains
 to be interviewed.
+
+## 14. Rendering an unbuilt draft is a silent waste
+
+Resume generation works, but the app never tells the user that
+`Draft - Resume.md` / `Draft - Cover Letter.md` are still the untouched
+scaffold template — "Generate resume" happily renders the placeholder
+and burns the render (and, with a companion in the loop, tokens) for
+nothing. Needs: a clear draft state per document (template / drafted /
+rendered), surfaced in the viewer and rail, a "draft not written yet"
+warning that gates or at least labels the generate action, and ideally
+the deterministic check reused by the audit and the companion (finding
+13) so the same signal drives "what's next" (finding 8): drafting is the
+next step, not rendering.
+
+Deterministic detection is cheap: the scaffold's placeholder markers
+(the same `^(YYYY|<|\{\{)`-style placeholders the index already skips)
+still present in the draft ⇒ not drafted.

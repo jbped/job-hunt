@@ -36,9 +36,23 @@ RUN apt-get update \
 COPY --from=agent /usr/local/bin/claude /usr/local/bin/claude
 COPY server/ /app/server
 # The interview workflow the agent is told to read lives in the skill, so the
-# skill has to exist in the image. It is read-only here, like the rest of /app.
-COPY .agents/skills /app/.agents/skills
+# skills have to exist in the image. Named one by one rather than copied as a
+# directory: a real checkout's .agents/skills/ also holds personal and
+# host-adapter installs, and none of those belong in a shipped image. This list
+# is the canonical set and test_safety.py pins it against
+# package_app.CANONICAL_SKILLS.
+COPY .agents/skills/career-evidence /app/.agents/skills/career-evidence
+COPY .agents/skills/cover-letter-pdf /app/.agents/skills/cover-letter-pdf
+COPY .agents/skills/cross-check /app/.agents/skills/cross-check
+COPY .agents/skills/draft-cover-letter /app/.agents/skills/draft-cover-letter
+COPY .agents/skills/draft-resume /app/.agents/skills/draft-resume
+COPY .agents/skills/init-vault /app/.agents/skills/init-vault
+COPY .agents/skills/new-application /app/.agents/skills/new-application
+COPY .agents/skills/new-person /app/.agents/skills/new-person
+COPY .agents/skills/resume-pdf /app/.agents/skills/resume-pdf
 COPY docker/entrypoint.sh /usr/local/bin/entrypoint.sh
+# An unzipped release may not carry the executable bit through the archive.
+RUN chmod 0755 /usr/local/bin/entrypoint.sh
 
 # The agent's config and its own session storage live on a named volume, so
 # `--resume` still works after the container is replaced. Created with /tmp's

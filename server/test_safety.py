@@ -231,7 +231,10 @@ class SafetyTest(unittest.TestCase):
                          ".agents/skills/career-evidence/SKILL.md",
                          ".agents/skills/new-application/SKILL.md",
                          "Dockerfile",
-                         "compose.yaml"):
+                         "compose.yaml",
+                         # The image cannot be built without it, and the
+                         # unzipped archive is a supported way to build it.
+                         "docker/entrypoint.sh"):
             self.assertIn(required, names)
         self.assertFalse(any(".claude-plugin" in name for name in names))
         self.assertFalse(any(name.startswith("job-hunt/") for name in names))
@@ -244,6 +247,28 @@ class SafetyTest(unittest.TestCase):
             parts = {part.lower() for part in Path(name).parts}
             self.assertTrue(parts.isdisjoint(provider_names),
                             f"provider-specific archive path: {name}")
+
+    def test_the_image_ships_exactly_the_canonical_skills(self):
+        """No unscoped `.agents/skills` COPY, and the named set is the real one.
+
+        A contributor's checkout also holds personal skills and host adapters
+        under that directory. Copying it wholesale would put them in a shipped
+        image, so the Dockerfile names each canonical skill and this keeps the
+        two lists from drifting apart.
+        """
+        import re
+        dockerfile = (Path(__file__).resolve().parent.parent
+                      / "Dockerfile").read_text(encoding="utf-8")
+        copied = set(re.findall(r"^COPY \.agents/skills/([^\s/]+) ",
+                                dockerfile, re.MULTILINE))
+        self.assertEqual(copied, package_app.CANONICAL_SKILLS)
+        self.assertNotIn("COPY .agents/skills /", dockerfile)
+        self.assertNotIn("COPY .agents/skills/ ", dockerfile)
+        for skill in package_app.CANONICAL_SKILLS:
+            self.assertTrue((package_app.SKILLS_ROOT / skill / "SKILL.md").is_file(),
+                            f"{skill} is named in the Dockerfile but not in the repo")
+        # The entrypoint is executable even when an archive dropped the bit.
+        self.assertIn("chmod 0755 /usr/local/bin/entrypoint.sh", dockerfile)
 
     def test_create_person_is_bounded(self):
         with self.assertRaises(serve.RequestError):

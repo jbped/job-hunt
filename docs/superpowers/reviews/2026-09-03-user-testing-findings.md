@@ -38,9 +38,41 @@ in the old visual language. The deferred redesign is now due: plan a
 deliberate UI iteration pass (information architecture, header/nav
 cleanup, visual design), reviewed as its own initiative.
 
-## Chrome/Firefox/sandbox status
+## 5. Firefox extension is missing
 
-- Chrome extension: works (finding 1 & 2 aside).
-- Firefox extension: not yet reported.
-- AI sandbox, webapp walk, zip, PDFs, Obsidian view, live vault: not yet
-  reported.
+There is no Firefox build of the extension. Needs to exist (packaging
+and any API differences from the Chrome build to be scoped at review).
+
+## 6. Obsidian ↔ webapp piping works; in-app editing is clunky
+
+Positive: edits made in Obsidian show up immediately in the webapp, and
+webapp edits land in the vault — the fingerprint/poll buffer system is
+doing its job. Negative: editing inside the webapp is clunky as a user.
+Enhancement idea: a WYSIWYG-to-markdown editing experience (must keep
+markdown as the stored truth and the fingerprint contract intact).
+
+## 7. Company questions: no editing after entry in the UI
+
+The panel supports entry at submission time, but answers/questions can't
+be edited afterwards within the UI — editing works via Obsidian (and
+reflects immediately). Review: whether the intended "Edit in note"
+affordance is missing, hidden, or insufficient, and what in-panel editing
+should look like.
+
+## 8. Fundamental flow gap: no "what next / where am I working" layer
+
+The biggest finding. The UI presents applications and notes well, but has
+no top-level action flow: this is an application, this is where it
+stands, this is the next action — the kanban-board-style stance and a
+"what do we do next" entry point are absent as a first-class experience.
+This is a data/flow-structure question, not a styling one, and needs
+ideation with Jacob before any UI iteration (finding 4) is designed —
+the UI iteration should be built around whatever this produces.
+
+## Status
+
+- Chrome extension: works (findings 1 & 2).
+- Firefox extension: missing (finding 5).
+- Obsidian ↔ webapp round-trip: works (finding 6).
+- Company questions: entry works, post-entry edit gap (finding 7).
+- AI sandbox, zip, PDFs, live vault: not yet reported.

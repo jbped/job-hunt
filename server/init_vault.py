@@ -59,6 +59,7 @@ DIRECTORIES = [
     "People/Job Hunt",
     "Preferences",
     "Resources",
+    "Resources/Templates",
     "Working Notes",
 ]
 

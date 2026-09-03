@@ -5,3 +5,5 @@ The ingress point for source documents: previous resumes, diplomas, certificates
 A document here is a *source*, not evidence. Facts extracted from it belong in `Career Evidence/` or `Personal Information/` notes, whose provenance lines then point back at the file (for example `source: Resources/Resume 2024-01.pdf`).
 
 Never edit an ingested source document — a corrected version is a new file.
+
+`Templates/` is the exception: files there are not sources but PDF templates the renderer uses. See its own README.

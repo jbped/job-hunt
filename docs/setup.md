@@ -82,6 +82,10 @@ restarts, so the browser extension pairs once. Re-roll it by running
 disposable. The token is also printed nowhere; copy it from the dashboard's
 **Pair extension** button or the file itself.
 
+## Custom PDF templates
+
+You can drop your own PostScript templates in `Resources/Templates/` in your vault; they appear in the dashboard's template pickers per application. A `.ps` file is a program, and rendering runs it in Ghostscript on your machine — so treat a template you were given the same way you would treat any other program someone sent you. The contract a template must honour is in the skill's `references/document-generation.md`, and `Resources/Templates/README.md` in your vault summarises it.
+
 ## Verify the install
 
 From the repo root:

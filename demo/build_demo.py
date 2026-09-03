@@ -106,6 +106,54 @@ TypeScript, Node, Python, SQL, Docker
 """
 
 
+# A vault template, kept deliberately plain: it exists to show the contract —
+# the kind line, two declared parameters, the tokens, and the marker — not to
+# be a second design.
+WIDE_MARGINS = """%!PS-Adobe-3.0
+%%Pages: 1
+%%BoundingBox: 0 0 612 792
+%%EndComments
+
+% ce-kind: resume
+% ce-param: left 54
+% ce-param: right 558
+% ce-param: section_order summary, experience, skills, education
+
+<< /PageSize [612 792] >> setpagedevice
+[ /Title ({{FULL_NAME}} - {{POSITION}} Resume)
+  /Author ({{FULL_NAME}})
+  /Subject (Application for {{POSITION}} at {{COMPANY}})
+  /DOCINFO pdfmark
+
+/HB /Helvetica-Bold findfont def
+/HR /Helvetica findfont def
+/brand { 0.10 0.30 0.28 setrgbcolor } def
+/ink { 0.10 0.10 0.10 setrgbcolor } def
+/muted { 0.35 0.35 0.35 setrgbcolor } def
+/Rshow { dup stringwidth pop neg 0 rmoveto show } def
+
+/phoneIcon {
+  /y exch def /x exch def
+  muted newpath x y 1.6 0 360 arc fill
+} def
+/pinIcon {
+  /y exch def /x exch def
+  muted newpath x y 1.6 0 360 arc fill
+} def
+/mailIcon {
+  /y exch def /x exch def
+  muted newpath x 2 sub y 1.5 sub 4 3 rectfill
+} def
+/linkedinIcon {
+  /y exch def /x exch def
+  muted newpath x 2 sub y 2 sub 4 4 rectfill
+} def
+
+brand
+HB 10 scalefont setfont
+"""
+
+
 def set_fields(path: Path, **fields: str) -> None:
     text = path.read_text(encoding="utf-8")
     for key, value in fields.items():
@@ -255,6 +303,13 @@ def build(force: bool = False) -> Path:
     set_fields(app3 / "Application Brief.md", status="rejected",
                date_applied="2026-07-01",
                compensation_status="unknown")
+
+    # A user-supplied template, so the picker has something to pick and the
+    # `% ce-param:` contract has a worked example in a vault you can open.
+    templates = vault / "Resources" / "Templates"
+    templates.mkdir(parents=True, exist_ok=True)
+    (templates / "Wide Margins.ps").write_text(WIDE_MARGINS, encoding="utf-8")
+    set_fields(app1 / "Application Brief.md", resume_template="vault:Wide Margins")
 
     # One rendered artifact, when Ghostscript is around; the vault is complete
     # without it, so a machine missing ps2pdf still gets a working demo.

@@ -7,6 +7,7 @@ import FieldRow from "../../components/FieldRow";
 import { ReferencePill } from "../../components/Pills";
 import { involvementMatches, peopleFor } from "../../lib/people";
 import { NOTE_ORDER, type DocSelection } from "./helpers";
+import { useSchemaQuery } from "../../api/queries";
 import { useAddContact, useAddInterview, useLinkPerson } from "../../lib/actions";
 import QuestionsPanel from "./QuestionsPanel";
 
@@ -68,6 +69,9 @@ export default function Rail({
   renderMessage: ReactNode;
   onRenderPdf: (app: Application, kind: "resume" | "cover-letter") => void;
 }) {
+  const schema = useSchemaQuery();
+  const templates = schema.data?.templates;
+
   const addContact = useAddContact();
   const addInterview = useAddInterview();
   const linkPerson = useLinkPerson();
@@ -235,6 +239,36 @@ export default function Rail({
             Generate cover letter
           </button>
         </div>
+        {/* Which template each kind renders through. An unset field is the
+            built-in default, so a vault that has never heard of the registry
+            keeps rendering exactly as before. Absent from an older server's
+            schema, in which case there is nothing to pick from. */}
+        {templates ? (
+          <>
+            <FieldRow label="Resume template">
+              <EditableField
+                path={app.brief}
+                field="resume_template"
+                ariaLabel="Resume template"
+                value={app.resume_template ?? ""}
+                values={templates["resume"]}
+                emptyLabel="Default"
+                fingerprint={app.fingerprint}
+              />
+            </FieldRow>
+            <FieldRow label="Letter template">
+              <EditableField
+                path={app.brief}
+                field="cover_letter_template"
+                ariaLabel="Letter template"
+                value={app.cover_letter_template ?? ""}
+                values={templates["cover-letter"]}
+                emptyLabel="Default"
+                fingerprint={app.fingerprint}
+              />
+            </FieldRow>
+          </>
+        ) : null}
         <div id="renderOut">{renderMessage}</div>
       </div>
 

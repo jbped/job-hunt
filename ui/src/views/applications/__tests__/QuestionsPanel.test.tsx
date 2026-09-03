@@ -40,6 +40,8 @@ function application(company: string, position: string): Application {
     experience_level_stated: null,
     next_action: null,
     next_action_date: null,
+    resume_template: null,
+    cover_letter_template: null,
     archived: null,
     archive_reason: null,
     archived_from: null,

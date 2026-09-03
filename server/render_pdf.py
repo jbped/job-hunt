@@ -19,6 +19,7 @@ Usage:
 
 from __future__ import annotations
 
+from dataclasses import dataclass, fields, replace
 from pathlib import Path
 import argparse
 import datetime
@@ -30,18 +31,6 @@ import sys
 import metrics
 import vaultlib as v
 
-# Geometry, taken from the existing template so rendered output stays consistent
-# with the PDFs already submitted.
-LEFT = 38.0
-RIGHT = 570.0
-BULLET_X = 50.0
-TOP_RULE_Y = 703.0
-BOTTOM_MARGIN = 54.0
-
-BODY_FONT = "Helvetica"
-BOLD_FONT = "Helvetica-Bold"
-
-
 class Density:
     """A set of type sizes and spacings to try when fitting to the page.
 
@@ -51,30 +40,163 @@ class Density:
     """
 
     def __init__(self, body: float, leading: float, gap_bullet: float,
-                 gap_role: float, gap_section: float, after_section: float):
+                 gap_role: float, gap_section: float, after_section: float,
+                 role_offset: float = 0.7, section_offset: float = 2.5,
+                 education_offset: float = -0.1):
         self.body = body
         self.leading = leading
         self.gap_bullet = gap_bullet
         self.gap_role = gap_role
         self.gap_section = gap_section
         self.after_section = after_section
-        self.role = body + 0.7
-        self.section = body + 2.5
-        self.education = body - 0.1
+        self.role = body + role_offset
+        self.section = body + section_offset
+        self.education = body + education_offset
 
 
-RESUME_DENSITIES = [
+RESUME_DENSITIES = (
     Density(8.0, 10.0, 2.0, 7.0, 20.0, 18.0),
     Density(7.8, 9.6, 1.6, 6.0, 17.0, 16.0),
     Density(7.6, 9.2, 1.2, 5.0, 15.0, 14.0),
     Density(7.4, 8.9, 1.0, 4.0, 13.0, 13.0),
-]
+)
 
-LETTER_DENSITIES = [
+LETTER_DENSITIES = (
     Density(9.2, 13.0, 0.0, 0.0, 13.0, 13.0),
     Density(9.0, 12.4, 0.0, 0.0, 12.0, 12.0),
     Density(8.6, 11.6, 0.0, 0.0, 11.0, 11.0),
-]
+)
+
+# The sections the resume engine knows how to draw, in the order a template
+# gets to reorder. Anything outside this set is a template bug, not a feature.
+SECTIONS = ("summary", "experience", "additional", "education", "skills")
+SECTION_LABELS = {
+    "experience": "Experience",
+    "additional": "Additional Experience",
+    "education": "Education",
+    "skills": "Technical Skills",
+}
+
+
+@dataclass(frozen=True)
+class Params:
+    """Every layout number the engine used to hardcode.
+
+    The defaults are the values this repo has always rendered with, so a
+    template that declares nothing renders byte-identically to before. A
+    template declares overrides in its prologue as `% ce-param: <key> <value>`
+    lines; the engine's logic stays here in Python, and only these numbers move.
+    """
+
+    # Text column and page box.
+    left: float = 38.0
+    right: float = 570.0
+    bullet_x: float = 50.0
+    top_rule_y: float = 703.0
+    bottom_margin: float = 54.0
+    page_top: float = 756.0
+
+    # Fonts, which must be ones the metrics tables can measure.
+    body_font: str = "Helvetica"
+    bold_font: str = "Helvetica-Bold"
+
+    # The letterhead wordmark and contact column.
+    name_size: float = 18.5
+    name_second_y: float = 735.0
+    title_size: float = 8.6
+    title_y: float = 718.0
+    contact_size: float = 7.8
+    contact_right: float = 548.0
+    contact_icon_x: float = 556.0
+    contact_icon_drop: float = 4.0
+    contact_step: float = 14.0
+    rule_width: float = 0.9
+
+    # Drawing details the emitted procedures use.
+    bullet_dot_x: float = 43.0
+    bullet_dot_rise: float = 2.0
+    bullet_dot_radius: float = 1.15
+    section_rule_gap: float = 8.0
+    section_rule_rise: float = 3.0
+    section_rule_width: float = 0.35
+
+    # Where the body starts below the rule, per kind.
+    resume_start_drop: float = 15.0
+    letter_start_drop: float = 22.0
+
+    # Cover-letter spacing, as multiples of the leading.
+    re_size_offset: float = 0.8
+    re_gap: float = 1.6
+    salutation_gap: float = 0.4
+    paragraph_gap: float = 0.6
+    closing_gap: float = 0.4
+
+    # Type-size offsets from the body size, applied to every density.
+    role_size_offset: float = 0.7
+    section_size_offset: float = 2.5
+    education_size_offset: float = -0.1
+
+    section_order: tuple[str, ...] = SECTIONS
+
+    def densities(self, kind: str) -> tuple[Density, ...]:
+        """The density ladder, rebuilt at this template's size offsets."""
+        ladder = RESUME_DENSITIES if kind == "resume" else LETTER_DENSITIES
+        return tuple(
+            Density(d.body, d.leading, d.gap_bullet, d.gap_role, d.gap_section,
+                    d.after_section, self.role_size_offset,
+                    self.section_size_offset, self.education_size_offset)
+            for d in ladder
+        )
+
+
+PARAM_KEYS = tuple(f.name for f in fields(Params))
+
+
+def parse_params(prologue_text: str) -> Params:
+    """Read a template's `% ce-param:` block. Refuse anything we cannot honour.
+
+    Silently ignoring an unknown key would let a template declare a layout it
+    does not get, and the user would only find out by comparing PDFs.
+    """
+    values: dict[str, object] = {}
+    for line in prologue_text.split("\n"):
+        match = re.match(r"^%\s*ce-param:\s*(\S+)\s+(.+?)\s*$", line.strip())
+        if not match:
+            continue
+        key, raw = match.group(1), match.group(2)
+        if key not in PARAM_KEYS:
+            raise SystemExit(
+                f"Unknown template parameter '{key}'.\nValid keys: "
+                + ", ".join(PARAM_KEYS)
+            )
+        values[key] = _coerce(key, raw)
+    return replace(Params(), **values)
+
+
+def _coerce(key: str, raw: str):
+    if key == "section_order":
+        wanted = tuple(part for part in re.split(r"[,\s]+", raw) if part)
+        unknown = [s for s in wanted if s not in SECTIONS]
+        if unknown or not wanted:
+            raise SystemExit(
+                f"Bad value for template parameter 'section_order': {raw!r}.\n"
+                "Valid sections: " + ", ".join(SECTIONS)
+            )
+        return wanted
+    if key in ("body_font", "bold_font"):
+        if raw not in metrics.WIDTHS:
+            raise SystemExit(
+                f"Bad value for template parameter '{key}': {raw!r}.\n"
+                "Only fonts with metrics tables can be laid out: "
+                + ", ".join(sorted(metrics.WIDTHS))
+            )
+        return raw
+    try:
+        return float(raw)
+    except ValueError:
+        raise SystemExit(
+            f"Bad value for template parameter '{key}': {raw!r} is not a number."
+        )
 
 
 # --------------------------------------------------------------------------
@@ -318,8 +440,10 @@ class Overflow(Exception):
 class Page:
     """Accumulates PostScript operations and tracks the current baseline."""
 
-    def __init__(self, density: Density, start_y: float, pages: int):
+    def __init__(self, density: Density, start_y: float, pages: int,
+                 params: Params | None = None):
         self.d = density
+        self.p = params or Params()
         self.y = start_y
         self.ops: list[str] = []
         self.page_breaks: list[int] = []
@@ -331,12 +455,14 @@ class Page:
         # and they would silently run off the right edge.
         self.overwide: list[str] = []
 
-    def _check_width(self, content: str, x: float, size: float, font: str = BODY_FONT) -> None:
-        if metrics.width(content, font, size) > (RIGHT - x) + 0.5:
+    def _check_width(self, content: str, x: float, size: float,
+                     font: str | None = None) -> None:
+        font = font or self.p.body_font
+        if metrics.width(content, font, size) > (self.p.right - x) + 0.5:
             self.overwide.append(content)
 
     def _ensure(self, needed: float) -> None:
-        if self.y - needed >= BOTTOM_MARGIN:
+        if self.y - needed >= self.p.bottom_margin:
             return
         if self.page >= self.pages_allowed:
             # Keep laying out past the bottom so the finished pass can report the
@@ -345,29 +471,32 @@ class Page:
             return
         self.page_breaks.append(len(self.ops))
         self.page += 1
-        self.y = 756.0
+        self.y = self.p.page_top
 
     def shortfall(self) -> float:
         """Points by which the content overran the page budget; 0 if it fits."""
-        return max(0.0, BOTTOM_MARGIN - self.y) if self.overflowed else 0.0
+        return max(0.0, self.p.bottom_margin - self.y) if self.overflowed else 0.0
 
-    def text(self, content: str, x: float, size: float, font: str = BODY_FONT) -> None:
+    def text(self, content: str, x: float, size: float, font: str | None = None) -> None:
         self._ensure(size)
         self._check_width(content, x, size, font)
         self.ops.append(f"{self.y:.1f} {x:.0f} ({metrics.escape(content)}) bodyline")
         self.y -= self.d.leading
 
-    def paragraph(self, content: str, x: float, max_x: float = RIGHT) -> None:
-        for line in metrics.wrap(content, BODY_FONT, self.d.body, max_x - x):
+    def paragraph(self, content: str, x: float, max_x: float | None = None) -> None:
+        max_x = self.p.right if max_x is None else max_x
+        for line in metrics.wrap(content, self.p.body_font, self.d.body, max_x - x):
             self.text(line, x, self.d.body)
 
     def bullet(self, content: str) -> None:
-        lines = metrics.wrap(content, BODY_FONT, self.d.body, RIGHT - BULLET_X)
+        lines = metrics.wrap(content, self.p.body_font, self.d.body,
+                             self.p.right - self.p.bullet_x)
         for i, line in enumerate(lines):
             self._ensure(self.d.body)
-            self._check_width(line, BULLET_X, self.d.body)
+            self._check_width(line, self.p.bullet_x, self.d.body)
             op = "bullet" if i == 0 else "bodyline"
-            prefix = f"{self.y:.1f}" if i == 0 else f"{self.y:.1f} {BULLET_X:.0f}"
+            prefix = (f"{self.y:.1f}" if i == 0
+                      else f"{self.y:.1f} {self.p.bullet_x:.0f}")
             self.ops.append(f"{prefix} ({metrics.escape(line)}) {op}")
             self.y -= self.d.leading
         self.y -= self.d.gap_bullet
@@ -383,9 +512,10 @@ class Page:
         # Title is left-aligned and dates right-aligned on the same baseline, so
         # the failure here is a collision in the middle rather than an overrun.
         size = self.d.education if education else self.d.role
-        title_w = metrics.width(title, BOLD_FONT, size)
-        dates_w = metrics.width(dates, BODY_FONT, self.d.education if education else self.d.body)
-        if title_w + dates_w + 12 > RIGHT - LEFT:
+        title_w = metrics.width(title, self.p.bold_font, size)
+        dates_w = metrics.width(dates, self.p.body_font,
+                                self.d.education if education else self.d.body)
+        if title_w + dates_w + 12 > self.p.right - self.p.left:
             self.overwide.append(f"{title} / {dates} (title and dates collide)")
         op = "education" if education else "role"
         self.ops.append(
@@ -394,74 +524,94 @@ class Page:
         self.y -= self.d.leading + 1
 
 
-def layout_resume(data: dict, density: Density, pages: int) -> Page:
-    page = Page(density, TOP_RULE_Y - 15, pages)
+def layout_resume(data: dict, density: Density, pages: int,
+                  params: Params | None = None) -> Page:
+    p = params or Params()
+    page = Page(density, p.top_rule_y - p.resume_start_drop, pages, p)
 
-    if data["summary"]:
-        page.paragraph(data["summary"], LEFT)
-
-    if data["experience"]:
-        page.section("Experience")
-        for i, role in enumerate(data["experience"]):
-            if i:
-                page.y -= density.gap_role
-            page.role(role["title"], role["dates"])
-            for bullet in role["bullets"]:
-                page.bullet(bullet)
-
-    if data["additional"]:
-        page.section("Additional Experience")
-        for i, role in enumerate(data["additional"]):
-            if i:
-                page.y -= density.gap_role
-            page.role(role["title"], role["dates"])
-            for bullet in role["bullets"]:
-                page.bullet(bullet)
-
-    if data["education"]:
-        page.section("Education")
-        for entry in data["education"]:
-            page.role(entry["title"], entry["dates"], education=True)
-
-    if data["skills"]:
-        page.section("Technical Skills")
-        page.paragraph(data["skills"], LEFT)
+    for name in p.section_order:
+        if not data[name]:
+            continue
+        if name == "summary":
+            page.paragraph(data["summary"], p.left)
+        elif name in ("experience", "additional"):
+            page.section(SECTION_LABELS[name])
+            for i, role in enumerate(data[name]):
+                if i:
+                    page.y -= density.gap_role
+                page.role(role["title"], role["dates"])
+                for bullet in role["bullets"]:
+                    page.bullet(bullet)
+        elif name == "education":
+            page.section(SECTION_LABELS[name])
+            for entry in data["education"]:
+                page.role(entry["title"], entry["dates"], education=True)
+        elif name == "skills":
+            page.section(SECTION_LABELS[name])
+            page.paragraph(data["skills"], p.left)
 
     return page
 
 
-def layout_letter(data: dict, density: Density, pages: int, position: str = "") -> Page:
-    page = Page(density, TOP_RULE_Y - 22, pages)
+def fit(data: dict, kind: str, pages: int = 1, position: str = "",
+        params: Params | None = None, source_name: str | None = None) -> Page:
+    """Lay the content out at the loosest density that still fits the budget."""
+    p = params or Params()
+    tightest = None
+    for density in p.densities(kind):
+        attempt = (layout_resume(data, density, pages, p) if kind == "resume"
+                   else layout_letter(data, density, pages, p, position))
+        tightest = attempt
+        if not attempt.overflowed:
+            return attempt
+
+    excess = tightest.shortfall()
+    lines = max(1, round(excess / tightest.d.leading))
+    source_name = source_name or (
+        "Draft - Resume.md" if kind == "resume" else "Draft - Cover Letter.md")
+    raise SystemExit(
+        f"Content does not fit on {pages} page(s), even at the tightest spacing —\n"
+        f"about {lines} line(s) ({excess:.0f}pt) too long.\n"
+        f"Cut roughly that much from {source_name}, or pass --pages {pages + 1} "
+        "to render a deliberate multi-page document."
+    )
+
+
+def layout_letter(data: dict, density: Density, pages: int,
+                  params: Params | None = None, position: str = "") -> Page:
+    p = params or Params()
+    page = Page(density, p.top_rule_y - p.letter_start_drop, pages, p)
 
     if data["date"]:
-        page.text(data["date"], LEFT, density.body)
+        page.text(data["date"], p.left, density.body)
         page.y -= density.leading
 
     for line in data["recipient"]:
-        page.text(line, LEFT, density.body)
+        page.text(line, p.left, density.body)
     if data["recipient"]:
         page.y -= density.leading
 
     if position:
         page._ensure(density.section)
         page.ops.append(
-            f"HB {density.body + 0.8:.1f} scalefont setfont brand {LEFT:.0f} {page.y:.1f} "
+            f"HB {density.body + p.re_size_offset:.1f} scalefont setfont brand "
+            f"{p.left:.0f} {page.y:.1f} "
             f"moveto (RE: {metrics.escape(position.upper())}) show"
         )
-        page.y -= density.leading * 1.6
+        page.y -= density.leading * p.re_gap
 
     if data["salutation"]:
-        page.text(data["salutation"], LEFT, density.body)
-        page.y -= density.leading * 0.4
+        page.text(data["salutation"], p.left, density.body)
+        page.y -= density.leading * p.salutation_gap
 
     for paragraph in data["paragraphs"]:
-        page.paragraph(paragraph, LEFT)
-        page.y -= density.leading * 0.6
+        page.paragraph(paragraph, p.left)
+        page.y -= density.leading * p.paragraph_gap
 
     if data["closing"]:
-        page.y -= density.leading * 0.4
+        page.y -= density.leading * p.closing_gap
         for line in data["closing"]:
-            page.text(line, LEFT, density.body)
+            page.text(line, p.left, density.body)
 
     return page
 
@@ -470,7 +620,7 @@ def layout_letter(data: dict, density: Density, pages: int, position: str = "") 
 # PostScript emission
 # --------------------------------------------------------------------------
 
-def overrides(d: Density) -> str:
+def overrides(d: Density, params: Params | None = None) -> str:
     """Redefine the drawing procedures at the chosen density's sizes.
 
     The shipped templates hardcode 8pt inside `bodyline`, `role`, and friends.
@@ -480,6 +630,7 @@ def overrides(d: Density) -> str:
     agreement. Colours, icons, and the rule geometry stay as the template
     defines them, so the design is unchanged.
     """
+    p = params or Params()
     return f"""
 /BODY {d.body:.2f} def
 /bodyline {{
@@ -488,28 +639,28 @@ def overrides(d: Density) -> str:
 }} def
 /bullet {{
   /txt exch def /y exch def
-  brand newpath 43 y 2 add 1.15 0 360 arc fill
-  y {BULLET_X:.0f} txt bodyline
+  brand newpath {p.bullet_dot_x:g} y {p.bullet_dot_rise:g} add {p.bullet_dot_radius:g} 0 360 arc fill
+  y {p.bullet_x:.0f} txt bodyline
 }} def
 /role {{
   /date exch def /title exch def /y exch def
-  HB {d.role:.2f} scalefont setfont ink {LEFT:.0f} y moveto title show
-  HR BODY scalefont setfont muted {RIGHT:.0f} y moveto date Rshow
+  HB {d.role:.2f} scalefont setfont ink {p.left:.0f} y moveto title show
+  HR BODY scalefont setfont muted {p.right:.0f} y moveto date Rshow
 }} def
 /education {{
   /date exch def /title exch def /y exch def
-  HB {d.education:.2f} scalefont setfont ink {LEFT:.0f} y moveto title show
-  HR {d.education:.2f} scalefont setfont muted {RIGHT:.0f} y moveto date Rshow
+  HB {d.education:.2f} scalefont setfont ink {p.left:.0f} y moveto title show
+  HR {d.education:.2f} scalefont setfont muted {p.right:.0f} y moveto date Rshow
 }} def
 /section {{
   /y exch def /label exch def
-  HB {d.section:.2f} scalefont setfont brand {LEFT:.0f} y moveto label show
-  label stringwidth pop {LEFT:.0f} add 8 add y 3 add moveto
-  {RIGHT:.0f} y 3 add lineto 0.35 setlinewidth stroke
+  HB {d.section:.2f} scalefont setfont brand {p.left:.0f} y moveto label show
+  label stringwidth pop {p.left:.0f} add {p.section_rule_gap:g} add y {p.section_rule_rise:g} add moveto
+  {p.right:.0f} y {p.section_rule_rise:g} add lineto {p.section_rule_width:g} setlinewidth stroke
 }} def
 /contact {{
   /txt exch def /y exch def
-  HR 7.8 scalefont setfont muted 548 y moveto txt Rshow
+  HR {p.contact_size:g} scalefont setfont muted {p.contact_right:g} y moveto txt Rshow
 }} def
 """
 
@@ -525,6 +676,127 @@ def prologue(template: Path) -> str:
             "It should end its definitions with a line 'brand' followed by 'HB ... scalefont'."
         )
     return text[:index]
+
+
+# --------------------------------------------------------------------------
+# The template registry
+# --------------------------------------------------------------------------
+
+# What a template of each kind must carry, beyond the prologue marker. These
+# are the tokens `build_postscript` substitutes; a template missing one would
+# ship a PDF whose metadata names the wrong person or role.
+REQUIRED_TOKENS = ("{{FULL_NAME}}", "{{POSITION}}", "{{COMPANY}}")
+
+KINDS = ("resume", "cover-letter")
+
+DEFAULT_TEMPLATES = {
+    "resume": "Resume - Figma Inspired",
+    "cover-letter": "Cover Letter - Figma Inspired",
+}
+
+VAULT_TEMPLATES = ("Resources", "Templates")
+
+
+def _declared_kind(text: str) -> str | None:
+    match = re.search(r"^%\s*ce-kind:\s*(\S+)\s*$", text, re.MULTILINE)
+    return match.group(1) if match else None
+
+
+def registry(vault: Path) -> dict[str, list[dict]]:
+    """Every template the user may pick, per kind.
+
+    Two roots and no others: the built-ins this repo ships, and `.ps` files the
+    user drops in their vault. Names are namespaced so the two can never
+    collide and a vault template can never shadow a built-in.
+    """
+    found: dict[str, list[dict]] = {kind: [] for kind in KINDS}
+
+    built_in = v.TEMPLATES_DIR / "PDF"
+    for kind, stem in DEFAULT_TEMPLATES.items():
+        found[kind].append({"name": f"built-in:{stem}",
+                            "path": built_in / f"{stem}.ps"})
+    for path in sorted(built_in.glob("*.ps")):
+        if path.stem in DEFAULT_TEMPLATES.values():
+            continue
+        kind = _declared_kind(path.read_text(encoding="utf-8", errors="replace"))
+        if kind in KINDS:
+            found[kind].append({"name": f"built-in:{path.stem}", "path": path})
+
+    root = vault / VAULT_TEMPLATES[0] / VAULT_TEMPLATES[1]
+    if root.is_dir():
+        for path in sorted(root.glob("*.ps")):
+            try:
+                # A symlink out of the vault is not a template the user put
+                # there; refuse it rather than reading whatever it points at.
+                resolved = v.resolve_within(vault, str(path.relative_to(vault)))
+            except ValueError:
+                print(f"note: ignoring {path.name}, which points outside the vault",
+                      file=sys.stderr)
+                continue
+            kind = _declared_kind(resolved.read_text(encoding="utf-8", errors="replace"))
+            if kind not in KINDS:
+                print(f"note: ignoring {path.name}, which declares no "
+                      "'% ce-kind: resume' or '% ce-kind: cover-letter' line",
+                      file=sys.stderr)
+                continue
+            found[kind].append({"name": f"vault:{path.stem}", "path": resolved})
+
+    return found
+
+
+def resolve_template(vault: Path, kind: str, name: str | None) -> Path:
+    """Turn a registry name into a path. No name means today's default."""
+    entries = registry(vault)[kind]
+    if not name:
+        return v.TEMPLATES_DIR / "PDF" / f"{DEFAULT_TEMPLATES[kind]}.ps"
+    for entry in entries:
+        if entry["name"] == name:
+            return entry["path"]
+    raise SystemExit(
+        f"No {kind} template named '{name}'.\nAvailable: "
+        + ", ".join(entry["name"] for entry in entries)
+    )
+
+
+TEMPLATE_FIELD = {"resume": "resume_template",
+                  "cover-letter": "cover_letter_template"}
+
+
+def template_for(vault: Path, folder: Path, kind: str,
+                 override: str | None = None) -> tuple[Path, Params]:
+    """The template this application renders with, and the layout it declares.
+
+    An explicit `--template` wins over the brief, and an unset brief field
+    means the default this repo has always used.
+    """
+    brief = folder / "Application Brief.md"
+    fm, _ = v.read_note(brief) if brief.exists() else ({}, "")
+    chosen = override or (fm.get(TEMPLATE_FIELD[kind]) or None)
+    path = resolve_template(vault, kind, chosen)
+    return path, check_template(path, kind)
+
+
+def check_template(path: Path, kind: str) -> Params:
+    """Prove a template can be rendered before anything is rendered with it.
+
+    A template is never transformed to make it fit — it is refused, with the
+    thing that is missing named, so the person who wrote it can fix it.
+    """
+    if not path.is_file():
+        raise SystemExit(f"Missing template: {path}")
+
+    # Only the prologue is ever used, so that is where the tokens have to be:
+    # a token past the marker would be discarded unread and the PDF would
+    # quietly carry the wrong metadata.
+    head = prologue(path)
+    missing = [token for token in REQUIRED_TOKENS if token not in head]
+    if missing:
+        raise SystemExit(
+            f"{path.name} is missing the required token(s) {', '.join(missing)}.\n"
+            "A template must carry all of " + ", ".join(REQUIRED_TOKENS)
+            + " in the PDF metadata block of its prologue."
+        )
+    return parse_params(head)
 
 
 def contact_icon(value: str) -> str:
@@ -543,8 +815,9 @@ def contact_icon(value: str) -> str:
     return "pinIcon"
 
 
-def header_ops(data: dict) -> list[str]:
+def header_ops(data: dict, params: Params | None = None) -> list[str]:
     """The name block, contact column, icons, and rule — fixed by the design."""
+    p = params or Params()
     words = data["name"].split()
     if len(words) >= 2:
         line1, line2 = words[0], " ".join(words[1:])
@@ -555,41 +828,49 @@ def header_ops(data: dict) -> list[str]:
     # in this design, not as running text.
     ops = [
         "brand",
-        f"HB 18.5 scalefont setfont {LEFT:.0f} 756 moveto ({metrics.escape(line1.upper())}) show",
+        f"HB {p.name_size:g} scalefont setfont {p.left:.0f} {p.page_top:g} moveto "
+        f"({metrics.escape(line1.upper())}) show",
     ]
     if line2:
-        ops.append(f"{LEFT:.0f} 735 moveto ({metrics.escape(line2.upper())}) show")
+        ops.append(f"{p.left:.0f} {p.name_second_y:g} moveto "
+                   f"({metrics.escape(line2.upper())}) show")
     ops.append(
-        f"HR 8.6 scalefont setfont muted {LEFT:.0f} 718 moveto "
+        f"HR {p.title_size:g} scalefont setfont muted {p.left:.0f} {p.title_y:g} moveto "
         f"({metrics.escape(data['title'])}) show"
     )
 
     for i, item in enumerate(data["contact"][:4]):
-        ops.append(f"{756 - i * 14} ({metrics.escape(item)}) contact")
-        ops.append(f"556 {752 - i * 14} {contact_icon(item)}")
+        ops.append(f"{p.page_top - i * p.contact_step:g} ({metrics.escape(item)}) contact")
+        ops.append(f"{p.contact_icon_x:g} "
+                   f"{p.page_top - p.contact_icon_drop - i * p.contact_step:g} "
+                   f"{contact_icon(item)}")
 
     ops.append(
-        f"brand {LEFT:.0f} {TOP_RULE_Y:.0f} moveto {RIGHT:.0f} {TOP_RULE_Y:.0f} lineto "
-        "0.9 setlinewidth stroke"
+        f"brand {p.left:.0f} {p.top_rule_y:.0f} moveto "
+        f"{p.right:.0f} {p.top_rule_y:.0f} lineto "
+        f"{p.rule_width:g} setlinewidth stroke"
     )
     return ops
 
 
 def build_postscript(template: Path, data: dict, page: Page, doc_title: str,
-                     author: str, subject: str) -> str:
+                     author: str, subject: str,
+                     params: Params | None = None) -> str:
+    p = params or page.p
     head = prologue(template)
     head = (head
             .replace("{{FULL_NAME}}", metrics.escape(author))
             .replace("{{POSITION}}", metrics.escape(doc_title))
             .replace("{{COMPANY}}", metrics.escape(subject)))
 
-    body = header_ops(data)
+    body = header_ops(data, p)
     ops = list(page.ops)
     for index in reversed(page.page_breaks):
-        ops.insert(index, "showpage\n" + "\n".join(header_ops(data)))
+        ops.insert(index, "showpage\n" + "\n".join(header_ops(data, p)))
 
     head = head.replace("%%Pages: 1", f"%%Pages: {page.page}")
-    return head + overrides(page.d) + "\n" + "\n".join(body + ops) + "\nshowpage\n%%EOF\n"
+    return (head + overrides(page.d, p) + "\n"
+            + "\n".join(body + ops) + "\nshowpage\n%%EOF\n")
 
 
 # --------------------------------------------------------------------------
@@ -657,18 +938,14 @@ def ghostscript() -> str | None:
 
 
 def render(vault: Path, folder: Path, kind: str, pages: int = 1,
-           preview: bool = True) -> dict:
+           preview: bool = True, template_name: str | None = None) -> dict:
     source_name = "Draft - Resume.md" if kind == "resume" else "Draft - Cover Letter.md"
-    template_name = ("PDF/Resume - Figma Inspired.ps" if kind == "resume"
-                     else "PDF/Cover Letter - Figma Inspired.ps")
     stem = "Resume" if kind == "resume" else "Cover Letter"
 
     source = folder / source_name
     if not source.exists():
         raise SystemExit(f"No {source_name} in {folder.relative_to(vault)}")
-    template = v.TEMPLATES_DIR / template_name
-    if not template.exists():
-        raise SystemExit(f"Missing skill template: {template}")
+    template, params = template_for(vault, folder, kind, template_name)
 
     gs = ghostscript()
     missing = [t for t in ("pdfinfo", "pdftotext", "pdffonts") if shutil.which(t) is None]
@@ -691,27 +968,10 @@ def render(vault: Path, folder: Path, kind: str, pages: int = 1,
 
     text = source.read_text(encoding="utf-8")
     data = parse_resume(text) if kind == "resume" else parse_letter(text, vault)
-    densities = RESUME_DENSITIES if kind == "resume" else LETTER_DENSITIES
+    page = fit(data, kind, pages, position, params, source_name=source_name)
 
-    page, tightest = None, None
-    for density in densities:
-        attempt = (layout_resume(data, density, pages) if kind == "resume"
-                   else layout_letter(data, density, pages, position))
-        tightest = attempt
-        if not attempt.overflowed:
-            page = attempt
-            break
-    if page is None:
-        excess = tightest.shortfall()
-        lines = max(1, round(excess / tightest.d.leading))
-        raise SystemExit(
-            f"Content does not fit on {pages} page(s), even at the tightest spacing —\n"
-            f"about {lines} line(s) ({excess:.0f}pt) too long.\n"
-            f"Cut roughly that much from {source_name}, or pass --pages {pages + 1} "
-            "to render a deliberate multi-page document."
-        )
-
-    ps_text = build_postscript(template, data, page, position, data["name"], company)
+    ps_text = build_postscript(template, data, page, position, data["name"],
+                               company, params)
 
     artifacts = folder / "Artifacts"
     artifacts.mkdir(exist_ok=True)
@@ -767,6 +1027,9 @@ def main() -> int:
     ap.add_argument("--app", required=True, help="application folder, relative to the vault")
     ap.add_argument("--kind", choices=["resume", "cover-letter"], default="resume")
     ap.add_argument("--pages", type=int, default=1, help="page budget; 1 unless deliberate")
+    ap.add_argument("--template",
+                    help="registry name, e.g. 'vault:My Design'; "
+                         "overrides the brief's field for this render")
     ap.add_argument("--no-preview", action="store_true")
     ap.add_argument("--vault")
     args = ap.parse_args()
@@ -783,7 +1046,8 @@ def main() -> int:
     if not folder.is_dir():
         raise SystemExit(f"Not a folder: {folder}")
 
-    out = render(vault, folder, args.kind, args.pages, preview=not args.no_preview)
+    out = render(vault, folder, args.kind, args.pages,
+                 preview=not args.no_preview, template_name=args.template)
 
     def show(path: Path) -> str:
         try:

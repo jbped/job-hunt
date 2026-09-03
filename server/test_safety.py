@@ -13,9 +13,11 @@ from __future__ import annotations
 
 from http.server import ThreadingHTTPServer
 from pathlib import Path
+import hashlib
 import http.client
 import json
 import os
+import shutil
 import tempfile
 import threading
 import unittest
@@ -855,6 +857,344 @@ class SafetyTest(unittest.TestCase):
         finally:
             server.shutdown()
             server.server_close()
+
+# --------------------------------------------------------------------------
+# The golden rule: a render with no template chosen is byte-identical to the
+# output this repo has always produced. The hash below is that promise. If a
+# change to the layout engine moves it, the change is a regression until the
+# author proves otherwise — so never "update the expected hash" casually.
+# --------------------------------------------------------------------------
+
+GOLDEN_RESUME = """---
+type: submission
+company: Globex Corporation
+position: Software Engineer II
+status: draft
+---
+
+# Globex Corporation | Software Engineer II
+
+## Header
+
+Avery Demoson
+Software Engineer
+Springfield, USA · avery@example.com · 555-0134 · linkedin.com/in/avery
+
+## Summary
+
+Software engineer with four years building web applications and the data pipelines behind them, including a dashboard rewrite serving 40 client teams.
+
+## Experience
+
+### Software Engineer | Acme Analytics | Mar 2022 - Jun 2024
+
+- Rewrote the legacy reporting dashboard as a TypeScript single-page app, cutting median page load from 6 seconds to 2 seconds across 40 client teams.
+- Added alerting to the order pipeline, cutting mean time to detect failures from hours to under 10 minutes.
+
+### Junior Developer | Initech Labs | Jan 2020 - Feb 2022
+
+- Maintained internal reporting scripts and stabilized the nightly data import that previously failed about once a week.
+
+## Additional Experience
+
+Volunteer Mentor | Code Club | 2021 — Coached six students through their first web projects.
+
+## Education
+
+- B.S. Computer Science | State University | 2019
+
+## Technical Skills
+
+TypeScript, Node, Python, SQL, Docker
+"""
+
+GOLDEN_RESUME_SHA256 = "40940944f45c46d5ac1ae60a2fde2bf20c29c87c844970b8770d39cd3538fc5c"
+
+
+def golden_postscript() -> str:
+    """The PostScript the default path produces for a fixed resume."""
+    template = v.TEMPLATES_DIR / "PDF" / "Resume - Figma Inspired.ps"
+    data = render_pdf.parse_resume(GOLDEN_RESUME)
+    page = render_pdf.fit(data, "resume", 1)
+    return render_pdf.build_postscript(
+        template, data, page, "Software Engineer II",
+        data["name"], "Globex Corporation")
+
+
+class GoldenRenderTest(unittest.TestCase):
+    def test_default_render_is_byte_identical(self):
+        digest = hashlib.sha256(
+            golden_postscript().encode("utf-8")).hexdigest()
+        self.assertEqual(
+            digest, GOLDEN_RESUME_SHA256,
+            "The default PDF render changed. A template-less render must stay "
+            "byte-identical to what this repo has always produced.")
+
+
+
+
+class TemplateParamsTest(unittest.TestCase):
+    def test_declared_parameters_replace_the_defaults(self):
+        params = render_pdf.parse_params(
+            "% ce-param: left 72\n"
+            "% ce-param: section_order summary, skills, experience\n")
+        self.assertEqual(params.left, 72.0)
+        self.assertEqual(params.section_order, ("summary", "skills", "experience"))
+        # Everything undeclared stays at the shipped value.
+        self.assertEqual(params.right, render_pdf.Params().right)
+
+    def test_a_prologue_without_a_block_is_the_default(self):
+        self.assertEqual(render_pdf.parse_params("%!PS-Adobe-3.0\n"),
+                         render_pdf.Params())
+
+    def test_an_unknown_parameter_is_refused_with_the_valid_keys(self):
+        with self.assertRaises(SystemExit) as caught:
+            render_pdf.parse_params("% ce-param: margin_left 72\n")
+        self.assertIn("margin_left", str(caught.exception))
+        self.assertIn("left", str(caught.exception))
+
+    def test_a_malformed_value_is_refused(self):
+        for line in ("% ce-param: left wide\n",
+                     "% ce-param: section_order summary, nonsense\n",
+                     "% ce-param: body_font Comic Sans\n"):
+            with self.assertRaises(SystemExit):
+                render_pdf.parse_params(line)
+
+    def test_declared_parameters_reach_the_rendered_postscript(self):
+        data = render_pdf.parse_resume(GOLDEN_RESUME)
+        params = render_pdf.parse_params("% ce-param: left 72\n")
+        page = render_pdf.fit(data, "resume", 1, params=params)
+        text = render_pdf.build_postscript(
+            v.TEMPLATES_DIR / "PDF" / "Resume - Figma Inspired.ps", data, page,
+            "Software Engineer II", data["name"], "Globex Corporation", params)
+        self.assertIn("ink 72 y moveto title show", text)
+
+
+
+# A minimal template honouring the prologue contract: the three tokens, the
+# procedures the engine expects, and the literal `brand` / `HB` marker.
+SAMPLE_TEMPLATE = """%!PS-Adobe-3.0
+%%Pages: 1
+%%EndComments
+% ce-kind: resume
+% ce-param: left 44
+[ /Title ({{FULL_NAME}} - {{POSITION}})
+  /Subject ({{COMPANY}})
+  /DOCINFO pdfmark
+/HB /Helvetica-Bold findfont def
+/HR /Helvetica findfont def
+/brand { 0 0 0.5 setrgbcolor } def
+/ink { 0 0 0 setrgbcolor } def
+/muted { 0.3 0.3 0.3 setrgbcolor } def
+/Rshow { dup stringwidth pop neg 0 rmoveto show } def
+/phoneIcon { pop pop } def
+/pinIcon { pop pop } def
+/mailIcon { pop pop } def
+/linkedinIcon { pop pop } def
+
+brand
+HB 10 scalefont setfont
+"""
+
+
+class TemplateRegistryTest(unittest.TestCase):
+    def setUp(self):
+        self._tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(self._tmp.cleanup)
+        self.vault = Path(self._tmp.name) / "vault"
+        self.templates = self.vault / "Resources" / "Templates"
+        self.templates.mkdir(parents=True)
+
+    def write(self, name: str, text: str = SAMPLE_TEMPLATE) -> Path:
+        path = self.templates / name
+        path.write_text(text, encoding="utf-8")
+        return path
+
+    def names(self, kind: str) -> list[str]:
+        return [entry["name"] for entry in render_pdf.registry(self.vault)[kind]]
+
+    def test_built_ins_are_always_registered(self):
+        self.assertIn("built-in:Resume - Figma Inspired", self.names("resume"))
+        self.assertIn("built-in:Cover Letter - Figma Inspired",
+                      self.names("cover-letter"))
+
+    def test_a_vault_template_joins_its_declared_kind(self):
+        self.write("Sample.ps")
+        self.assertIn("vault:Sample", self.names("resume"))
+        self.assertNotIn("vault:Sample", self.names("cover-letter"))
+
+    def test_a_template_without_a_kind_is_skipped_not_fatal(self):
+        self.write("Nameless.ps", SAMPLE_TEMPLATE.replace("% ce-kind: resume\n", ""))
+        self.assertNotIn("vault:Nameless", self.names("resume"))
+        self.assertNotIn("vault:Nameless", self.names("cover-letter"))
+
+    def test_a_missing_templates_folder_is_simply_empty(self):
+        bare = Path(self._tmp.name) / "bare"
+        bare.mkdir()
+        self.assertEqual(
+            [n for n in (e["name"] for e in render_pdf.registry(bare)["resume"])
+             if n.startswith("vault:")], [])
+
+    def test_the_registry_never_follows_a_link_out_of_the_vault(self):
+        outside = Path(self._tmp.name) / "outside"
+        outside.mkdir()
+        (outside / "Evil.ps").write_text(SAMPLE_TEMPLATE, encoding="utf-8")
+        try:
+            (self.templates / "Evil.ps").symlink_to(outside / "Evil.ps")
+        except OSError:
+            self.skipTest("this filesystem does not support symlinks")
+        self.assertNotIn("vault:Evil", self.names("resume"))
+
+    def test_no_name_resolves_to_todays_default(self):
+        self.assertEqual(
+            render_pdf.resolve_template(self.vault, "resume", None),
+            v.TEMPLATES_DIR / "PDF" / "Resume - Figma Inspired.ps")
+
+    def test_an_unknown_name_is_refused_with_the_available_names(self):
+        self.write("Sample.ps")
+        with self.assertRaises(SystemExit) as caught:
+            render_pdf.resolve_template(self.vault, "resume", "vault:Nope")
+        self.assertIn("vault:Sample", str(caught.exception))
+
+    def test_a_template_of_the_wrong_kind_is_refused(self):
+        self.write("Sample.ps")
+        with self.assertRaises(SystemExit):
+            render_pdf.resolve_template(self.vault, "cover-letter", "vault:Sample")
+
+    def test_a_template_missing_a_token_is_refused(self):
+        path = self.write("Broken.ps",
+                          SAMPLE_TEMPLATE.replace("{{FULL_NAME}}", "Someone"))
+        with self.assertRaises(SystemExit) as caught:
+            render_pdf.check_template(path, "resume")
+        self.assertIn("{{FULL_NAME}}", str(caught.exception))
+
+    def test_a_template_without_the_marker_is_refused(self):
+        path = self.write("Marker.ps", SAMPLE_TEMPLATE.replace("\nbrand\nHB", "\n"))
+        with self.assertRaises(SystemExit):
+            render_pdf.check_template(path, "resume")
+
+    def test_a_template_with_a_bad_parameter_is_refused(self):
+        path = self.write("Bad.ps",
+                          SAMPLE_TEMPLATE.replace("% ce-param: left 44",
+                                                  "% ce-param: left sideways"))
+        with self.assertRaises(SystemExit):
+            render_pdf.check_template(path, "resume")
+
+    def test_a_sound_template_passes_and_yields_its_parameters(self):
+        path = self.write("Sample.ps")
+        self.assertEqual(render_pdf.check_template(path, "resume").left, 44.0)
+
+
+class ResolveWithinTest(unittest.TestCase):
+    def setUp(self):
+        self._tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(self._tmp.cleanup)
+        self.root = Path(self._tmp.name) / "root"
+        (self.root / "sub").mkdir(parents=True)
+        (self.root / "sub" / "file.txt").write_text("ok", encoding="utf-8")
+
+    def test_an_inside_path_resolves(self):
+        self.assertEqual(v.resolve_within(self.root, "sub/file.txt"),
+                         (self.root / "sub" / "file.txt").resolve())
+
+    def test_every_way_out_is_refused(self):
+        outside = Path(self._tmp.name) / "outside.txt"
+        outside.write_text("secret", encoding="utf-8")
+        for relative in ("../outside.txt", "sub/../../outside.txt",
+                         str(outside), "sub/../../"):
+            with self.assertRaises(ValueError):
+                v.resolve_within(self.root, relative)
+
+    def test_a_symlink_out_of_the_root_is_refused(self):
+        outside = Path(self._tmp.name) / "outside.txt"
+        outside.write_text("secret", encoding="utf-8")
+        try:
+            (self.root / "link.txt").symlink_to(outside)
+        except OSError:
+            self.skipTest("this filesystem does not support symlinks")
+        with self.assertRaises(ValueError):
+            v.resolve_within(self.root, "link.txt")
+
+
+
+def _renderable() -> bool:
+    return render_pdf.ghostscript() is not None and all(
+        shutil.which(tool) for tool in ("pdfinfo", "pdftotext", "pdffonts"))
+
+
+class TemplateSelectionTest(unittest.TestCase):
+    """The brief chooses the template; an unset field renders exactly as before."""
+
+    def setUp(self):
+        self._tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(self._tmp.cleanup)
+        self.vault = Path(self._tmp.name) / "vault"
+        init_vault.create(self.vault)
+        (self.vault / "Personal Information" / "Contact.md").write_text(
+            CONTACT, encoding="utf-8")
+        self.app = new_application.create(self.vault, "Globex Corporation",
+                                          "Software Engineer II")
+        (self.app / "Draft - Resume.md").write_text(GOLDEN_RESUME, encoding="utf-8")
+        templates = self.vault / "Resources" / "Templates"
+        templates.mkdir(parents=True, exist_ok=True)
+        (templates / "Sample.ps").write_text(SAMPLE_TEMPLATE, encoding="utf-8")
+
+    def choose(self, field: str, value: str) -> None:
+        brief = self.app / "Application Brief.md"
+        brief.write_text(
+            v.set_frontmatter_field(brief.read_text(encoding="utf-8"), field, value),
+            encoding="utf-8")
+
+    def test_an_unset_field_uses_todays_default(self):
+        path, params = render_pdf.template_for(self.vault, self.app, "resume")
+        self.assertEqual(path, v.TEMPLATES_DIR / "PDF" / "Resume - Figma Inspired.ps")
+        self.assertEqual(params, render_pdf.Params())
+
+    def test_the_brief_field_selects_a_vault_template(self):
+        self.choose("resume_template", "vault:Sample")
+        path, params = render_pdf.template_for(self.vault, self.app, "resume")
+        self.assertEqual(path, self.vault / "Resources" / "Templates" / "Sample.ps")
+        self.assertEqual(params.left, 44.0)
+
+    def test_an_explicit_override_beats_the_brief(self):
+        self.choose("resume_template", "vault:Sample")
+        path, _ = render_pdf.template_for(
+            self.vault, self.app, "resume", "built-in:Resume - Figma Inspired")
+        self.assertEqual(path, v.TEMPLATES_DIR / "PDF" / "Resume - Figma Inspired.ps")
+
+    def test_an_unknown_name_in_the_brief_is_refused(self):
+        self.choose("resume_template", "vault:Missing")
+        with self.assertRaises(SystemExit):
+            render_pdf.template_for(self.vault, self.app, "resume")
+
+    def test_the_field_is_schema_known_and_ui_editable(self):
+        for field in ("resume_template", "cover_letter_template"):
+            self.assertIn(field, schema.NOTE_TYPES["application"]["optional"])
+            self.assertIn(field, schema.UI_EDITABLE["application"])
+        # The values come from the registry, so they are deliberately not a
+        # fixed vocabulary.
+        self.assertNotIn("resume_template", schema.ENUMS)
+
+    def test_api_schema_carries_the_registry(self):
+        payload = serve.api_schema(self.vault)
+        self.assertIn("vault:Sample", payload["templates"]["resume"])
+        self.assertIn("built-in:Resume - Figma Inspired",
+                      payload["templates"]["resume"])
+        self.assertNotIn("vault:Sample", payload["templates"]["cover-letter"])
+
+    @unittest.skipUnless(_renderable(), "Ghostscript or Poppler is not installed")
+    def test_a_vault_template_renders_and_validates(self):
+        self.choose("resume_template", "vault:Sample")
+        out = render_pdf.render(self.vault, self.app, "resume", 1, preview=False)
+        self.assertEqual(out["problems"], [])
+        self.assertIn("ink 44 y moveto title show",
+                      out["ps"].read_text(encoding="utf-8"))
+
+    @unittest.skipUnless(_renderable(), "Ghostscript or Poppler is not installed")
+    def test_an_unset_field_renders_the_golden_postscript(self):
+        out = render_pdf.render(self.vault, self.app, "resume", 1, preview=False)
+        digest = hashlib.sha256(out["ps"].read_bytes()).hexdigest()
+        self.assertEqual(digest, GOLDEN_RESUME_SHA256)
 
 
 if __name__ == "__main__":

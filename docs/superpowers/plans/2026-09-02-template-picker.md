@@ -40,10 +40,10 @@
 **Interfaces:**
 - Produces: `@dataclass Params` in `render_pdf.py` — fields for every module layout constant it replaces (at minimum `left`, `right`, `top_rule_y`, the `Density` numbers, and `section_order: tuple[str, ...]` over the engine's existing section identifiers), defaults = today's exact values; `parse_params(prologue_text) -> Params` reading `% ce-param: <key> <value>` lines (unknown key → `SystemExit` naming valid keys; malformed value → `SystemExit`); layout functions take a `Params` argument.
 
-- [ ] **Step 1 (golden baseline):** add a test that renders the demo application's resume PostScript (the `.ps` text `build_postscript` produces, no Ghostscript needed) and stores its sha256 in the test as the expected value. Run once to capture the hash; the test then asserts it. This is the refactor's tripwire.
-- [ ] **Step 2:** introduce `Params` + `parse_params`, thread through `header_ops`/`layout_resume`/`layout_letter`/`overrides`, delete the loose constants. `section_order` drives the order the engine emits its existing sections; validate entries against the known set.
-- [ ] **Step 3:** golden test still passes (identical hash — defaults produce identical output). A unit test: a prologue with `% ce-param: left 72` yields `Params(left=72, ...)`; an unknown key exits loudly.
-- [ ] **Step 4:** full suite green; commit `Parameterize the PDF layout engine`.
+- [x] **Step 1 (golden baseline):** add a test that renders the demo application's resume PostScript (the `.ps` text `build_postscript` produces, no Ghostscript needed) and stores its sha256 in the test as the expected value. Run once to capture the hash; the test then asserts it. This is the refactor's tripwire.
+- [x] **Step 2:** introduce `Params` + `parse_params`, thread through `header_ops`/`layout_resume`/`layout_letter`/`overrides`, delete the loose constants. `section_order` drives the order the engine emits its existing sections; validate entries against the known set.
+- [x] **Step 3:** golden test still passes (identical hash — defaults produce identical output). A unit test: a prologue with `% ce-param: left 72` yields `Params(left=72, ...)`; an unknown key exits loudly.
+- [x] **Step 4:** full suite green; commit `Parameterize the PDF layout engine`.
 
 ### Task 2: Registry, validation, and the shared path guard
 
@@ -52,8 +52,8 @@
 **Interfaces:**
 - Produces: `vaultlib.resolve_within(root: Path, relative: str) -> Path` (raises `ValueError` on escape; `serve.py`'s `resolve()` and `_serve_asset` converted to use it); in `render_pdf.py`: `registry(vault) -> dict` mapping kind → list of `{"name": "built-in:<stem>"|"vault:<stem>", "path": ...}` (built-ins from `TEMPLATES_DIR/"PDF"`, vault from `vault/"Resources"/"Templates"` — missing dir = empty, resolved via `resolve_within`); vault templates declare kind via `% ce-kind: resume|cover-letter` (missing → excluded with a stderr warning, never a crash); `resolve_template(vault, kind, name|None) -> Path` (None → today's default; unknown name → `SystemExit` listing available names); `check_template(path, kind)` — marker present, 3 tokens present, params parse — run before any render with a non-default template.
 
-- [ ] Tests first: registry ignores files outside the two roots (symlink escape refused via `resolve_within`); unknown template name exits listing names; a template missing `{{FULL_NAME}}` is refused by `check_template`; `resolve_within` conversion keeps the existing `/assets/` escape test green.
-- [ ] Implement; suite green; commit `Add the template registry and validation`.
+- [x] Tests first: registry ignores files outside the two roots (symlink escape refused via `resolve_within`); unknown template name exits listing names; a template missing `{{FULL_NAME}}` is refused by `check_template`; `resolve_within` conversion keeps the existing `/assets/` escape test green.
+- [x] Implement; suite green; commit `Add the template registry and validation`.
 
 ### Task 3: Brief fields, CLI, and /api/schema
 
@@ -62,16 +62,52 @@
 **Interfaces:**
 - Produces: `render_pdf.py --template <name>` CLI override; otherwise the brief's `resume_template`/`cover_letter_template` (read moved before resolution); both fields in `NOTE_TYPES["application"]["optional"]` + `UI_EDITABLE["application"]`; `/api/schema` gains `"templates": {"resume": [names...], "cover-letter": [names...]}` computed per request from `registry(vault)`.
 
-- [ ] Tests first: a brief with `resume_template: vault:Sample` renders through the vault template (seed one in the test's temp vault); `/api/schema` exposes the registry; an unset field renders the default (golden hash again). Implement; green; commit `Resolve templates from the brief and expose the registry`.
+- [x] Tests first: a brief with `resume_template: vault:Sample` renders through the vault template (seed one in the test's temp vault); `/api/schema` exposes the registry; an unset field renders the default (golden hash again). Implement; green; commit `Resolve templates from the brief and expose the registry`.
 
 ### Task 4: Pickers in the Rail
 
 **Files:** Modify `ui/src/api/types.ts` (Schema.templates), `ui/src/views/applications/Rail.tsx`; test `ui/src/views/applications/__tests__/` (new test file)
 
-- [ ] Tests first (RTL): with a schema fixture carrying two resume templates, the picker renders both plus a "Default" option and writes the field via `/api/field`; no `templates` key in schema (older server) → pickers absent, nothing crashes. Implement two `EditableField`-based selects (`values` prop from `schema.templates[kind]`, empty value = default) beside the render controls. `npm run typecheck` + `npm test` green; commit `Add per-application template pickers`.
+- [x] Tests first (RTL): with a schema fixture carrying two resume templates, the picker renders both plus a "Default" option and writes the field via `/api/field`; no `templates` key in schema (older server) → pickers absent, nothing crashes. Implement two `EditableField`-based selects (`values` prop from `schema.templates[kind]`, empty value = default) beside the render controls. `npm run typecheck` + `npm test` green; commit `Add per-application template pickers`.
 
 ### Task 5: Docs, vault template, demo, verification
 
 **Files:** Modify `.agents/skills/career-evidence/references/document-generation.md` (token + `ce-param`/`ce-kind` contract, full key list), `references/vault-schema.md` (`Resources/Templates/`), `docs/setup.md` (one-sentence trust note: a `.ps` template executes in Ghostscript — treat third-party templates like any program you'd run), `server/assets/vault-template/Resources/Templates/README.md` (new; reconcile with the existing Resources README wording), `demo/build_demo.py` (seed one sample vault template exercising a couple of `ce-param` keys and set it on one demo application)
 
-- [ ] Docs + template + demo seed; rebuild demo; audit exits 0; full gates (`test_safety.py`, typecheck, vitest, `npm run build` + commit bundle); render the demo app's PDF once via the vault template if Ghostscript is present (note if absent). Append a verification section to this plan. Commit `Document and seed the template registry`. Stop — no push, no merge.
+- [x] Docs + template + demo seed; rebuild demo; audit exits 0; full gates (`test_safety.py`, typecheck, vitest, `npm run build` + commit bundle); render the demo app's PDF once via the vault template if Ghostscript is present (note if absent). Append a verification section to this plan. Commit `Document and seed the template registry`. Stop — no push, no merge.
+
+---
+
+## Verification (2026-09-02)
+
+All five tasks are committed on `feat-template-picker`. Nothing was pushed or merged.
+
+### The golden rule
+
+`GoldenRenderTest.test_default_render_is_byte_identical` hashes the PostScript the default path produces for a fixed resume. The hash was captured before Task 1's refactor and has not moved since:
+
+```
+40940944f45c46d5ac1ae60a2fde2bf20c29c87c844970b8770d39cd3538fc5c
+```
+
+It was asserted green after every task. Task 3 added a second assertion of the same hash through the full `render()` path (Ghostscript present), so the bytes are checked both at the seam and end to end.
+
+### Gates
+
+- `python3 server/test_safety.py` — 70 tests, OK. The suite grew from 41 to 70; no existing test was weakened. The `/assets/` escape test and the vault-escape tests still pass through the converted `resolve_within`.
+- `python3 server/audit_vault.py --vault demo/vault` — 0 errors, 0 warnings, exit 0.
+- `cd ui && npm run typecheck` — clean.
+- `cd ui && npm test` — 9 files, 29 tests, all passing.
+- `cd ui && npm run build` — bundle rebuilt and committed; `index.html` still carries exactly one `__SESSION_TOKEN__`.
+
+### End-to-end
+
+`demo/build_demo.py --force` seeds `Resources/Templates/Wide Margins.ps` (declaring `ce-kind`, `left 54`, `right 558`, and a reordered `section_order`) and sets `resume_template: vault:Wide Margins` on the Globex application. Ghostscript is installed here, so the demo's resume PDF rendered through that vault template: the emitted `.ps` draws role titles at `54` rather than `38`, and Technical Skills precedes Education as declared. The audit is clean afterwards.
+
+### Notes and discrepancies
+
+- The plan's `Params` sketch listed "the `Density` numbers" as fields. The density *ladder* stayed in Python — it is a fitting strategy rather than a design choice, and a template able to disable it could silently emit an unreadable resume. What a template does control is the ladder's size offsets (`role_size_offset`, `section_size_offset`, `education_size_offset`), which are applied to every rung. Documented as such.
+- `check_template` looks for the three tokens in the *prologue*, not the whole file. A token past the `brand`/`HB` marker is discarded unread, so accepting it would let a template ship PDF metadata naming the wrong person.
+- Built-in templates carry no `% ce-kind:` line; the two shipped designs are registered by name. Any future built-in needs the line, exactly as a vault template does.
+- `EditableField` gained two small props — `emptyLabel` (so the empty option reads "Default" rather than an em dash) and `ariaLabel` (the pickers' `FieldRow` label is a sibling, not an associated one, so the selects had no accessible name).
+- `init_vault.DIRECTORIES` gained `Resources/Templates`, so a new vault ships the folder and its README rather than creating it on first use.

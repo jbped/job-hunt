@@ -1379,8 +1379,10 @@ def main() -> int:
     except KeyboardInterrupt:
         print("\nStopped.")
     finally:
-        # Live agent subprocesses die with the server that spawned them; the
-        # persisted index survives, so every conversation is still resumable.
+        # Every live agent process ends with the server. The index survives,
+        # so the conversations are still listed and still resumable — but
+        # nothing wakes on its own at the next start: a person has to open one
+        # and send a turn.
         agent_sessions.close_all()
         pidfile = _pidfile(vault)
         try:

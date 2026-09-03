@@ -33,6 +33,11 @@ APP_ROOT = Path(__file__).resolve().parent.parent
 INDEX_NAME = "agent-sessions.json"
 DEFAULT_AGENT_BIN = "claude"
 
+# Everything the evidence interview needs and nothing more: read the vault and
+# the skill, write notes back. No Bash, no WebFetch, no WebSearch, no
+# subagents, no MCP — see build_args for why each of those needs saying.
+TOOLS = ("Read", "Write", "Edit", "Glob", "Grep")
+
 # One conversation's worth of events is small; this only stops a runaway agent
 # from growing the buffer without bound.
 MAX_BUFFERED_EVENTS = 20000
@@ -153,6 +158,14 @@ def build_args(vault: Path, session_id: str, *, resume: bool,
     write the agent attempts is otherwise denied. Neither loosens
     `--restricted`, which still refuses bypassPermissions and keeps the file
     tools inside the working directories.
+
+    `--restricted` alone was not enough for "files in the vault and nothing
+    else", checked against claude 2.1.251: it drops Bash and WebFetch but
+    leaves WebSearch and the rest of the built-in set, and it still loads the
+    user's MCP servers. So the tools are named explicitly and
+    `--strict-mcp-config` shuts the MCP door. A captured job posting is text
+    an attacker wrote; this is what makes a prompt-injected agent unable to do
+    anything with it but edit markdown the audit then checks.
     """
     args = [binary or agent_bin(),
             "-p",
@@ -161,6 +174,8 @@ def build_args(vault: Path, session_id: str, *, resume: bool,
             "--input-format", "stream-json",
             "--include-partial-messages",
             "--restricted",
+            "--strict-mcp-config",
+            "--tools", ",".join(TOOLS),
             "--permission-mode", "acceptEdits",
             "--add-dir", str(vault)]
     if resume:

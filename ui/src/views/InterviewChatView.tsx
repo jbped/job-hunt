@@ -111,7 +111,8 @@ export default function InterviewChatView() {
               )}
             </div>
             <div className="muted" style={{ marginTop: "8px" }}>
-              Transcripts are supporting material, not vault truth — the notes the agent writes
+              Nothing here runs until you send a message — opening a conversation costs nothing.
+              Transcripts are supporting material, not vault truth; the notes the agent writes
               are.
             </div>
           </div>
@@ -122,7 +123,7 @@ export default function InterviewChatView() {
             {messages.length === 0 && !streaming ? (
               <div className="empty">
                 {sessionId
-                  ? "Reopened. The agent still has this conversation's history; send a message to carry on."
+                  ? "This conversation is not running. Sending a message resumes it — the agent picks its history back up from where you left off."
                   : "Tell the agent which role or accomplishment you want to work through."}
               </div>
             ) : null}
@@ -133,6 +134,12 @@ export default function InterviewChatView() {
                 ) : (
                   <p>{message.text}</p>
                 )}
+                {message.role === "error" ? (
+                  <p className="muted">
+                    If the agent is not signed in, or cannot start at all, docs/setup.md has
+                    the two ways to give the container credentials.
+                  </p>
+                ) : null}
               </div>
             ))}
             {streaming ? (

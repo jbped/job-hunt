@@ -903,6 +903,14 @@ class AgentSessionTest(unittest.TestCase):
             self.assertNotIn("bypassPermissions", args)
             self.assertNotIn("--allow-dangerously-skip-permissions", args)
             self.assertEqual(args[args.index("--permission-mode") + 1], "acceptEdits")
+            # `--restricted` alone leaves WebSearch, the rest of the built-in
+            # set and the user's MCP servers in place, so the tools are named.
+            self.assertIn("--strict-mcp-config", args)
+            granted = args[args.index("--tools") + 1].split(",")
+            self.assertEqual(sorted(granted),
+                             ["Edit", "Glob", "Grep", "Read", "Write"])
+            for forbidden in ("Bash", "WebFetch", "WebSearch", "Task"):
+                self.assertNotIn(forbidden, granted)
         self.assertIn("--session-id",
                       agent_sessions.build_args(self.vault, "x", resume=False))
         self.assertIn("--resume",
@@ -1088,6 +1096,34 @@ class AgentSessionTest(unittest.TestCase):
                          session_id)
         # And one index entry, not two.
         self.assertEqual(len(agent_sessions.load_index(self.vault)), 1)
+
+    def test_nothing_resumes_until_the_user_asks_for_it(self):
+        """A listed conversation is inert: no subprocess until a turn is sent.
+
+        Restarting the server must not wake a single agent, and opening one in
+        the chat must not either — resuming costs money and reads the vault, so
+        it happens only when the person says so.
+        """
+        import inspect
+        port = self._serving()
+        session_id = self._post(port, {"message": "first turn"})[1]["session_id"]
+        agent_sessions.close_all()          # stands in for a server restart
+        self.assertIsNone(agent_sessions.live(session_id))
+        self.assertTrue(agent_sessions.known(self.vault, session_id))
+
+        # Opening it: the stream says "idle" and ends, and still nothing runs.
+        status, events = self._stream(port, session_id)
+        self.assertEqual(status, 200)
+        self.assertEqual([e["type"] for e in events], ["idle", "done"])
+        self.assertIsNone(agent_sessions.live(session_id))
+
+        # Only a turn spawns anything, and it spawns a resume.
+        self._post(port, {"session_id": session_id, "message": "carry on"})
+        self.assertIn("--resume", agent_sessions.live(session_id).proc.args)
+
+        # And no startup path can reach a spawn behind the user's back.
+        for function in (serve.main, serve.Handler._stream_agent):
+            self.assertNotIn("agent_sessions.spawn", inspect.getsource(function))
 
     def test_shutdown_reaps_every_live_conversation(self):
         port = self._serving()

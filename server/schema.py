@@ -204,6 +204,8 @@ NOTE_TYPES = {
             "experience_level_stated",
             "next_action",
             "next_action_date",
+            "resume_template",
+            "cover_letter_template",
             "archived",
             "archive_reason",
             "archived_from",
@@ -341,6 +343,8 @@ UI_EDITABLE = {
         "compensation_period",
         "compensation_requested",
         "experience_level_stated",
+        "resume_template",
+        "cover_letter_template",
     ],
     "person": [
         "company_context",

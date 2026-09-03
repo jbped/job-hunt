@@ -17,6 +17,7 @@ import hashlib
 import http.client
 import json
 import os
+import shutil
 import tempfile
 import threading
 import unittest
@@ -1113,6 +1114,87 @@ class ResolveWithinTest(unittest.TestCase):
             self.skipTest("this filesystem does not support symlinks")
         with self.assertRaises(ValueError):
             v.resolve_within(self.root, "link.txt")
+
+
+
+def _renderable() -> bool:
+    return render_pdf.ghostscript() is not None and all(
+        shutil.which(tool) for tool in ("pdfinfo", "pdftotext", "pdffonts"))
+
+
+class TemplateSelectionTest(unittest.TestCase):
+    """The brief chooses the template; an unset field renders exactly as before."""
+
+    def setUp(self):
+        self._tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(self._tmp.cleanup)
+        self.vault = Path(self._tmp.name) / "vault"
+        init_vault.create(self.vault)
+        (self.vault / "Personal Information" / "Contact.md").write_text(
+            CONTACT, encoding="utf-8")
+        self.app = new_application.create(self.vault, "Globex Corporation",
+                                          "Software Engineer II")
+        (self.app / "Draft - Resume.md").write_text(GOLDEN_RESUME, encoding="utf-8")
+        templates = self.vault / "Resources" / "Templates"
+        templates.mkdir(parents=True, exist_ok=True)
+        (templates / "Sample.ps").write_text(SAMPLE_TEMPLATE, encoding="utf-8")
+
+    def choose(self, field: str, value: str) -> None:
+        brief = self.app / "Application Brief.md"
+        brief.write_text(
+            v.set_frontmatter_field(brief.read_text(encoding="utf-8"), field, value),
+            encoding="utf-8")
+
+    def test_an_unset_field_uses_todays_default(self):
+        path, params = render_pdf.template_for(self.vault, self.app, "resume")
+        self.assertEqual(path, v.TEMPLATES_DIR / "PDF" / "Resume - Figma Inspired.ps")
+        self.assertEqual(params, render_pdf.Params())
+
+    def test_the_brief_field_selects_a_vault_template(self):
+        self.choose("resume_template", "vault:Sample")
+        path, params = render_pdf.template_for(self.vault, self.app, "resume")
+        self.assertEqual(path, self.vault / "Resources" / "Templates" / "Sample.ps")
+        self.assertEqual(params.left, 44.0)
+
+    def test_an_explicit_override_beats_the_brief(self):
+        self.choose("resume_template", "vault:Sample")
+        path, _ = render_pdf.template_for(
+            self.vault, self.app, "resume", "built-in:Resume - Figma Inspired")
+        self.assertEqual(path, v.TEMPLATES_DIR / "PDF" / "Resume - Figma Inspired.ps")
+
+    def test_an_unknown_name_in_the_brief_is_refused(self):
+        self.choose("resume_template", "vault:Missing")
+        with self.assertRaises(SystemExit):
+            render_pdf.template_for(self.vault, self.app, "resume")
+
+    def test_the_field_is_schema_known_and_ui_editable(self):
+        for field in ("resume_template", "cover_letter_template"):
+            self.assertIn(field, schema.NOTE_TYPES["application"]["optional"])
+            self.assertIn(field, schema.UI_EDITABLE["application"])
+        # The values come from the registry, so they are deliberately not a
+        # fixed vocabulary.
+        self.assertNotIn("resume_template", schema.ENUMS)
+
+    def test_api_schema_carries_the_registry(self):
+        payload = serve.api_schema(self.vault)
+        self.assertIn("vault:Sample", payload["templates"]["resume"])
+        self.assertIn("built-in:Resume - Figma Inspired",
+                      payload["templates"]["resume"])
+        self.assertNotIn("vault:Sample", payload["templates"]["cover-letter"])
+
+    @unittest.skipUnless(_renderable(), "Ghostscript or Poppler is not installed")
+    def test_a_vault_template_renders_and_validates(self):
+        self.choose("resume_template", "vault:Sample")
+        out = render_pdf.render(self.vault, self.app, "resume", 1, preview=False)
+        self.assertEqual(out["problems"], [])
+        self.assertIn("ink 44 y moveto title show",
+                      out["ps"].read_text(encoding="utf-8"))
+
+    @unittest.skipUnless(_renderable(), "Ghostscript or Poppler is not installed")
+    def test_an_unset_field_renders_the_golden_postscript(self):
+        out = render_pdf.render(self.vault, self.app, "resume", 1, preview=False)
+        digest = hashlib.sha256(out["ps"].read_bytes()).hexdigest()
+        self.assertEqual(digest, GOLDEN_RESUME_SHA256)
 
 
 if __name__ == "__main__":

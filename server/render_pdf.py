@@ -758,6 +758,24 @@ def resolve_template(vault: Path, kind: str, name: str | None) -> Path:
     )
 
 
+TEMPLATE_FIELD = {"resume": "resume_template",
+                  "cover-letter": "cover_letter_template"}
+
+
+def template_for(vault: Path, folder: Path, kind: str,
+                 override: str | None = None) -> tuple[Path, Params]:
+    """The template this application renders with, and the layout it declares.
+
+    An explicit `--template` wins over the brief, and an unset brief field
+    means the default this repo has always used.
+    """
+    brief = folder / "Application Brief.md"
+    fm, _ = v.read_note(brief) if brief.exists() else ({}, "")
+    chosen = override or (fm.get(TEMPLATE_FIELD[kind]) or None)
+    path = resolve_template(vault, kind, chosen)
+    return path, check_template(path, kind)
+
+
 def check_template(path: Path, kind: str) -> Params:
     """Prove a template can be rendered before anything is rendered with it.
 
@@ -766,17 +784,18 @@ def check_template(path: Path, kind: str) -> Params:
     """
     if not path.is_file():
         raise SystemExit(f"Missing template: {path}")
-    text = path.read_text(encoding="utf-8")
 
-    missing = [token for token in REQUIRED_TOKENS if token not in text]
+    # Only the prologue is ever used, so that is where the tokens have to be:
+    # a token past the marker would be discarded unread and the PDF would
+    # quietly carry the wrong metadata.
+    head = prologue(path)
+    missing = [token for token in REQUIRED_TOKENS if token not in head]
     if missing:
         raise SystemExit(
             f"{path.name} is missing the required token(s) {', '.join(missing)}.\n"
             "A template must carry all of " + ", ".join(REQUIRED_TOKENS)
-            + " in its PDF metadata block."
+            + " in the PDF metadata block of its prologue."
         )
-
-    head = prologue(path)
     return parse_params(head)
 
 
@@ -919,18 +938,14 @@ def ghostscript() -> str | None:
 
 
 def render(vault: Path, folder: Path, kind: str, pages: int = 1,
-           preview: bool = True) -> dict:
+           preview: bool = True, template_name: str | None = None) -> dict:
     source_name = "Draft - Resume.md" if kind == "resume" else "Draft - Cover Letter.md"
-    template_name = ("PDF/Resume - Figma Inspired.ps" if kind == "resume"
-                     else "PDF/Cover Letter - Figma Inspired.ps")
     stem = "Resume" if kind == "resume" else "Cover Letter"
 
     source = folder / source_name
     if not source.exists():
         raise SystemExit(f"No {source_name} in {folder.relative_to(vault)}")
-    template = v.TEMPLATES_DIR / template_name
-    if not template.exists():
-        raise SystemExit(f"Missing skill template: {template}")
+    template, params = template_for(vault, folder, kind, template_name)
 
     gs = ghostscript()
     missing = [t for t in ("pdfinfo", "pdftotext", "pdffonts") if shutil.which(t) is None]
@@ -953,9 +968,10 @@ def render(vault: Path, folder: Path, kind: str, pages: int = 1,
 
     text = source.read_text(encoding="utf-8")
     data = parse_resume(text) if kind == "resume" else parse_letter(text, vault)
-    page = fit(data, kind, pages, position, source_name=source_name)
+    page = fit(data, kind, pages, position, params, source_name=source_name)
 
-    ps_text = build_postscript(template, data, page, position, data["name"], company)
+    ps_text = build_postscript(template, data, page, position, data["name"],
+                               company, params)
 
     artifacts = folder / "Artifacts"
     artifacts.mkdir(exist_ok=True)
@@ -1011,6 +1027,9 @@ def main() -> int:
     ap.add_argument("--app", required=True, help="application folder, relative to the vault")
     ap.add_argument("--kind", choices=["resume", "cover-letter"], default="resume")
     ap.add_argument("--pages", type=int, default=1, help="page budget; 1 unless deliberate")
+    ap.add_argument("--template",
+                    help="registry name, e.g. 'vault:My Design'; "
+                         "overrides the brief's field for this render")
     ap.add_argument("--no-preview", action="store_true")
     ap.add_argument("--vault")
     args = ap.parse_args()
@@ -1027,7 +1046,8 @@ def main() -> int:
     if not folder.is_dir():
         raise SystemExit(f"Not a folder: {folder}")
 
-    out = render(vault, folder, args.kind, args.pages, preview=not args.no_preview)
+    out = render(vault, folder, args.kind, args.pages,
+                 preview=not args.no_preview, template_name=args.template)
 
     def show(path: Path) -> str:
         try:

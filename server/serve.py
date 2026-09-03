@@ -854,6 +854,8 @@ HANDLERS = {
 def api_schema(vault: Path) -> dict:
     """The /api/schema payload: every vocabulary the UI needs, plus the form
     and editable-field specs, so the page never hard-codes what schema.py owns."""
+    import render_pdf  # deferred, as the render route does: it is not needed to serve
+
     return {
         "status": schema.APPLICATION_STATUS,
         "terminal": sorted(schema.TERMINAL_STATUS),
@@ -873,6 +875,12 @@ def api_schema(vault: Path) -> dict:
         "editable": schema.UI_EDITABLE,
         "archivable": schema.ARCHIVABLE_KINDS,
         "forms": schema.FORMS,
+        # Not in schema.py's ENUMS: the values are whatever templates exist
+        # right now, built-in plus whatever the user dropped in their vault.
+        "templates": {
+            kind: [entry["name"] for entry in entries]
+            for kind, entries in render_pdf.registry(vault).items()
+        },
         "vault_name": vault.name,
     }
 

@@ -60,6 +60,7 @@ const INDEX: VaultIndex = {
   applications: [ACME, OLDCO],
   leads: [],
   archived: [],
+  company_questions: [],
   contacts: [],
   interviews: [],
   people: [],

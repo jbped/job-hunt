@@ -42,6 +42,24 @@ MAX_BUFFERED_EVENTS = 20000
 # missing one exits, and the caller gets a clear error instead of a hang.
 START_GRACE_SECONDS = 20.0
 
+# What a new conversation is told, and nothing more. The workflow itself lives
+# in the career-evidence skill and is read from disk by the agent — forking its
+# text into this constant would give the vault two sources of truth for how an
+# interview is run, which is exactly what the skill exists to prevent.
+INTERVIEW_SKILL = ".agents/skills/career-evidence/references/evidence-interview.md"
+
+INTERVIEW_PROMPT = (
+    "You are conducting an evidence interview for this job-hunt vault, through "
+    "a chat panel in the dashboard. Before asking anything, read "
+    f"{INTERVIEW_SKILL} and the skill it belongs to "
+    "(.agents/skills/career-evidence/SKILL.md), then orient yourself in the "
+    "vault: its Job Hunt Dashboard and the Career Evidence notes the interview "
+    "concerns. Follow that workflow exactly; it, not this prompt, is the source "
+    "of truth for how an interview is run. Write only markdown notes inside the "
+    "vault, and never invent an accomplishment, a metric, or a date the person "
+    "did not give you."
+)
+
 AGENT_UNAVAILABLE = (
     "The AI agent could not start. Check that the `claude` CLI is installed and "
     "signed in — in Docker that means the credential mount described in "
@@ -294,7 +312,13 @@ def live(session_id: str) -> LiveSession | None:
 
 def spawn(vault: Path, session_id: str, *, resume: bool,
           system_prompt: str | None = None) -> LiveSession:
-    """Start the agent for this conversation. Never uses a shell."""
+    """Start the agent for this conversation. Never uses a shell.
+
+    A fresh conversation is seeded with the interview pointer; a resumed one is
+    not — `--resume` carries the original system prompt along with the history.
+    """
+    if system_prompt is None and not resume:
+        system_prompt = INTERVIEW_PROMPT
     args = build_args(vault, session_id, resume=resume, system_prompt=system_prompt)
     try:
         proc = subprocess.Popen(

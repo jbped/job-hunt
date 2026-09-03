@@ -1379,6 +1379,9 @@ def main() -> int:
     except KeyboardInterrupt:
         print("\nStopped.")
     finally:
+        # Live agent subprocesses die with the server that spawned them; the
+        # persisted index survives, so every conversation is still resumable.
+        agent_sessions.close_all()
         pidfile = _pidfile(vault)
         try:
             if json.loads(pidfile.read_text(encoding="utf-8")).get("pid") == os.getpid():

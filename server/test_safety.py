@@ -1038,6 +1038,71 @@ class AgentSessionTest(unittest.TestCase):
                                            "session_id": "not-a-uuid"})[0], 400)
         self.assertEqual(self._post(port, {"message": "  "})[0], 400)
 
+    # -- seeding and lifecycle -----------------------------------------
+
+    def test_a_new_conversation_is_seeded_and_a_resumed_one_is_not(self):
+        session = agent_sessions.spawn(self.vault, agent_sessions.new_id(),
+                                       resume=False)
+        self.addCleanup(session.close)
+        args = session.proc.args
+        self.assertIn("--append-system-prompt", args)
+        prompt = args[args.index("--append-system-prompt") + 1]
+        self.assertIn(agent_sessions.INTERVIEW_SKILL, prompt)
+
+        resumed = agent_sessions.spawn(self.vault, agent_sessions.new_id(),
+                                       resume=True)
+        self.addCleanup(resumed.close)
+        self.assertNotIn("--append-system-prompt", resumed.proc.args)
+
+    def test_the_prompt_points_at_the_skill_instead_of_forking_it(self):
+        """The workflow text stays in the skill; the seed is a pointer."""
+        reference = (Path(__file__).resolve().parent.parent
+                     / agent_sessions.INTERVIEW_SKILL)
+        self.assertTrue(reference.is_file(), agent_sessions.INTERVIEW_SKILL)
+        self.assertLess(len(agent_sessions.INTERVIEW_PROMPT), 1200)
+        for heading in ("The seven dimensions", "Context —", "Adoption —"):
+            self.assertNotIn(heading, agent_sessions.INTERVIEW_PROMPT)
+
+    def test_closing_a_conversation_kills_the_process_and_keeps_the_index(self):
+        port = self._serving()
+        session_id = self._post(port, {"message": "first turn"})[1]["session_id"]
+        proc = agent_sessions.live(session_id).proc
+        self.assertIsNone(proc.poll())
+
+        status, body = self._post(port, {"session_id": session_id, "close": True})
+        self.assertEqual(status, 200)
+        self.assertTrue(body["closed"])
+        self.assertIsNotNone(proc.poll())
+        self.assertIsNone(agent_sessions.live(session_id))
+        # Closing ends the process, not the conversation.
+        self.assertTrue(agent_sessions.known(self.vault, session_id))
+
+        status, body = self._post(port, {"session_id": session_id,
+                                         "message": "second turn"})
+        self.assertEqual(status, 200)
+        self.assertEqual(body["session_id"], session_id)
+        respawned = agent_sessions.live(session_id)
+        self.assertIsNot(respawned.proc, proc)
+        self.assertIn("--resume", respawned.proc.args)
+        self.assertEqual(respawned.proc.args[respawned.proc.args.index("--resume") + 1],
+                         session_id)
+        # And one index entry, not two.
+        self.assertEqual(len(agent_sessions.load_index(self.vault)), 1)
+
+    def test_shutdown_reaps_every_live_conversation(self):
+        port = self._serving()
+        procs = [agent_sessions.live(self._post(port, {"message": f"turn {n}"})[1]
+                                     ["session_id"]).proc for n in range(2)]
+        self.assertTrue(all(p.poll() is None for p in procs))
+        agent_sessions.close_all()
+        self.assertTrue(all(p.poll() is not None for p in procs))
+        self.assertEqual(len(agent_sessions.load_index(self.vault)), 2)
+
+    def test_the_server_reaps_sessions_when_it_stops(self):
+        import inspect
+        source = inspect.getsource(serve.main)
+        self.assertIn("agent_sessions.close_all()", source)
+
     def test_a_dead_agent_is_reported_not_hung(self):
         os.environ["CAREER_EVIDENCE_AGENT_BIN"] = str(
             Path(__file__).resolve().parent / "testdata" / "failing_agent.sh")

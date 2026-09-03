@@ -30,11 +30,18 @@ questions:
    Bash and WebFetch off. This is policy for all 0.7-era agent
    workflows, not just the interview; any future workflow wanting more
    must argue for it in its own spec.
-5. **Lifecycle: per-conversation** — a session starts when the interview
-   chat opens and its subprocess ends when the conversation is closed
-   (or the server stops); the CLI's `--resume <session-id>` makes a
-   closed interview resumable within the CLI's retention window. No
-   always-on daemon.
+5. **Lifecycle: per-conversation, history persisted** — a session starts
+   when the interview chat opens and its subprocess ends when the
+   conversation is closed (or the server stops); the CLI's
+   `--resume <session-id>` makes a closed interview resumable. No
+   always-on daemon. Amendment (user, 2026-09-02): the session index
+   (id, title, application context, timestamps) persists in the vault's
+   `.cache/` so the chat UI lists all previous conversations and can
+   reopen any of them; the CLI's own session storage lives on a
+   persistent volume in Docker so `--resume` survives container
+   restarts. Caveat recorded: chat transcripts are supporting material,
+   not vault truth — markdown notes remain the only source of truth,
+   and wiping `.cache/` loses the chat list, never career data.
 6. **Egress: deferred hardening.** The container keeps ordinary outbound
    access (the CLI must reach its provider); `--restricted` already
    removes the agent's own ability to make arbitrary requests.
@@ -60,10 +67,14 @@ questions:
     held-open response on the existing `ThreadingHTTPServer`), relaying
     the subprocess's JSON-line events as SSE `data:` events until the
     turn completes. No WebSocket, no new server dependency.
-  - Session registry: in-memory map session-id → subprocess handle,
-    per-conversation lifecycle, cleaned up on close/exit. Vault writes
-    happen only by the agent through its file tools inside `/vault`;
-    the server's own write surface is unchanged.
+  - Session registry: live subprocess handles in memory; the session
+    index persisted to the vault's `.cache/` (decision 5). A
+    `GET /api/agent/sessions` route lists past conversations for the
+    chat UI. Vault writes happen only by the agent through its file
+    tools inside `/vault`; the server's own write surface is unchanged.
+  - After-the-fact auditing is the confirmed stance (user, 2026-09-02):
+    no staging/approval step for agent writes; `audit_vault.py` remains
+    the check.
 - **Interview prompt:** the conversation is seeded with the
   evidence-interview workflow from the career-evidence skill (the skill
   stays the source of truth; the server passes a pointer/system prompt,

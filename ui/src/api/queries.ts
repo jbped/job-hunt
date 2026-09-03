@@ -4,7 +4,12 @@ import {
   type UseQueryResult,
 } from "@tanstack/react-query";
 import { api } from "./client";
-import type { AuditReport, Schema, VaultIndex } from "./types";
+import type {
+  AgentSessionList,
+  AuditReport,
+  Schema,
+  VaultIndex,
+} from "./types";
 
 /** The three long-lived reads. The vanilla page refetched all three together
  *  (`refresh()`, index.html:427); here each is a query and a write invalidates
@@ -40,4 +45,13 @@ export async function invalidateAfterWrite(qc: QueryClient): Promise<void> {
     qc.invalidateQueries({ queryKey: ["schema"] }),
   ]);
   await qc.invalidateQueries({ queryKey: ["audit"] });
+}
+
+/** The chat's session list. Kept out of `invalidateAfterWrite`: an agent turn
+ *  is not a vault write, and a vault write does not change this list. */
+export function useAgentSessionsQuery(): UseQueryResult<AgentSessionList> {
+  return useQuery({
+    queryKey: ["agent-sessions"],
+    queryFn: () => api<AgentSessionList>("/api/agent/sessions"),
+  });
 }

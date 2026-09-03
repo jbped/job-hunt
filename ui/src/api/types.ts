@@ -425,3 +425,43 @@ export interface RenderRequest {
 export interface RenderResult {
   job: string;
 }
+
+/** One past interview conversation, from the vault's `.cache/` index. The
+ *  transcript is not persisted — the CLI owns that — so this is a title, an
+ *  optional application, and timestamps. */
+export interface AgentSession {
+  id: string;
+  title: string;
+  application: string;
+  created: string;
+  updated: string;
+}
+
+export interface AgentSessionList {
+  sessions: AgentSession[];
+}
+
+export interface InterviewTurnRequest {
+  message?: string;
+  session_id?: string;
+  application?: string;
+  close?: boolean;
+}
+
+export interface InterviewTurnResult {
+  session_id: string;
+  title?: string;
+  closed?: boolean;
+}
+
+/** The agent's own stream-json events, relayed verbatim over SSE plus the
+ *  server's own `done`/`idle`/`agent_error` markers. Only the fields the chat
+ *  reads are named; everything else rides along untouched. */
+export interface AgentEvent {
+  type: string;
+  message?: { content?: { type?: string; text?: string }[] };
+  event?: { type?: string; delta?: { type?: string; text?: string } };
+  text?: string;
+  is_error?: boolean;
+  result?: string;
+}

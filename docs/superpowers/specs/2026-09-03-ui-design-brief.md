@@ -183,6 +183,10 @@ compact control in the drawer; defaults live in settings.
 ### 7. Settings
 
 - Landing page (what's next / applications).
+- Appearance: light, dark, or follow the system, plus a choice of base
+  colour. The app ships seven palettes and defaults to a cool grey; the
+  choice is the user's and applies everywhere. Present it as a normal
+  preference, not a developer setting.
 - Browser extension pairing (status, pair action).
 - Templates: default template per document kind; the place to add a
   template (for now an explained drop location, later an upload flow).
@@ -246,3 +250,43 @@ settings page (AI workflows section in particular); the extension
 popup in its unpaired and preview states. A navigation shell that
 holds them together. Explore two directions for the shell and the
 application detail before converging.
+
+---
+
+## Appendix: notes for whoever drives the design tool
+
+Not part of the brief. The brief above is deliberately free of
+implementation, and a designer working from it should ignore this section.
+These are constraints and gaps discovered while syncing the component library
+to Claude Design on 2026-09-03. They affect how the mocks get made, not what
+the product should be.
+
+- **Utility classes are not open-ended.** Designs render with the design
+  system's compiled stylesheet and no Tailwind compiler, so only the utility
+  families the library ships resolve — anything outside them silently does
+  nothing. The available families are enumerated in
+  `ui/.design-sync/conventions.md`, which the design agent receives. If a
+  mock needs a class outside that list, widen the safelist in
+  `ui/src/design-system.lib.css` and re-sync rather than working around it.
+- **Reply calls-to-action have no component behind them yet.** The library
+  covers the companion drawer well — `Bubble`, `Message`, `MessageScroller`
+  and `MessageAvatar` are all synced — but nothing expresses a CTA-bearing
+  reply, so it has to be composed from a button inside the message content.
+  If the mocks settle on one shape for it, that is the first composite worth
+  promoting into a real component and re-syncing. (shadcn also publishes
+  `Attachment` and `Questionnaire`, which may suit the interview and
+  document-upload flows; neither is installed here yet.)
+- **There is no prose editor in the component library.** The brief asks for
+  notes, journals and company answers to be edited with live preview and no
+  raw-markup exposure; shadcn ships nothing for this — its registry has no
+  editor, rich-text or markdown entry at all. An engine has to be chosen: a
+  textarea with a preview pane is free but still shows markup; Tiptap with
+  hand-styled shadcn chrome is the usual answer; Plate (`platejs`) ships its
+  own shadcn-compatible registry and installs through the same CLI. The
+  deciding constraint is not the toolbar but the serializer — markdown notes
+  are the only source of truth and must stay readable in Obsidian, so
+  anything the editor cannot round-trip losslessly is destroyed on save. The
+  mocks do not need this settled: the editing surface can be drawn from
+  `Card`, `Button`, `Separator` and `Textarea`, and the engine chosen to fit
+  it. A formatting toolbar wants shadcn's `toggle-group`, which is published
+  but not installed here — add it and re-sync when the editor is built.

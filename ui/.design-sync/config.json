@@ -1,0 +1,44 @@
+{
+  "projectId": "34b4af10-9e69-4f1b-8789-5e8ad9b48421",
+  "shape": "package",
+  "pkg": "job-hunt-ui",
+  "globalName": "JobHuntUI",
+  "buildCmd": "npm run build:lib",
+  "tsconfig": "tsconfig.app.json",
+  "cssEntry": "./dist/styles.css",
+  "extraFonts": [
+    "node_modules/@fontsource-variable/inter/index.css"
+  ],
+  "docsDir": "docs/design-system",
+  "overrides": {
+    "Dialog": {
+      "cardMode": "single",
+      "viewport": "760x460",
+      "primaryStory": "MarkAsApplied"
+    },
+    "Sheet": {
+      "cardMode": "single",
+      "viewport": "860x560",
+      "primaryStory": "CompanionDrawer"
+    },
+    "DropdownMenu": {
+      "cardMode": "single",
+      "viewport": "620x420",
+      "primaryStory": "ApplicationActions"
+    },
+    "Select": {
+      "cardMode": "single",
+      "viewport": "620x420",
+      "primaryStory": "WorkModel"
+    },
+    "Sidebar": {
+      "cardMode": "single",
+      "viewport": "700x460",
+      "primaryStory": "AppNav"
+    },
+    "Table": {
+      "cardMode": "column"
+    }
+  },
+  "readmeHeader": ".design-sync/conventions.md"
+}

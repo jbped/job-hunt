@@ -32,3 +32,11 @@ __pycache__/
 
 # The React frontend workspace; the built bundle in server/assets/ui/ is committed.
 ui/node_modules/
+
+# design-sync working state. The durable inputs under ui/.design-sync/
+# (config.json, NOTES.md, conventions.md, previews/) ARE committed;
+# .cache/ is already covered by the global rule above.
+ui/.ds-sync/
+ui/ds-bundle/
+ui/.design-sync/learnings/
+ui/.design-sync/node_modules

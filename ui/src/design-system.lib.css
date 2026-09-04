@@ -1,0 +1,45 @@
+/* The design-system build's stylesheet. Designs rendered from this bundle get
+   this file's import closure and no Tailwind compiler, so the utilities a
+   consumer might write for layout glue have to be generated up front. The app
+   imports design-system.css directly and stays lean. */
+@import "./design-system.css";
+
+@source inline("{,sm:,md:,lg:}{flex,inline-flex,grid,block,inline-block,hidden,contents}");
+@source inline("{,sm:,md:,lg:}flex-{row,col,wrap,nowrap,1}");
+@source inline("{shrink,grow}-{0,1}");
+@source inline("items-{start,center,end,baseline,stretch}");
+@source inline("justify-{start,center,end,between,around,evenly}");
+@source inline("self-{auto,start,center,end,stretch}");
+@source inline("{,sm:,md:,lg:}grid-cols-{1,2,3,4,5,6,12}");
+@source inline("col-span-{1,2,3,4,5,6,full}");
+@source inline("{,sm:,md:,lg:}gap-{0,1,2,3,4,5,6,8,10,12,16}");
+@source inline("gap-{x,y}-{0,1,2,3,4,5,6,8,10,12}");
+@source inline("{,sm:,md:,lg:}{p,px,py,pt,pr,pb,pl}-{0,1,2,3,4,5,6,8,10,12,16}");
+@source inline("{m,mx,my,mt,mr,mb,ml}-{0,1,2,3,4,5,6,8,10,12,16,auto}");
+@source inline("space-{x,y}-{1,2,3,4,6,8}");
+@source inline("{w,h}-{full,fit,auto,px,screen}");
+@source inline("{w,h}-{4,5,6,8,10,12,16,20,24,32,48,64}");
+@source inline("size-{3,4,5,6,8,10,12,16}");
+@source inline("min-{w,h}-0");
+@source inline("max-w-{xs,sm,md,lg,xl,2xl,3xl,4xl,5xl,6xl,7xl,full,none,prose}");
+@source inline("text-{xs,sm,base,lg,xl,2xl,3xl,4xl}");
+@source inline("font-{normal,medium,semibold,bold}");
+@source inline("leading-{none,tight,snug,normal,relaxed}");
+@source inline("tracking-{tight,normal,wide}");
+@source inline("text-{left,center,right}");
+@source inline("{truncate,text-balance,text-pretty,break-words,whitespace-nowrap}");
+@source inline("line-clamp-{1,2,3,4}");
+@source inline("bg-{background,card,popover,primary,secondary,muted,accent,destructive,sidebar,transparent}");
+@source inline("text-{foreground,card-foreground,popover-foreground,primary,primary-foreground,secondary-foreground,muted-foreground,accent-foreground,destructive,sidebar-foreground}");
+@source inline("border-{border,input,transparent,0,2,4,t,r,b,l}");
+@source inline("{border,ring-ring,ring-1,ring-2,outline-none}");
+@source inline("rounded-{none,xs,sm,md,lg,xl,2xl,3xl,full}");
+@source inline("shadow-{none,xs,sm,md,lg,xl}");
+@source inline("overflow-{hidden,auto,visible}");
+@source inline("overflow-{x,y}-{hidden,auto}");
+@source inline("{relative,absolute,fixed,sticky,static}");
+@source inline("{top,right,bottom,left,inset}-0");
+@source inline("z-{0,10,20,30,40,50}");
+@source inline("{cursor-pointer,cursor-default,select-none,pointer-events-none}");
+@source inline("opacity-{0,50,60,70,80,90,100}");
+@source inline("{,md:}{sr-only,not-sr-only}");

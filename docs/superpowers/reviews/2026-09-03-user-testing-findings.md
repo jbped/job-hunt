@@ -416,3 +416,30 @@ cloning through the companion; richer editor.
 Dependencies: 1 before 3's what-next view; 2's CTA contract before 3's
 drawer; the design brief and mocks start immediately
 (`docs/superpowers/specs/2026-09-03-ui-design-brief.md`).
+
+## Design round one review (2026-09-04, Jacob + orchestrator)
+
+Reviewed the Claude Design prototype ("Job Hunt App", saved under `docs/superpowers/specs/mocks/2026-09-04-claude-design/`, not committed). Verdict: strong mechanics (computed What's next, document state machine, propose-and-click assistant, company level, per-accomplishment skill validation), weak hierarchy (data without verbs, no empty-vault state, vocabulary drift, no privacy controls, settings incomplete). Decisions, all approved:
+
+1. The board is the landing page; What's next, Applications, and Leads merge into it.
+2. Today strip on the board: interviews, calls, follow-ups, anything dated.
+3. Leads become company records; a company card sits in Discovered until a role is added.
+4. First-run checklist on the board, computed from vault state: resume, interviews, pairing.
+5. Rail: Board, Experience, People, Profile, plus assistant and settings.
+6. Interview round derived from interview note count; optional expected-rounds field on the brief.
+7. Capture automation: per-workflow toggles in settings, off by default.
+8. Copy: state and verb only; no persona.
+9. Statuses: discovered, preparing, applied, interviewing, offer, rejected, withdrawn, closed. Researching and screening removed (schema change, migration needed).
+10. Conversations file to their record; general chats file to the board.
+11. Assistant is a resizable split pane.
+12. People split into People and Contacts notes; the agent never receives Contacts; merged into one page in the UI. Audit flags contact patterns outside Contacts.
+13. Profile: About, Contact (own entries with audience pills), Education. Templates live in settings.
+14. Interview Queue note retired; "roles at needs-interview" is computed.
+15. Application page: Overview, Posting, Documents, Interviews, Submission. Company questions and voice read-only on Overview. Conversations tab dropped.
+16. Settings: Appearance, Extension, Templates, Assistant, Workflows. No landing setting.
+17. Semantic colour: column hues, signal severity colours, green for verified and rendered, one accent per card.
+18. Workflow instructions have an Add or Replace mode; Replace never touches truth and privacy rules.
+19. Assistant panel shows a context meter; Compact button behind a per-provider capability flag; spike to verify with the Claude CLI.
+20. Signal precedence on a card: dated overdue/today, undocumented interview, stale render, scaffold, ready to submit, quiet.
+
+Round-two direction for Claude Design: `docs/superpowers/specs/2026-09-04-ui-direction-round-2.md`. Schema consequences (9, 12, 14, expected-rounds, company records without a role) feed Initiative 1 and need their own spec before implementation.

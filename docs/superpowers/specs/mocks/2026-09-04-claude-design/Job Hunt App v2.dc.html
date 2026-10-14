@@ -1,0 +1,1802 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="_ds/job-hunt-ui-34b4af10-9e69-4f1b-8789-5e8ad9b48421/styles.css">
+<script src="_ds/job-hunt-ui-34b4af10-9e69-4f1b-8789-5e8ad9b48421/_ds_bundle.js"></script>
+<style>
+  html, body { margin: 0; height: 100%; }
+  body { font-family: var(--font-sans); }
+  a { color: var(--primary); text-decoration: none; cursor: pointer; }
+  a:hover { color: var(--foreground); text-decoration: underline; }
+  select, textarea, input { font-family: var(--font-sans); }
+  [data-rail-actions] button { width: 100%; }
+  .light, :root { --sig-red: oklch(0.52 0.19 25); --sig-amber: oklch(0.52 0.12 70); --sig-blue: oklch(0.52 0.15 250); --sig-grey: oklch(0.52 0.01 260); --sig-green: oklch(0.47 0.12 150); }
+  .dark { --sig-red: oklch(0.76 0.16 25); --sig-amber: oklch(0.80 0.13 75); --sig-blue: oklch(0.76 0.13 250); --sig-grey: oklch(0.70 0.01 260); --sig-green: oklch(0.76 0.13 155); }
+  @keyframes toastIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+</style>
+</helmet>
+
+<div class="{{ themeClass }}" data-base-color="{{ baseColor }}" style="height:100vh;display:flex;overflow:hidden;background:var(--background);color:var(--foreground)">
+
+  <div style="width:216px;flex-shrink:0;height:100%;border-right:1px solid var(--border);background:var(--sidebar);display:flex;flex-direction:column;padding:16px 12px">
+    <div style="padding:4px 8px 14px;font:600 15px/1.2 var(--font-sans);color:var(--sidebar-foreground)">Job hunt</div>
+    <div data-rail-actions style="position:relative;padding:0 0 14px">
+      <x-import component-from-global-scope="JobHuntUI.Button" size="sm" style="width:100%;display:flex;flex-direction:column" onClick="{{ toggleAddMenu }}" hint-size="100%,32px">{{ addMenuLabel }}</x-import>
+      <sc-if value="{{ addMenuOpen }}" hint-placeholder-val="{{ false }}">
+        <div style="position:absolute;top:38px;left:0;right:0;z-index:60;border:1px solid var(--border);border-radius:10px;background:var(--popover);box-shadow:0 12px 28px rgba(0,0,0,.16);padding:5px;display:flex;flex-direction:column;gap:1px">
+          <sc-for list="{{ addOptions }}" as="ao" hint-placeholder-count="5">
+            <div style="padding:8px 10px;border-radius:7px;cursor:pointer;font:500 13px/1.3 var(--font-sans);color:var(--popover-foreground)" onClick="{{ ao.onClick }}" style-hover="background:var(--muted)">{{ ao.label }}</div>
+          </sc-for>
+        </div>
+      </sc-if>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:2px">
+      <sc-for list="{{ nav }}" as="item" hint-placeholder-count="4">
+        <div style="{{ item.style }}" onClick="{{ item.onClick }}" style-hover="background:var(--sidebar-accent)">
+          <span>{{ item.label }}</span>
+          <span style="font-weight:400;color:var(--muted-foreground)">{{ item.badge }}</span>
+        </div>
+      </sc-for>
+    </div>
+    <div data-rail-actions style="margin-top:auto;display:flex;flex-direction:column;gap:8px">
+      <x-import component-from-global-scope="JobHuntUI.Button" size="sm" variant="outline" style="width:100%;display:flex;flex-direction:column" onClick="{{ toggleAssistant }}" hint-size="100%,32px">{{ assistantButtonLabel }}</x-import>
+      <x-import component-from-global-scope="JobHuntUI.Button" size="sm" variant="ghost" style="width:100%;display:flex;flex-direction:column" onClick="{{ goSettings }}" hint-size="100%,32px">Settings</x-import>
+    </div>
+  </div>
+
+  <div style="flex:1;min-width:0;height:100%;display:flex;flex-direction:column;overflow:hidden">
+
+    <sc-if value="{{ isBoard }}" hint-placeholder-val="{{ true }}">
+      <div style="padding:22px 28px 16px;border-bottom:1px solid var(--border);display:flex;flex-direction:column;gap:16px;flex-shrink:0">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:20px">
+          <div style="font:600 24px/1.2 var(--font-sans);letter-spacing:-0.01em">Board</div>
+          <a onClick="{{ toggleVault }}" style="font:400 12px/1 var(--font-sans);color:var(--muted-foreground)">{{ vaultToggleLabel }}</a>
+        </div>
+
+        <sc-if value="{{ checklistOn }}" hint-placeholder-val="{{ true }}">
+          <div style="border:1px solid var(--border);border-radius:12px;background:var(--card);padding:14px 16px;display:flex;align-items:center;gap:14px;flex-wrap:wrap">
+            <sc-for list="{{ checklist }}" as="cl" hint-placeholder-count="3">
+              <div style="display:flex;align-items:center;gap:9px">
+                <span style="{{ cl.dot }}">{{ cl.mark }}</span>
+                <span style="{{ cl.labelStyle }}">{{ cl.label }}</span>
+                <sc-if value="{{ cl.pending }}" hint-placeholder-val="{{ true }}">
+                  <x-import component-from-global-scope="JobHuntUI.Button" size="sm" variant="outline" onClick="{{ cl.onClick }}" hint-size="auto,28px">{{ cl.verb }}</x-import>
+                </sc-if>
+              </div>
+              <sc-if value="{{ cl.divider }}" hint-placeholder-val="{{ true }}">
+                <span style="width:1px;height:22px;background:var(--border)"></span>
+              </sc-if>
+            </sc-for>
+          </div>
+        </sc-if>
+
+        <div style="display:flex;align-items:stretch;gap:10px;overflow-x:auto;padding-bottom:2px">
+          <div style="flex-shrink:0;align-self:center;font:600 11px/1 var(--font-sans);letter-spacing:.08em;text-transform:uppercase;color:var(--muted-foreground);padding-right:4px">Today</div>
+          <sc-for list="{{ today }}" as="td" hint-placeholder-count="4">
+            <div style="flex-shrink:0;border:1px solid var(--border);border-left:3px solid {{ td.color }};border-radius:9px;background:var(--card);padding:9px 13px;cursor:pointer;min-width:190px" onClick="{{ td.onClick }}" style-hover="background:var(--muted)">
+              <div style="font:600 12px/1.2 var(--font-sans);color:{{ td.color }}">{{ td.when }}</div>
+              <div style="font:500 13px/1.3 var(--font-sans);margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:230px">{{ td.label }}</div>
+              <div style="font:400 12px/1.3 var(--font-sans);color:var(--muted-foreground);margin-top:2px">{{ td.sub }}</div>
+            </div>
+          </sc-for>
+          <sc-if value="{{ todayEmpty }}" hint-placeholder-val="{{ false }}">
+            <div style="align-self:center;font:400 13px/1 var(--font-sans);color:var(--muted-foreground)">Nothing dated</div>
+          </sc-if>
+        </div>
+      </div>
+
+      <div style="flex:1;overflow:auto;padding:20px 28px 28px">
+        <div style="display:flex;align-items:flex-start;gap:14px;min-height:100%">
+          <sc-for list="{{ columns }}" as="col" hint-placeholder-count="5">
+            <div style="width:272px;flex-shrink:0;display:flex;flex-direction:column;gap:10px">
+              <div style="display:flex;align-items:center;gap:8px;padding:0 2px 6px;border-bottom:2px solid {{ col.hue }}">
+                <div style="font:600 13px/1 var(--font-sans)">{{ col.label }}</div>
+                <div style="font:400 13px/1 var(--font-sans);color:var(--muted-foreground)">{{ col.count }}</div>
+              </div>
+              <sc-for list="{{ col.cards }}" as="c" hint-placeholder-count="2">
+                <div style="border:1px solid var(--border);border-radius:11px;background:var(--card);padding:13px 14px;display:flex;flex-direction:column;gap:9px">
+                  <div style="cursor:pointer" onClick="{{ c.onOpen }}">
+                    <div style="font:600 14px/1.3 var(--font-sans);color:var(--card-foreground)">{{ c.role }}</div>
+                    <div style="font:400 12px/1.3 var(--font-sans);color:var(--muted-foreground);margin-top:3px">{{ c.company }}</div>
+                  </div>
+                  <div style="display:flex;align-items:center;gap:7px">
+                    <span style="width:7px;height:7px;border-radius:4px;background:{{ c.signalColor }};flex-shrink:0"></span>
+                    <span style="font:500 12px/1.3 var(--font-sans);color:{{ c.signalColor }}">{{ c.signalText }}</span>
+                  </div>
+                  <div style="display:flex;align-items:center;justify-content:space-between;gap:8px">
+                    <span style="font:400 12px/1 var(--font-sans);color:var(--muted-foreground)">{{ c.days }}</span>
+                    <x-import component-from-global-scope="JobHuntUI.Button" size="sm" variant="outline" onClick="{{ c.onVerb }}" hint-size="auto,28px">{{ c.verb }}</x-import>
+                  </div>
+                </div>
+              </sc-for>
+              <sc-if value="{{ col.empty }}" hint-placeholder-val="{{ false }}">
+                <div style="border:1px dashed var(--border);border-radius:11px;padding:16px 14px;display:flex;flex-direction:column;gap:10px;align-items:flex-start">
+                  <div style="font:400 13px/1.4 var(--font-sans);color:var(--muted-foreground)">{{ col.emptyLabel }}</div>
+                  <x-import component-from-global-scope="JobHuntUI.Button" size="sm" variant="outline" onClick="{{ col.onEmptyAction }}" hint-size="auto,28px">{{ col.emptyVerb }}</x-import>
+                </div>
+              </sc-if>
+            </div>
+          </sc-for>
+
+          <div style="width:{{ closedWidth }};flex-shrink:0;display:flex;flex-direction:column;gap:10px">
+            <div style="display:flex;align-items:center;gap:8px;padding:0 2px 6px;border-bottom:2px solid var(--border);cursor:pointer" onClick="{{ toggleClosed }}">
+              <div style="font:600 13px/1 var(--font-sans);color:var(--muted-foreground)">{{ closedLabel }}</div>
+              <div style="font:400 13px/1 var(--font-sans);color:var(--muted-foreground)">{{ closedCount }}</div>
+            </div>
+            <sc-if value="{{ closedOpen }}" hint-placeholder-val="{{ false }}">
+              <sc-for list="{{ closedCards }}" as="cc" hint-placeholder-count="2">
+                <div style="border:1px solid var(--border);border-radius:11px;background:var(--card);padding:12px 14px;cursor:pointer;opacity:0.8" onClick="{{ cc.onOpen }}" style-hover="opacity:1">
+                  <div style="font:600 13px/1.3 var(--font-sans);color:var(--card-foreground)">{{ cc.role }}</div>
+                  <div style="font:400 12px/1.3 var(--font-sans);color:var(--muted-foreground);margin-top:3px">{{ cc.company }} · {{ cc.signalText }}</div>
+                </div>
+              </sc-for>
+            </sc-if>
+          </div>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ isApp }}" hint-placeholder-val="{{ false }}">
+      <div style="border-bottom:1px solid var(--border);background:var(--card);padding:18px 28px 0;flex-shrink:0">
+        <div style="font:400 12px/1 var(--font-sans);color:var(--muted-foreground)"><a onClick="{{ goBoard }}">Board</a> · <a onClick="{{ app.onCompany }}">{{ app.company }}</a></div>
+        <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:20px;flex-wrap:wrap;margin-top:12px">
+          <div style="flex:1 1 320px;min-width:0">
+            <div style="font:600 23px/1.2 var(--font-sans);letter-spacing:-0.01em">{{ app.role }}</div>
+            <div style="display:flex;align-items:center;gap:10px;margin-top:8px">
+              <x-import component-from-global-scope="JobHuntUI.Badge" variant="{{ app.statusVariant }}" hint-size="auto,20px">{{ app.status }}</x-import>
+              <sc-if value="{{ app.hasRound }}" hint-placeholder-val="{{ false }}">
+                <span style="font:500 13px/1 var(--font-sans);color:var(--muted-foreground)">{{ app.roundTag }}</span>
+              </sc-if>
+              <span style="font:400 13px/1 var(--font-sans);color:var(--muted-foreground)">{{ app.days }}</span>
+            </div>
+          </div>
+          <div style="display:flex;align-items:center;gap:12px;flex-shrink:0;flex-wrap:wrap">
+            <div>
+              <div style="font:500 13px/1.3 var(--font-sans);color:{{ app.signalColor }}">{{ app.signalText }}</div>
+            </div>
+            <x-import component-from-global-scope="JobHuntUI.Button" size="sm" onClick="{{ app.onVerb }}" hint-size="auto,32px">{{ app.verb }}</x-import>
+          </div>
+        </div>
+        <div style="display:flex;gap:22px;margin-top:18px;font:500 13px/1 var(--font-sans);flex-wrap:wrap">
+          <sc-for list="{{ appTabs }}" as="at" hint-placeholder-count="5">
+            <div style="{{ at.style }}" onClick="{{ at.onClick }}">{{ at.label }}</div>
+          </sc-for>
+        </div>
+      </div>
+
+      <div style="flex:1;overflow-y:auto;padding:20px 28px 28px">
+        <sc-if value="{{ tabOverview }}" hint-placeholder-val="{{ true }}">
+          <div style="display:flex;gap:20px;align-items:flex-start;flex-wrap:wrap">
+            <div style="flex:1 1 440px;min-width:0;display:flex;flex-direction:column;gap:16px">
+              <div style="border:1px solid var(--border);border-radius:12px;background:var(--card);overflow:hidden">
+                <div style="padding:12px 16px;border-bottom:1px solid var(--border);font:600 12px/1 var(--font-sans);letter-spacing:.06em;text-transform:uppercase;color:var(--muted-foreground)">Brief</div>
+                <sc-for list="{{ brief }}" as="bf" hint-placeholder-count="6">
+                  <div style="display:flex;align-items:center;gap:14px;padding:9px 16px;border-bottom:1px solid var(--border)">
+                    <div style="flex:0 1 140px;min-width:96px;font:500 12px/1.3 var(--font-sans);color:var(--muted-foreground)">{{ bf.label }}</div>
+                    <div style="flex:1;min-width:0"><x-import component-from-global-scope="JobHuntUI.Input" value="{{ bf.value }}" onChange="{{ bf.onChange }}" hint-size="100%,32px"></x-import></div>
+                  </div>
+                </sc-for>
+              </div>
+              <div style="border:1px solid var(--border);border-radius:12px;background:var(--card);padding:16px">
+                <div style="display:flex;align-items:center;justify-content:space-between;gap:12px">
+                  <div style="font:600 12px/1 var(--font-sans);letter-spacing:.06em;text-transform:uppercase;color:var(--muted-foreground)">Analysis</div>
+                  <span style="font:400 12px/1 var(--font-sans);color:var(--muted-foreground)">{{ app.analysisMeta }}</span>
+                </div>
+                <div style="font:400 14px/1.65 var(--font-sans);margin-top:11px;max-width:74ch;text-wrap:pretty">{{ app.analysis }}</div>
+                <div style="margin-top:14px"><x-import component-from-global-scope="JobHuntUI.Button" size="sm" variant="outline" onClick="{{ app.onAnalyse }}" hint-size="auto,30px">{{ app.analyseVerb }}</x-import></div>
+              </div>
+            </div>
+            <div style="flex:1 1 300px;min-width:0;max-width:360px;display:flex;flex-direction:column;gap:16px">
+              <div style="border:1px solid var(--border);border-radius:12px;background:var(--muted);padding:16px">
+                <div style="display:flex;align-items:center;justify-content:space-between;gap:10px">
+                  <div style="font:600 12px/1 var(--font-sans);letter-spacing:.06em;text-transform:uppercase;color:var(--muted-foreground)">{{ app.company }}</div>
+                  <a onClick="{{ app.onCompany }}" style="font:500 12px/1 var(--font-sans)">Edit on company</a>
+                </div>
+                <div style="font:400 13px/1.6 var(--font-sans);margin-top:10px;color:var(--foreground)">{{ company.voice }}</div>
+                <div style="display:flex;flex-direction:column;gap:9px;margin-top:14px">
+                  <sc-for list="{{ company.questions }}" as="q" hint-placeholder-count="3">
+                    <div>
+                      <div style="font:500 12px/1.35 var(--font-sans);color:var(--muted-foreground)">{{ q.q }}</div>
+                      <div style="font:400 13px/1.5 var(--font-sans);color:{{ q.color }};margin-top:2px">{{ q.a }}</div>
+                    </div>
+                  </sc-for>
+                </div>
+              </div>
+              <div style="border:1px solid var(--border);border-radius:12px;background:var(--card);padding:16px">
+                <div style="font:600 12px/1 var(--font-sans);letter-spacing:.06em;text-transform:uppercase;color:var(--muted-foreground)">People</div>
+                <div style="display:flex;flex-direction:column;gap:10px;margin-top:12px;font:400 13px/1.4 var(--font-sans)">
+                  <sc-for list="{{ app.people }}" as="p" hint-placeholder-count="3">
+                    <div style="display:flex;justify-content:space-between;gap:10px"><a onClick="{{ p.onOpen }}">{{ p.name }}</a><span style="color:var(--muted-foreground)">{{ p.role }}</span></div>
+                  </sc-for>
+                  <sc-if value="{{ app.noPeople }}" hint-placeholder-val="{{ false }}">
+                    <div style="color:var(--muted-foreground)">Nobody named</div>
+                  </sc-if>
+                </div>
+              </div>
+            </div>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ tabPosting }}" hint-placeholder-val="{{ false }}">
+          <div style="max-width:800px;border:1px solid var(--border);border-radius:12px;background:var(--card);overflow:hidden">
+            <div style="padding:14px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:12px">
+              <div style="font:600 12px/1 var(--font-sans);letter-spacing:.06em;text-transform:uppercase;color:var(--muted-foreground)">Captured posting</div>
+              <span style="font:400 12px/1 var(--font-sans);color:var(--muted-foreground)">{{ app.captured }}</span>
+            </div>
+            <sc-if value="{{ app.hasPosting }}" hint-placeholder-val="{{ true }}">
+              <div style="padding:18px;display:flex;flex-direction:column;gap:14px;max-width:70ch">
+                <sc-for list="{{ app.posting }}" as="ps" hint-placeholder-count="4">
+                  <div>
+                    <div style="font:600 13px/1.3 var(--font-sans)">{{ ps.h }}</div>
+                    <div style="font:400 14px/1.65 var(--font-sans);color:var(--foreground);margin-top:5px;text-wrap:pretty">{{ ps.body }}</div>
+                  </div>
+                </sc-for>
+              </div>
+            </sc-if>
+            <sc-if value="{{ app.noPosting }}" hint-placeholder-val="{{ false }}">
+              <div style="padding:26px 18px;display:flex;flex-direction:column;gap:12px;align-items:flex-start">
+                <div style="font:400 14px/1.5 var(--font-sans);color:var(--muted-foreground)">No posting captured</div>
+                <x-import component-from-global-scope="JobHuntUI.Button" size="sm" onClick="{{ app.onCapture }}" hint-size="auto,30px">Capture</x-import>
+              </div>
+            </sc-if>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ tabDocs }}" hint-placeholder-val="{{ false }}">
+          <div style="display:flex;flex-direction:column;gap:16px">
+            <sc-for list="{{ docs }}" as="dc" hint-placeholder-count="2">
+              <div style="border:1px solid var(--border);border-radius:12px;background:var(--card);overflow:hidden">
+                <div style="padding:13px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+                  <div style="font:600 15px/1.2 var(--font-sans)">{{ dc.name }}</div>
+                  <x-import component-from-global-scope="JobHuntUI.Badge" variant="{{ dc.badgeVariant }}" hint-size="auto,20px">{{ dc.state }}</x-import>
+                  <span style="font:400 12px/1 var(--font-sans);color:var(--muted-foreground)">{{ dc.meta }}</span>
+                  <div style="margin-left:auto;display:flex;align-items:center;gap:10px;flex-wrap:wrap;min-width:0;flex:1 1 220px;justify-content:flex-end">
+                    <select value="{{ dc.template }}" onChange="{{ dc.onTemplate }}" style="{{ selectStyle }};flex:1 1 140px;min-width:0;width:auto">
+                      <sc-for list="{{ dc.templates }}" as="tp" hint-placeholder-count="3">
+                        <option value="{{ tp.v }}">{{ tp.v }}</option>
+                      </sc-for>
+                    </select>
+                    <x-import component-from-global-scope="JobHuntUI.Button" size="sm" onClick="{{ dc.onVerb }}" hint-size="auto,30px">{{ dc.verb }}</x-import>
+                  </div>
+                </div>
+                <div style="display:flex;align-items:stretch;flex-wrap:wrap">
+                  <div style="flex:1 1 340px;min-width:0;padding:16px 18px;border-right:1px solid var(--border)">
+                    <div style="font:600 12px/1 var(--font-sans);letter-spacing:.06em;text-transform:uppercase;color:var(--muted-foreground)">Draft</div>
+                    <div style="margin-top:11px"><x-import component-from-global-scope="JobHuntUI.Textarea" placeholder="{{ dc.placeholder }}" value="{{ dc.draft }}" onChange="{{ dc.onDraft }}" style="min-height:210px;font:400 13px/1.7 var(--font-sans)" hint-size="100%,210px"></x-import></div>
+                  </div>
+                  <div style="flex:1 1 340px;min-width:0;padding:16px 18px;background:var(--muted)">
+                    <div style="display:flex;align-items:center;justify-content:space-between;gap:10px">
+                      <div style="font:600 12px/1 var(--font-sans);letter-spacing:.06em;text-transform:uppercase;color:var(--muted-foreground)">Last render</div>
+                      <span style="font:400 12px/1 var(--font-sans);color:var(--muted-foreground)">{{ dc.renderMeta }}</span>
+                    </div>
+                    <div style="font:400 13px/1.7 var(--font-sans);margin-top:11px;white-space:pre-wrap;max-width:64ch">{{ dc.rendered }}</div>
+                  </div>
+                </div>
+              </div>
+            </sc-for>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ tabInterviews }}" hint-placeholder-val="{{ false }}">
+          <div style="max-width:820px;display:flex;flex-direction:column;gap:12px">
+            <sc-for list="{{ interviews }}" as="iv" hint-placeholder-count="3">
+              <div style="border:1px solid var(--border);border-left:3px solid {{ iv.accent }};border-radius:11px;background:var(--card);padding:15px 18px">
+                <div style="display:flex;align-items:center;gap:11px;flex-wrap:wrap">
+                  <div style="font:600 15px/1.2 var(--font-sans)">{{ iv.name }}</div>
+                  <x-import component-from-global-scope="JobHuntUI.Badge" variant="{{ iv.badgeVariant }}" hint-size="auto,20px">{{ iv.badge }}</x-import>
+                  <span style="font:400 13px/1 var(--font-sans);color:var(--muted-foreground)">{{ iv.when }}</span>
+                  <div style="margin-left:auto"><x-import component-from-global-scope="JobHuntUI.Button" size="sm" variant="outline" onClick="{{ iv.onVerb }}" hint-size="auto,30px">{{ iv.verb }}</x-import></div>
+                </div>
+                <div style="font:400 13px/1.5 var(--font-sans);color:var(--muted-foreground);margin-top:6px">{{ iv.who }}</div>
+                <sc-if value="{{ iv.hasNotes }}" hint-placeholder-val="{{ false }}">
+                  <div style="font:400 14px/1.65 var(--font-sans);margin-top:10px;max-width:70ch;text-wrap:pretty">{{ iv.notes }}</div>
+                </sc-if>
+              </div>
+            </sc-for>
+            <sc-if value="{{ noInterviews }}" hint-placeholder-val="{{ false }}">
+              <div style="border:1px dashed var(--border);border-radius:12px;padding:24px;display:flex;flex-direction:column;gap:12px;align-items:flex-start">
+                <div style="font:400 14px/1.5 var(--font-sans);color:var(--muted-foreground)">No interviews</div>
+                <x-import component-from-global-scope="JobHuntUI.Button" size="sm" onClick="{{ openAddInterview }}" hint-size="auto,30px">Add an interview</x-import>
+              </div>
+            </sc-if>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ tabSubmission }}" hint-placeholder-val="{{ false }}">
+          <div style="max-width:700px;border:1px solid var(--border);border-radius:12px;background:var(--card);overflow:hidden">
+            <div style="padding:14px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:12px">
+              <div style="font:600 12px/1 var(--font-sans);letter-spacing:.06em;text-transform:uppercase;color:var(--muted-foreground)">Checklist</div>
+              <span style="font:400 12px/1 var(--font-sans);color:var(--muted-foreground)">{{ submission.meta }}</span>
+            </div>
+            <sc-for list="{{ submission.items }}" as="si" hint-placeholder-count="4">
+              <div style="display:flex;align-items:center;gap:12px;padding:12px 18px;border-bottom:1px solid var(--border)">
+                <span style="{{ si.dot }}">{{ si.mark }}</span>
+                <div style="flex:1;min-width:0;font:400 14px/1.4 var(--font-sans)">{{ si.label }}</div>
+                <span style="font:400 12px/1 var(--font-sans);color:{{ si.color }}">{{ si.state }}</span>
+              </div>
+            </sc-for>
+            <div style="padding:16px 18px;display:flex;align-items:center;justify-content:space-between;gap:12px">
+              <span style="font:400 12px/1.4 var(--font-sans);color:var(--muted-foreground)">{{ submission.note }}</span>
+              <x-import component-from-global-scope="JobHuntUI.Button" size="sm" onClick="{{ submission.onSubmit }}" hint-size="auto,32px">{{ submission.verb }}</x-import>
+            </div>
+          </div>
+        </sc-if>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ isCompany }}" hint-placeholder-val="{{ false }}">
+      <div style="border-bottom:1px solid var(--border);background:var(--card);padding:18px 28px 20px;flex-shrink:0">
+        <div style="font:400 12px/1 var(--font-sans);color:var(--muted-foreground)"><a onClick="{{ goBoard }}">Board</a> · {{ company.name }}</div>
+        <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:20px;flex-wrap:wrap;margin-top:12px">
+          <div style="flex:1 1 280px;min-width:0">
+            <div style="font:600 23px/1.2 var(--font-sans);letter-spacing:-0.01em">{{ company.name }}</div>
+            <div style="font:400 13px/1.5 var(--font-sans);color:var(--muted-foreground);margin-top:5px">{{ company.meta }}</div>
+          </div>
+          <x-import component-from-global-scope="JobHuntUI.Button" size="sm" onClick="{{ company.onAddRole }}" hint-size="auto,32px">Add a role</x-import>
+        </div>
+      </div>
+      <div style="flex:1;overflow-y:auto;padding:20px 28px 28px;display:flex;gap:20px;flex-wrap:wrap;align-items:flex-start">
+        <div style="flex:1 1 420px;min-width:0;display:flex;flex-direction:column;gap:16px">
+          <div style="border:1px solid var(--border);border-radius:12px;background:var(--card);overflow:hidden">
+            <div style="padding:12px 16px;border-bottom:1px solid var(--border);font:600 12px/1 var(--font-sans);letter-spacing:.06em;text-transform:uppercase;color:var(--muted-foreground)">Questions</div>
+            <sc-for list="{{ company.answers }}" as="an" hint-placeholder-count="3">
+              <div style="padding:13px 16px;border-bottom:1px solid var(--border)">
+                <div style="font:500 13px/1.35 var(--font-sans)">{{ an.q }}</div>
+                <div style="margin-top:8px"><x-import component-from-global-scope="JobHuntUI.Textarea" placeholder="Answer" value="{{ an.a }}" onChange="{{ an.onChange }}" style="min-height:64px;font:400 13px/1.6 var(--font-sans)" hint-size="100%,64px"></x-import></div>
+              </div>
+            </sc-for>
+          </div>
+          <div style="border:1px solid var(--border);border-radius:12px;background:var(--card);padding:16px">
+            <div style="font:600 12px/1 var(--font-sans);letter-spacing:.06em;text-transform:uppercase;color:var(--muted-foreground)">Voice</div>
+            <div style="margin-top:11px"><x-import component-from-global-scope="JobHuntUI.Textarea" value="{{ company.voiceDraft }}" onChange="{{ company.onVoice }}" style="min-height:92px;font:400 13px/1.65 var(--font-sans)" hint-size="100%,92px"></x-import></div>
+          </div>
+        </div>
+        <div style="flex:1 1 300px;min-width:0;max-width:360px;display:flex;flex-direction:column;gap:16px">
+          <sc-if value="{{ company.isLead }}" hint-placeholder-val="{{ false }}">
+            <div style="border:1px solid var(--border);border-left:3px solid var(--sig-grey);border-radius:12px;background:var(--card);padding:16px">
+              <div style="font:600 12px/1 var(--font-sans);letter-spacing:.06em;text-transform:uppercase;color:var(--muted-foreground)">Reason</div>
+              <div style="font:400 14px/1.6 var(--font-sans);margin-top:9px">{{ company.reason }}</div>
+              <div style="font:400 13px/1.5 var(--font-sans);color:var(--muted-foreground);margin-top:8px">{{ company.followupLine }}</div>
+              <div style="display:flex;gap:8px;margin-top:14px">
+                <x-import component-from-global-scope="JobHuntUI.Button" size="sm" onClick="{{ company.onAddRole }}" hint-size="auto,30px">Add a role</x-import>
+                <x-import component-from-global-scope="JobHuntUI.Button" size="sm" variant="ghost" onClick="{{ company.onPass }}" hint-size="auto,30px">Decide against</x-import>
+              </div>
+            </div>
+          </sc-if>
+          <div style="border:1px solid var(--border);border-radius:12px;background:var(--card);padding:16px">
+            <div style="font:600 12px/1 var(--font-sans);letter-spacing:.06em;text-transform:uppercase;color:var(--muted-foreground)">Applications</div>
+            <div style="display:flex;flex-direction:column;gap:11px;margin-top:12px">
+              <sc-for list="{{ company.apps }}" as="ca" hint-placeholder-count="2">
+                <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;cursor:pointer" onClick="{{ ca.onOpen }}">
+                  <span style="font:500 13px/1.3 var(--font-sans)">{{ ca.role }}</span>
+                  <span style="font:400 12px/1 var(--font-sans);color:var(--muted-foreground)">{{ ca.status }}</span>
+                </div>
+              </sc-for>
+              <sc-if value="{{ company.noApps }}" hint-placeholder-val="{{ false }}">
+                <div style="font:400 13px/1.4 var(--font-sans);color:var(--muted-foreground)">No role yet</div>
+              </sc-if>
+            </div>
+          </div>
+          <div style="border:1px solid var(--border);border-radius:12px;background:var(--card);padding:16px">
+            <div style="font:600 12px/1 var(--font-sans);letter-spacing:.06em;text-transform:uppercase;color:var(--muted-foreground)">People</div>
+            <div style="display:flex;flex-direction:column;gap:11px;margin-top:12px;font:400 13px/1.4 var(--font-sans)">
+              <sc-for list="{{ company.people }}" as="cp" hint-placeholder-count="2">
+                <div style="display:flex;justify-content:space-between;gap:10px"><a onClick="{{ cp.onOpen }}">{{ cp.name }}</a><span style="color:var(--muted-foreground)">{{ cp.role }}</span></div>
+              </sc-for>
+              <sc-if value="{{ company.noPeople }}" hint-placeholder-val="{{ false }}">
+                <div style="color:var(--muted-foreground)">Nobody on file</div>
+              </sc-if>
+            </div>
+          </div>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ isExperience }}" hint-placeholder-val="{{ false }}">
+      <div style="padding:22px 28px 0;border-bottom:1px solid var(--border);flex-shrink:0">
+        <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:20px;flex-wrap:wrap">
+          <div style="flex:1 1 auto;min-width:0;font:600 24px/1.2 var(--font-sans);letter-spacing:-0.01em">Experience</div>
+          <x-import component-from-global-scope="JobHuntUI.Button" size="sm" onClick="{{ onUploadResume }}" hint-size="auto,32px">{{ resumeVerb }}</x-import>
+        </div>
+        <div style="display:flex;gap:22px;margin-top:18px;font:500 13px/1 var(--font-sans);flex-wrap:wrap">
+          <sc-for list="{{ expTabs }}" as="et" hint-placeholder-count="2">
+            <div style="{{ et.style }}" onClick="{{ et.onClick }}">{{ et.label }} <span style="font-weight:400;color:var(--muted-foreground)">{{ et.count }}</span></div>
+          </sc-for>
+        </div>
+      </div>
+      <div style="flex:1;overflow-y:auto;padding:20px 28px 28px">
+        <sc-if value="{{ expRolesTab }}" hint-placeholder-val="{{ true }}">
+          <div style="max-width:900px;display:flex;flex-direction:column;gap:12px">
+            <sc-for list="{{ roles }}" as="r" hint-placeholder-count="4">
+              <div style="border:1px solid var(--border);border-radius:12px;background:var(--card);overflow:hidden">
+                <div style="padding:15px 18px;display:flex;align-items:center;gap:12px;flex-wrap:wrap;cursor:pointer" onClick="{{ r.onToggle }}">
+                  <div style="min-width:0">
+                    <div style="font:600 15px/1.25 var(--font-sans)">{{ r.name }}</div>
+                    <div style="font:400 12px/1.4 var(--font-sans);color:var(--muted-foreground);margin-top:3px">{{ r.period }}</div>
+                  </div>
+                  <x-import component-from-global-scope="JobHuntUI.Badge" variant="{{ r.badgeVariant }}" hint-size="auto,20px">{{ r.state }}</x-import>
+                  <span style="font:400 12px/1 var(--font-sans);color:var(--muted-foreground)">{{ r.evidenceCount }}</span>
+                  <div style="margin-left:auto"><x-import component-from-global-scope="JobHuntUI.Button" size="sm" variant="{{ r.verbVariant }}" onClick="{{ r.onVerb }}" hint-size="auto,30px">{{ r.verb }}</x-import></div>
+                </div>
+                <sc-if value="{{ r.open }}" hint-placeholder-val="{{ false }}">
+                  <div style="border-top:1px solid var(--border);padding:6px 0">
+                    <sc-for list="{{ r.evidence }}" as="ev" hint-placeholder-count="2">
+                      <div style="padding:13px 18px;border-bottom:1px solid var(--border)">
+                        <div style="display:flex;align-items:center;gap:11px;flex-wrap:wrap">
+                          <div style="flex:1;min-width:0;font:500 14px/1.35 var(--font-sans)">{{ ev.title }}</div>
+                          <x-import component-from-global-scope="JobHuntUI.Badge" variant="{{ ev.badgeVariant }}" hint-size="auto,20px">{{ ev.state }}</x-import>
+                          <x-import component-from-global-scope="JobHuntUI.Button" size="sm" variant="ghost" onClick="{{ ev.onVerb }}" hint-size="auto,28px">{{ ev.verb }}</x-import>
+                        </div>
+                        <div style="display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin-top:9px">
+                          <sc-for list="{{ ev.skills }}" as="sk" hint-placeholder-count="3">
+                            <span style="{{ sk.style }}" onClick="{{ sk.onClick }}">{{ sk.label }}</span>
+                          </sc-for>
+                        </div>
+                      </div>
+                    </sc-for>
+                    <sc-if value="{{ r.noEvidence }}" hint-placeholder-val="{{ false }}">
+                      <div style="padding:18px;display:flex;flex-direction:column;gap:11px;align-items:flex-start">
+                        <div style="font:400 13px/1.4 var(--font-sans);color:var(--muted-foreground)">No evidence</div>
+                        <x-import component-from-global-scope="JobHuntUI.Button" size="sm" onClick="{{ r.onVerb }}" hint-size="auto,30px">Interview</x-import>
+                      </div>
+                    </sc-if>
+                  </div>
+                </sc-if>
+              </div>
+            </sc-for>
+            <sc-if value="{{ noRoles }}" hint-placeholder-val="{{ false }}">
+              <div style="border:1px dashed var(--border);border-radius:12px;padding:26px;display:flex;flex-direction:column;gap:12px;align-items:flex-start">
+                <div style="font:400 14px/1.5 var(--font-sans);color:var(--muted-foreground)">No roles</div>
+                <x-import component-from-global-scope="JobHuntUI.Button" size="sm" onClick="{{ onUploadResume }}" hint-size="auto,30px">Upload a resume</x-import>
+              </div>
+            </sc-if>
+          </div>
+        </sc-if>
+        <sc-if value="{{ expMatrixTab }}" hint-placeholder-val="{{ false }}">
+          <div style="display:flex;flex-direction:column;gap:14px">
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:20px;flex-wrap:wrap">
+              <div style="font:400 13px/1.5 var(--font-sans);color:var(--muted-foreground);max-width:66ch">{{ matrixNote }}</div>
+              <div style="width:240px"><x-import component-from-global-scope="JobHuntUI.Input" placeholder="Filter skills" value="{{ skillQ }}" onChange="{{ onSkillQ }}" hint-size="100%,32px"></x-import></div>
+            </div>
+            <div style="border:1px solid var(--border);border-radius:12px;background:var(--card);padding:18px;overflow-x:auto">
+              <div style="display:grid;grid-template-columns:{{ matrixGrid }};gap:5px;align-items:center;min-width:620px">
+                <div></div>
+                <sc-for list="{{ matrixCols }}" as="mc" hint-placeholder-count="4">
+                  <div style="font:600 12px/1.3 var(--font-sans);color:var(--muted-foreground);text-align:center;padding-bottom:6px">{{ mc.label }}</div>
+                </sc-for>
+                <sc-for list="{{ matrixRows }}" as="mr" hint-placeholder-count="6">
+                  <div style="font:500 13px/1.35 var(--font-sans);padding-right:10px">{{ mr.name }}</div>
+                  <sc-for list="{{ mr.cells }}" as="mcell" hint-placeholder-count="4">
+                    <div style="{{ mcell.style }}" onClick="{{ mcell.onClick }}">{{ mcell.v }}</div>
+                  </sc-for>
+                </sc-for>
+              </div>
+            </div>
+            <div style="display:flex;align-items:center;gap:18px;font:400 12px/1.4 var(--font-sans);color:var(--muted-foreground)">
+              <div style="display:flex;align-items:center;gap:6px"><span style="width:13px;height:13px;border-radius:3px;background:var(--sig-green);display:inline-block"></span>verified</div>
+              <div style="display:flex;align-items:center;gap:6px"><span style="width:13px;height:13px;border-radius:3px;background:var(--muted);display:inline-block"></span>draft</div>
+              <div style="display:flex;align-items:center;gap:6px"><span style="width:13px;height:13px;border-radius:3px;border:1px solid var(--border);display:inline-block"></span>none</div>
+            </div>
+          </div>
+        </sc-if>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ isPeople }}" hint-placeholder-val="{{ false }}">
+      <div style="padding:22px 28px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:20px;flex-wrap:wrap;flex-shrink:0">
+        <div style="flex:1 1 auto;min-width:0;font:600 24px/1.2 var(--font-sans);letter-spacing:-0.01em">People</div>
+        <div style="width:260px"><x-import component-from-global-scope="JobHuntUI.Input" placeholder="Search people" value="{{ pq }}" onChange="{{ onPq }}" hint-size="100%,32px"></x-import></div>
+      </div>
+      <div style="flex:1;overflow-y:auto;padding:18px 28px 28px">
+        <div style="max-width:900px;border:1px solid var(--border);border-radius:12px;background:var(--card);overflow:hidden">
+          <sc-for list="{{ people }}" as="p" hint-placeholder-count="6">
+            <div style="display:flex;align-items:center;gap:14px;padding:13px 18px;border-bottom:1px solid var(--border);cursor:pointer" onClick="{{ p.onOpen }}" style-hover="background:var(--muted)">
+              <div style="width:32px;height:32px;border-radius:16px;background:var(--muted);display:flex;align-items:center;justify-content:center;font:600 12px/1 var(--font-sans);flex-shrink:0">{{ p.mono }}</div>
+              <div style="width:190px;flex-shrink:0;display:flex;align-items:center;gap:8px">
+                <span style="font:500 14px/1.3 var(--font-sans)">{{ p.name }}</span>
+                <sc-if value="{{ p.isRef }}" hint-placeholder-val="{{ false }}">
+                  <x-import component-from-global-scope="JobHuntUI.Badge" variant="secondary" hint-size="auto,20px">Reference</x-import>
+                </sc-if>
+              </div>
+              <div style="width:120px;flex-shrink:0;font:400 12px/1.3 var(--font-sans);color:var(--muted-foreground)">{{ p.relationship }}</div>
+              <div style="flex:1;min-width:0;font:400 13px/1.4 var(--font-sans);color:var(--muted-foreground);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ p.sub }}</div>
+              <div style="flex-shrink:0;font:400 12px/1 var(--font-sans);color:var(--muted-foreground)">{{ p.links }}</div>
+            </div>
+          </sc-for>
+          <sc-if value="{{ noPeople }}" hint-placeholder-val="{{ false }}">
+            <div style="padding:24px 18px;display:flex;flex-direction:column;gap:12px;align-items:flex-start">
+              <div style="font:400 14px/1.5 var(--font-sans);color:var(--muted-foreground)">No people</div>
+              <x-import component-from-global-scope="JobHuntUI.Button" size="sm" onClick="{{ openAddPerson }}" hint-size="auto,30px">Add a person</x-import>
+            </div>
+          </sc-if>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ isPerson }}" hint-placeholder-val="{{ false }}">
+      <div style="border-bottom:1px solid var(--border);background:var(--card);padding:18px 28px 20px;flex-shrink:0">
+        <div style="font:400 12px/1 var(--font-sans);color:var(--muted-foreground)"><a onClick="{{ goPeople }}">People</a> · {{ person.name }}</div>
+        <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:20px;flex-wrap:wrap;margin-top:12px">
+          <div style="flex:1 1 280px;min-width:0;display:flex;align-items:center;gap:14px">
+            <div style="width:44px;height:44px;border-radius:22px;background:var(--muted);display:flex;align-items:center;justify-content:center;font:600 15px/1 var(--font-sans);flex-shrink:0">{{ person.mono }}</div>
+            <div style="min-width:0">
+              <div style="font:600 23px/1.2 var(--font-sans);letter-spacing:-0.01em">{{ person.name }}</div>
+              <div style="font:400 13px/1.5 var(--font-sans);color:var(--muted-foreground);margin-top:4px">{{ person.relationship }} · {{ person.sub }}</div>
+            </div>
+          </div>
+          <x-import component-from-global-scope="JobHuntUI.Button" size="sm" variant="outline" onClick="{{ person.onDraft }}" hint-size="auto,32px">Draft a message</x-import>
+        </div>
+      </div>
+      <div style="flex:1;overflow-y:auto;padding:20px 28px 28px;display:flex;gap:20px;flex-wrap:wrap;align-items:flex-start">
+        <div style="flex:1 1 420px;min-width:0;display:flex;flex-direction:column;gap:16px">
+          <div style="border:1px solid var(--border);border-radius:12px;background:var(--card);overflow:hidden">
+            <div style="padding:12px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px">
+              <div style="font:600 12px/1 var(--font-sans);letter-spacing:.06em;text-transform:uppercase;color:var(--muted-foreground)">Applications</div>
+              <span style="font:400 12px/1 var(--font-sans);color:var(--muted-foreground)">{{ person.appCount }}</span>
+            </div>
+            <sc-for list="{{ person.apps }}" as="pa" hint-placeholder-count="2">
+              <div style="display:flex;align-items:center;gap:14px;padding:12px 16px;border-bottom:1px solid var(--border);cursor:pointer" onClick="{{ pa.onOpen }}" style-hover="background:var(--muted)">
+                <div style="flex:1;min-width:0">
+                  <div style="font:500 14px/1.3 var(--font-sans);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ pa.title }}</div>
+                  <div style="font:400 12px/1.35 var(--font-sans);color:var(--muted-foreground);margin-top:3px">{{ pa.part }}</div>
+                </div>
+                <x-import component-from-global-scope="JobHuntUI.Badge" variant="{{ pa.statusVariant }}" hint-size="auto,20px">{{ pa.status }}</x-import>
+              </div>
+            </sc-for>
+            <sc-if value="{{ person.noApps }}" hint-placeholder-val="{{ false }}">
+              <div style="padding:18px 16px;font:400 13px/1.5 var(--font-sans);color:var(--muted-foreground)">Not attached</div>
+            </sc-if>
+          </div>
+          <div style="border:1px solid var(--border);border-radius:12px;background:var(--card);padding:16px">
+            <div style="font:600 12px/1 var(--font-sans);letter-spacing:.06em;text-transform:uppercase;color:var(--muted-foreground)">Notes</div>
+            <div style="display:flex;flex-direction:column;gap:10px;margin-top:12px">
+              <sc-for list="{{ person.notes }}" as="nt" hint-placeholder-count="2">
+                <div style="display:flex;align-items:flex-start;gap:12px;border-left:2px solid var(--border);padding:2px 0 2px 12px">
+                  <div style="flex:1;min-width:0;font:400 14px/1.6 var(--font-sans);text-wrap:pretty">{{ nt.text }}</div>
+                  <x-import component-from-global-scope="JobHuntUI.Button" size="sm" variant="ghost" onClick="{{ nt.onDelete }}" hint-size="auto,28px">Archive</x-import>
+                </div>
+              </sc-for>
+              <sc-if value="{{ person.noNotes }}" hint-placeholder-val="{{ false }}">
+                <div style="font:400 13px/1.5 var(--font-sans);color:var(--muted-foreground)">No notes</div>
+              </sc-if>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:9px;margin-top:14px">
+              <x-import component-from-global-scope="JobHuntUI.Textarea" placeholder="What they said, promised, or asked for" value="{{ noteDraft }}" onChange="{{ onNoteDraft }}" style="min-height:66px" hint-size="100%,66px"></x-import>
+              <div><x-import component-from-global-scope="JobHuntUI.Button" size="sm" onClick="{{ addNote }}" hint-size="auto,30px">Add</x-import></div>
+            </div>
+          </div>
+        </div>
+        <div style="flex:1 1 320px;min-width:0;max-width:380px;display:flex;flex-direction:column;gap:16px">
+          <div style="border:1px solid var(--border);border-radius:12px;background:var(--card);padding:16px">
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:10px">
+              <div style="font:600 12px/1 var(--font-sans);letter-spacing:.06em;text-transform:uppercase;color:var(--muted-foreground)">Reference</div>
+              <x-import component-from-global-scope="JobHuntUI.Badge" variant="{{ person.refVariant }}" hint-size="auto,20px">{{ person.refState }}</x-import>
+            </div>
+            <div style="font:400 13px/1.6 var(--font-sans);margin-top:10px">{{ person.refLine }}</div>
+            <div style="display:flex;gap:8px;margin-top:13px">
+              <x-import component-from-global-scope="JobHuntUI.Button" size="sm" variant="outline" onClick="{{ person.onRefStep }}" hint-size="auto,30px">{{ person.refVerb }}</x-import>
+            </div>
+          </div>
+          <div style="border:1px solid var(--border);border-radius:12px;background:var(--card);overflow:hidden">
+            <div style="padding:12px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:9px">
+              <div style="font:600 12px/1 var(--font-sans);letter-spacing:.06em;text-transform:uppercase;color:var(--muted-foreground)">Contacts</div>
+              <x-import component-from-global-scope="JobHuntUI.Badge" variant="outline" hint-size="auto,20px">Never sent to the assistant</x-import>
+            </div>
+            <sc-for list="{{ person.contacts }}" as="ct" hint-placeholder-count="3">
+              <div style="padding:11px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:11px">
+                <div style="flex:1;min-width:0">
+                  <div style="font:400 13px/1.4 var(--font-sans);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ ct.value }}</div>
+                  <div style="font:400 11px/1.3 var(--font-sans);color:var(--muted-foreground);margin-top:2px">{{ ct.kind }}</div>
+                </div>
+                <span style="{{ ct.pill }}" onClick="{{ ct.onCycle }}">{{ ct.audience }}</span>
+              </div>
+            </sc-for>
+            <div style="padding:12px 16px;display:flex;align-items:center;gap:9px;flex-wrap:wrap">
+              <select value="{{ cdKind }}" onChange="{{ onCdKind }}" style="{{ selectStyle }};flex:1 1 110px;min-width:0">
+                <sc-for list="{{ contactKinds }}" as="ck" hint-placeholder-count="5">
+                  <option value="{{ ck.v }}">{{ ck.v }}</option>
+                </sc-for>
+              </select>
+              <div style="flex:1;min-width:0"><x-import component-from-global-scope="JobHuntUI.Input" placeholder="Address or handle" value="{{ cdValue }}" onChange="{{ onCdValue }}" hint-size="100%,32px"></x-import></div>
+              <x-import component-from-global-scope="JobHuntUI.Button" size="sm" onClick="{{ addContact }}" hint-size="auto,30px">Add</x-import>
+            </div>
+          </div>
+          <sc-if value="{{ person.hasIntros }}" hint-placeholder-val="{{ false }}">
+            <div style="border:1px solid var(--border);border-radius:12px;background:var(--card);padding:16px">
+              <div style="font:600 12px/1 var(--font-sans);letter-spacing:.06em;text-transform:uppercase;color:var(--muted-foreground)">Introduced you to</div>
+              <div style="display:flex;flex-direction:column;gap:10px;margin-top:12px;font:400 13px/1.4 var(--font-sans)">
+                <sc-for list="{{ person.intros }}" as="ir" hint-placeholder-count="1">
+                  <div style="display:flex;justify-content:space-between;gap:10px"><a onClick="{{ ir.onOpen }}">{{ ir.name }}</a><span style="color:var(--muted-foreground)">{{ ir.state }}</span></div>
+                </sc-for>
+              </div>
+            </div>
+          </sc-if>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ isProfile }}" hint-placeholder-val="{{ false }}">
+      <div style="padding:22px 28px 0;border-bottom:1px solid var(--border);flex-shrink:0">
+        <div style="font:600 24px/1.2 var(--font-sans);letter-spacing:-0.01em">Profile</div>
+        <div style="display:flex;gap:22px;margin-top:18px;font:500 13px/1 var(--font-sans);flex-wrap:wrap">
+          <sc-for list="{{ profileTabs }}" as="pt" hint-placeholder-count="3">
+            <div style="{{ pt.style }}" onClick="{{ pt.onClick }}">{{ pt.label }}</div>
+          </sc-for>
+        </div>
+      </div>
+      <div style="flex:1;overflow-y:auto;padding:20px 28px 28px">
+        <sc-if value="{{ profAbout }}" hint-placeholder-val="{{ true }}">
+          <div style="max-width:720px;display:flex;flex-direction:column;gap:16px">
+            <div style="border:1px solid var(--border);border-radius:12px;background:var(--card);padding:16px">
+              <div style="font:600 12px/1 var(--font-sans);letter-spacing:.06em;text-transform:uppercase;color:var(--muted-foreground)">Headline</div>
+              <div style="margin-top:11px"><x-import component-from-global-scope="JobHuntUI.Input" value="{{ headline }}" onChange="{{ onHeadline }}" hint-size="100%,32px"></x-import></div>
+            </div>
+            <div style="border:1px solid var(--border);border-radius:12px;background:var(--card);padding:16px">
+              <div style="font:600 12px/1 var(--font-sans);letter-spacing:.06em;text-transform:uppercase;color:var(--muted-foreground)">Summary</div>
+              <div style="margin-top:11px"><x-import component-from-global-scope="JobHuntUI.Textarea" value="{{ summary }}" onChange="{{ onSummary }}" style="min-height:190px;font:400 14px/1.7 var(--font-sans)" hint-size="100%,190px"></x-import></div>
+            </div>
+          </div>
+        </sc-if>
+        <sc-if value="{{ profContact }}" hint-placeholder-val="{{ false }}">
+          <div style="max-width:760px;border:1px solid var(--border);border-radius:12px;background:var(--card);overflow:hidden">
+            <sc-for list="{{ myContacts }}" as="mc" hint-placeholder-count="6">
+              <div style="display:flex;align-items:center;gap:12px;padding:11px 16px;border-bottom:1px solid var(--border);flex-wrap:wrap">
+                <div style="flex:0 1 160px;min-width:110px"><x-import component-from-global-scope="JobHuntUI.Input" value="{{ mc.label }}" onChange="{{ mc.onLabel }}" hint-size="100%,32px"></x-import></div>
+                <div style="flex:1;min-width:0"><x-import component-from-global-scope="JobHuntUI.Input" value="{{ mc.value }}" onChange="{{ mc.onValue }}" hint-size="100%,32px"></x-import></div>
+                <span style="{{ mc.pill }}" onClick="{{ mc.onCycle }}">{{ mc.audience }}</span>
+                <x-import component-from-global-scope="JobHuntUI.Button" size="sm" variant="ghost" onClick="{{ mc.onDelete }}" hint-size="auto,28px">Remove</x-import>
+              </div>
+            </sc-for>
+            <div style="padding:12px 16px;display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+              <div style="flex:0 1 160px;min-width:110px"><x-import component-from-global-scope="JobHuntUI.Input" placeholder="Type" value="{{ mkLabel }}" onChange="{{ onMkLabel }}" hint-size="100%,32px"></x-import></div>
+              <div style="flex:1;min-width:0"><x-import component-from-global-scope="JobHuntUI.Input" placeholder="Address or handle" value="{{ mkValue }}" onChange="{{ onMkValue }}" hint-size="100%,32px"></x-import></div>
+              <x-import component-from-global-scope="JobHuntUI.Button" size="sm" onClick="{{ addMyContact }}" hint-size="auto,30px">Add</x-import>
+            </div>
+          </div>
+        </sc-if>
+        <sc-if value="{{ profEdu }}" hint-placeholder-val="{{ false }}">
+          <div style="max-width:720px;display:flex;flex-direction:column;gap:12px">
+            <sc-for list="{{ education }}" as="ed" hint-placeholder-count="3">
+              <div style="border:1px solid var(--border);border-radius:12px;background:var(--card);padding:15px 18px;display:flex;align-items:flex-start;gap:14px">
+                <div style="flex:1;min-width:0">
+                  <div style="font:600 15px/1.3 var(--font-sans)">{{ ed.school }}</div>
+                  <div style="font:400 13px/1.5 var(--font-sans);color:var(--muted-foreground);margin-top:4px">{{ ed.qual }} · {{ ed.period }}</div>
+                  <div style="font:400 13px/1.55 var(--font-sans);margin-top:7px;max-width:62ch;text-wrap:pretty">{{ ed.detail }}</div>
+                </div>
+                <x-import component-from-global-scope="JobHuntUI.Button" size="sm" variant="ghost" onClick="{{ ed.onDelete }}" hint-size="auto,28px">Remove</x-import>
+              </div>
+            </sc-for>
+            <div style="border:1px dashed var(--border);border-radius:12px;padding:16px;display:flex;flex-direction:column;gap:11px">
+              <x-import component-from-global-scope="JobHuntUI.Input" placeholder="School or awarding body" value="{{ edSchool }}" onChange="{{ onEdSchool }}" hint-size="100%,32px"></x-import>
+              <x-import component-from-global-scope="JobHuntUI.Input" placeholder="Qualification" value="{{ edQual }}" onChange="{{ onEdQual }}" hint-size="100%,32px"></x-import>
+              <x-import component-from-global-scope="JobHuntUI.Input" placeholder="Period" value="{{ edPeriod }}" onChange="{{ onEdPeriod }}" hint-size="100%,32px"></x-import>
+              <x-import component-from-global-scope="JobHuntUI.Textarea" placeholder="Anything worth noting" value="{{ edDetail }}" onChange="{{ onEdDetail }}" style="min-height:70px" hint-size="100%,70px"></x-import>
+              <div><x-import component-from-global-scope="JobHuntUI.Button" size="sm" onClick="{{ addEdu }}" hint-size="auto,30px">Add</x-import></div>
+            </div>
+          </div>
+        </sc-if>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ isSettings }}" hint-placeholder-val="{{ false }}">
+      <div style="padding:22px 28px 0;border-bottom:1px solid var(--border);flex-shrink:0">
+        <div style="font:600 24px/1.2 var(--font-sans);letter-spacing:-0.01em">Settings</div>
+        <div style="display:flex;gap:22px;margin-top:18px;font:500 13px/1 var(--font-sans);flex-wrap:wrap">
+          <sc-for list="{{ setTabs }}" as="st" hint-placeholder-count="5">
+            <div style="{{ st.style }}" onClick="{{ st.onClick }}">{{ st.label }}</div>
+          </sc-for>
+        </div>
+      </div>
+      <div style="flex:1;overflow-y:auto;padding:20px 28px 28px">
+        <sc-if value="{{ setAppearance }}" hint-placeholder-val="{{ true }}">
+          <div style="max-width:640px;display:flex;flex-direction:column;gap:16px">
+            <div style="border:1px solid var(--border);border-radius:12px;background:var(--card);padding:16px">
+              <div style="font:600 12px/1 var(--font-sans);letter-spacing:.06em;text-transform:uppercase;color:var(--muted-foreground)">Theme</div>
+              <div style="display:flex;gap:8px;margin-top:12px">
+                <sc-for list="{{ themeOptions }}" as="th" hint-placeholder-count="2">
+                  <div style="{{ th.style }}" onClick="{{ th.onClick }}">{{ th.label }}</div>
+                </sc-for>
+              </div>
+            </div>
+            <div style="border:1px solid var(--border);border-radius:12px;background:var(--card);padding:16px">
+              <div style="font:600 12px/1 var(--font-sans);letter-spacing:.06em;text-transform:uppercase;color:var(--muted-foreground)">Base colour</div>
+              <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap">
+                <sc-for list="{{ colorOptions }}" as="cl2" hint-placeholder-count="7">
+                  <div style="{{ cl2.style }}" onClick="{{ cl2.onClick }}">{{ cl2.label }}</div>
+                </sc-for>
+              </div>
+            </div>
+          </div>
+        </sc-if>
+        <sc-if value="{{ setExtension }}" hint-placeholder-val="{{ false }}">
+          <div style="display:flex;gap:24px;flex-wrap:wrap;align-items:flex-start">
+            <div style="flex:1 1 360px;max-width:520px;border:1px solid var(--border);border-radius:12px;background:var(--card);padding:16px">
+              <div style="display:flex;align-items:center;justify-content:space-between;gap:12px">
+                <div style="font:600 12px/1 var(--font-sans);letter-spacing:.06em;text-transform:uppercase;color:var(--muted-foreground)">Extension</div>
+                <x-import component-from-global-scope="JobHuntUI.Badge" variant="{{ ext.badgeVariant }}" hint-size="auto,20px">{{ ext.state }}</x-import>
+              </div>
+              <div style="font:400 13px/1.6 var(--font-sans);margin-top:11px">{{ ext.line }}</div>
+              <div style="display:flex;gap:8px;margin-top:14px">
+                <x-import component-from-global-scope="JobHuntUI.Button" size="sm" onClick="{{ ext.onPrimary }}" hint-size="auto,30px">{{ ext.primaryVerb }}</x-import>
+                <sc-if value="{{ ext.paired }}" hint-placeholder-val="{{ false }}">
+                  <x-import component-from-global-scope="JobHuntUI.Button" size="sm" variant="ghost" onClick="{{ ext.onRevoke }}" hint-size="auto,30px">Revoke</x-import>
+                </sc-if>
+              </div>
+            </div>
+            <div style="flex:0 0 336px;border:1px solid var(--border);border-radius:14px;background:var(--card);box-shadow:0 14px 34px rgba(0,0,0,.13);overflow:hidden">
+              <div style="padding:12px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:10px">
+                <div style="font:600 13px/1 var(--font-sans)">Job hunt</div>
+                <span style="font:400 11px/1 var(--font-sans);color:var(--muted-foreground)">{{ ext.popupState }}</span>
+              </div>
+              <sc-if value="{{ ext.paired }}" hint-placeholder-val="{{ false }}">
+                <div style="padding:14px">
+                  <div style="font:600 14px/1.3 var(--font-sans)">Staff Engineer</div>
+                  <div style="font:400 12px/1.4 var(--font-sans);color:var(--muted-foreground);margin-top:3px">Vandelay Industries · Boston, hybrid</div>
+                  <div style="border:1px solid var(--border);border-radius:9px;background:var(--muted);padding:11px;margin-top:12px;font:400 12px/1.6 var(--font-sans);max-height:120px;overflow:hidden">{{ ext.excerpt }}</div>
+                  <div style="display:flex;gap:8px;margin-top:12px">
+                    <x-import component-from-global-scope="JobHuntUI.Button" size="sm" onClick="{{ ext.onCaptureApp }}" hint-size="auto,30px">Save as application</x-import>
+                    <x-import component-from-global-scope="JobHuntUI.Button" size="sm" variant="outline" onClick="{{ ext.onCaptureCo }}" hint-size="auto,30px">Save company</x-import>
+                  </div>
+                </div>
+              </sc-if>
+              <sc-if value="{{ ext.unpaired }}" hint-placeholder-val="{{ true }}">
+                <div style="padding:20px 14px;display:flex;flex-direction:column;gap:12px;align-items:flex-start">
+                  <div style="font:400 13px/1.5 var(--font-sans);color:var(--muted-foreground)">Not paired with a vault</div>
+                  <x-import component-from-global-scope="JobHuntUI.Button" size="sm" onClick="{{ ext.onPrimary }}" hint-size="auto,30px">Pair</x-import>
+                </div>
+              </sc-if>
+            </div>
+          </div>
+        </sc-if>
+        <sc-if value="{{ setTemplates }}" hint-placeholder-val="{{ false }}">
+          <div style="max-width:680px;border:1px solid var(--border);border-radius:12px;background:var(--card);overflow:hidden">
+            <sc-for list="{{ templateRows }}" as="tr" hint-placeholder-count="2">
+              <div style="display:flex;align-items:center;gap:14px;padding:13px 16px;border-bottom:1px solid var(--border);flex-wrap:wrap">
+                <div style="flex:0 1 190px;min-width:120px;font:500 13px/1.3 var(--font-sans)">{{ tr.label }}</div>
+                <select value="{{ tr.value }}" onChange="{{ tr.onChange }}" style="{{ selectStyle }};flex:1 1 160px;min-width:0">
+                  <sc-for list="{{ tr.options }}" as="to" hint-placeholder-count="3">
+                    <option value="{{ to.v }}">{{ to.v }}</option>
+                  </sc-for>
+                </select>
+              </div>
+            </sc-for>
+          </div>
+        </sc-if>
+        <sc-if value="{{ setAssistant }}" hint-placeholder-val="{{ false }}">
+          <div style="max-width:680px;display:flex;flex-direction:column;gap:16px">
+            <div style="border:1px solid var(--border);border-radius:12px;background:var(--card);overflow:hidden">
+              <sc-for list="{{ assistantRows }}" as="ar" hint-placeholder-count="3">
+                <div style="display:flex;align-items:center;gap:14px;padding:13px 16px;border-bottom:1px solid var(--border);flex-wrap:wrap">
+                  <div style="flex:0 1 150px;min-width:110px;font:500 13px/1.3 var(--font-sans)">{{ ar.label }}</div>
+                  <select value="{{ ar.value }}" onChange="{{ ar.onChange }}" style="{{ selectStyle }};flex:1 1 160px;min-width:0">
+                    <sc-for list="{{ ar.options }}" as="ao2" hint-placeholder-count="3">
+                      <option value="{{ ao2.v }}">{{ ao2.v }}</option>
+                    </sc-for>
+                  </select>
+                </div>
+              </sc-for>
+            </div>
+            <div style="border:1px solid var(--border);border-radius:12px;background:var(--card);overflow:hidden">
+              <div style="padding:12px 16px;border-bottom:1px solid var(--border);font:600 12px/1 var(--font-sans);letter-spacing:.06em;text-transform:uppercase;color:var(--muted-foreground)">On capture</div>
+              <sc-for list="{{ automations }}" as="au" hint-placeholder-count="3">
+                <div style="display:flex;align-items:center;gap:14px;padding:12px 16px;border-bottom:1px solid var(--border)">
+                  <div style="flex:1;min-width:0;font:400 14px/1.4 var(--font-sans)">{{ au.label }}</div>
+                  <span style="{{ au.pill }}" onClick="{{ au.onToggle }}">{{ au.state }}</span>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+        </sc-if>
+        <sc-if value="{{ setWorkflows }}" hint-placeholder-val="{{ false }}">
+          <div style="max-width:820px;display:flex;flex-direction:column;gap:16px">
+            <div style="border:1px solid var(--border);border-radius:12px;background:var(--card);padding:16px">
+              <div style="font:600 12px/1 var(--font-sans);letter-spacing:.06em;text-transform:uppercase;color:var(--muted-foreground)">Your voice</div>
+              <div style="margin-top:11px"><x-import component-from-global-scope="JobHuntUI.Textarea" value="{{ voice }}" onChange="{{ onVoice }}" style="min-height:92px;font:400 13px/1.65 var(--font-sans)" hint-size="100%,92px"></x-import></div>
+            </div>
+            <sc-for list="{{ workflows }}" as="wf" hint-placeholder-count="3">
+              <div style="border:1px solid var(--border);border-radius:12px;background:var(--card);overflow:hidden">
+                <div style="padding:13px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+                  <div style="font:600 14px/1.2 var(--font-sans)">{{ wf.name }}</div>
+                  <div style="margin-left:auto;display:flex;align-items:center;gap:8px">
+                    <sc-for list="{{ wf.modes }}" as="wm" hint-placeholder-count="2">
+                      <span style="{{ wm.style }}" onClick="{{ wm.onClick }}">{{ wm.label }}</span>
+                    </sc-for>
+                    <x-import component-from-global-scope="JobHuntUI.Button" size="sm" variant="ghost" onClick="{{ wf.onReset }}" hint-size="auto,28px">Reset</x-import>
+                  </div>
+                </div>
+                <div style="display:flex;align-items:stretch;flex-wrap:wrap">
+                  <div style="flex:1 1 320px;min-width:0;padding:14px 16px;background:var(--muted)">
+                    <div style="font:600 11px/1 var(--font-sans);letter-spacing:.06em;text-transform:uppercase;color:var(--muted-foreground)">Default</div>
+                    <div style="font:400 13px/1.65 var(--font-sans);margin-top:9px;max-width:52ch">{{ wf.default }}</div>
+                  </div>
+                  <div style="flex:1 1 320px;min-width:0;padding:14px 16px;border-left:1px solid var(--border)">
+                    <div style="font:600 11px/1 var(--font-sans);letter-spacing:.06em;text-transform:uppercase;color:var(--muted-foreground)">Yours</div>
+                    <div style="margin-top:9px"><x-import component-from-global-scope="JobHuntUI.Textarea" placeholder="{{ wf.placeholder }}" value="{{ wf.custom }}" onChange="{{ wf.onChange }}" style="min-height:76px;font:400 13px/1.6 var(--font-sans)" hint-size="100%,76px"></x-import></div>
+                    <div style="font:400 11px/1.4 var(--font-sans);color:var(--muted-foreground);margin-top:8px">{{ wf.modeNote }}</div>
+                  </div>
+                </div>
+              </div>
+            </sc-for>
+          </div>
+        </sc-if>
+      </div>
+    </sc-if>
+  </div>
+
+  <sc-if value="{{ assistantOpen }}" hint-placeholder-val="{{ false }}">
+    <div style="width:8px;flex-shrink:0;cursor:col-resize;background:var(--border)" onMouseDown="{{ onDragStart }}"></div>
+    <div style="width:{{ assistantWidth }};flex-shrink:0;height:100%;border-left:1px solid var(--border);background:var(--card);display:flex;flex-direction:column;overflow:hidden">
+      <div style="padding:14px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:10px;flex-shrink:0">
+        <div style="min-width:0">
+          <div style="font:600 14px/1.2 var(--font-sans)">Assistant</div>
+          <div style="font:400 12px/1.3 var(--font-sans);color:var(--muted-foreground);margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ scopeLabel }}</div>
+        </div>
+        <x-import component-from-global-scope="JobHuntUI.Button" size="sm" variant="ghost" onClick="{{ toggleAssistant }}" hint-size="auto,28px">Close</x-import>
+      </div>
+      <div style="padding:11px 16px;border-bottom:1px solid var(--border);flex-shrink:0">
+        <div style="font:600 11px/1 var(--font-sans);letter-spacing:.06em;text-transform:uppercase;color:var(--muted-foreground)">Conversations</div>
+        <div style="display:flex;flex-direction:column;gap:1px;margin-top:9px">
+          <sc-for list="{{ conversations }}" as="cv" hint-placeholder-count="3">
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:6px 8px;border-radius:7px;cursor:pointer" onClick="{{ cv.onOpen }}" style-hover="background:var(--muted)">
+              <span style="font:400 13px/1.3 var(--font-sans);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ cv.title }}</span>
+              <span style="font:400 11px/1 var(--font-sans);color:var(--muted-foreground);flex-shrink:0">{{ cv.when }}</span>
+            </div>
+          </sc-for>
+          <sc-if value="{{ noConversations }}" hint-placeholder-val="{{ false }}">
+            <div style="font:400 13px/1.4 var(--font-sans);color:var(--muted-foreground);padding:2px 8px">None here yet</div>
+          </sc-if>
+        </div>
+      </div>
+      <div style="flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:14px">
+        <sc-for list="{{ messages }}" as="m" hint-placeholder-count="3">
+          <div style="{{ m.wrap }}">
+            <div style="{{ m.bubble }}">{{ m.text }}</div>
+            <sc-if value="{{ m.hasActions }}" hint-placeholder-val="{{ false }}">
+              <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:10px">
+                <sc-for list="{{ m.actions }}" as="ac" hint-placeholder-count="2">
+                  <x-import component-from-global-scope="JobHuntUI.Button" size="sm" variant="outline" onClick="{{ ac.onClick }}" hint-size="auto,30px">{{ ac.label }}</x-import>
+                </sc-for>
+              </div>
+            </sc-if>
+          </div>
+        </sc-for>
+      </div>
+      <div style="border-top:1px solid var(--border);padding:12px 16px;flex-shrink:0;display:flex;flex-direction:column;gap:10px">
+        <x-import component-from-global-scope="JobHuntUI.Textarea" placeholder="Ask about {{ scopeShort }}" value="{{ input }}" onChange="{{ onInput }}" style="min-height:62px;font:400 13px/1.6 var(--font-sans)" hint-size="100%,62px"></x-import>
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:10px">
+          <div style="font:400 11px/1.4 var(--font-sans);color:var(--muted-foreground);min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ footerLine }}</div>
+          <div style="display:flex;align-items:center;gap:7px;flex-shrink:0">
+            <x-import component-from-global-scope="JobHuntUI.Button" size="sm" variant="ghost" onClick="{{ onCompact }}" hint-size="auto,28px">Compact</x-import>
+            <x-import component-from-global-scope="JobHuntUI.Button" size="sm" onClick="{{ onSend }}" hint-size="auto,28px">Send</x-import>
+          </div>
+        </div>
+        <div style="height:3px;border-radius:2px;background:var(--muted);overflow:hidden">
+          <div style="height:100%;width:{{ contextPct }};background:var(--sig-blue)"></div>
+        </div>
+      </div>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ addModal }}" hint-placeholder-val="{{ false }}">
+    <div style="position:fixed;inset:0;z-index:80;background:rgba(0,0,0,.34);display:flex;align-items:center;justify-content:center;padding:32px" onClick="{{ closeAdd }}">
+      <div style="width:500px;max-width:100%;max-height:100%;overflow-y:auto;border:1px solid var(--border);border-radius:14px;background:var(--card);box-shadow:0 24px 60px rgba(0,0,0,.28);padding:22px" onClick="{{ stopModal }}">
+        <div style="font:600 18px/1.25 var(--font-sans);letter-spacing:-0.01em">{{ addTitle }}</div>
+        <div style="display:flex;flex-direction:column;gap:13px;margin-top:18px">
+          <sc-for list="{{ addFields }}" as="af" hint-placeholder-count="3">
+            <div style="display:flex;flex-direction:column;gap:6px">
+              <div style="font:500 11px/1 var(--font-sans);color:var(--muted-foreground);text-transform:uppercase;letter-spacing:0.05em">{{ af.label }}</div>
+              <sc-if value="{{ af.isSelect }}" hint-placeholder-val="{{ false }}">
+                <select value="{{ af.value }}" onChange="{{ af.onChange }}" style="{{ selectStyle }}">
+                  <sc-for list="{{ af.options }}" as="afo" hint-placeholder-count="4">
+                    <option value="{{ afo.v }}">{{ afo.label }}</option>
+                  </sc-for>
+                </select>
+              </sc-if>
+              <sc-if value="{{ af.isText }}" hint-placeholder-val="{{ true }}">
+                <x-import component-from-global-scope="JobHuntUI.Input" placeholder="{{ af.placeholder }}" value="{{ af.value }}" onChange="{{ af.onChange }}" hint-size="100%,32px"></x-import>
+              </sc-if>
+            </div>
+          </sc-for>
+        </div>
+        <div style="display:flex;align-items:center;justify-content:flex-end;gap:8px;margin-top:20px">
+          <x-import component-from-global-scope="JobHuntUI.Button" size="sm" variant="ghost" onClick="{{ closeAdd }}" hint-size="auto,30px">Cancel</x-import>
+          <x-import component-from-global-scope="JobHuntUI.Button" size="sm" onClick="{{ submitAdd }}" hint-size="auto,30px">{{ addCta }}</x-import>
+        </div>
+      </div>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ hasToast }}" hint-placeholder-val="{{ false }}">
+    <div style="position:fixed;bottom:22px;left:50%;transform:translateX(-50%);z-index:90;border:1px solid var(--border);border-radius:10px;background:var(--popover);color:var(--popover-foreground);box-shadow:0 12px 30px rgba(0,0,0,.2);padding:11px 16px;font:500 13px/1.3 var(--font-sans);animation:toastIn .18s ease-out">{{ toast }}</div>
+  </sc-if>
+</div>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;: {&quot;width&quot;: 1440, &quot;height&quot;: 900}}">
+class Component extends DCLogic {
+  state = {
+    view: 'board', appId: null, companyId: null, personName: null,
+    appTab: 'overview', expTab: 'roles', profileTab: 'about', setTab: 'appearance',
+    roleOpen: {}, closedOpen: false, emptyVault: false,
+    assistant: false, assistantW: 420, input: '', messages: null,
+    addMenu: false, addKind: null, addDraft: {},
+    noteDraft: '', contactDraft: { kind: 'Email', value: '' }, myDraft: { label: '', value: '' }, eduDraft: {},
+    pq: '', skillQ: '', toast: null,
+    data: this.seed()
+  };
+
+  seed() {
+    return {
+      firstRun: { resume: true, interviews: false, extension: false },
+      settings: {
+        theme: 'light', baseColor: 'mist', paired: false,
+        templates: { resume: 'Chronological — engineering', cover: 'Letter, formal' },
+        assistant: { provider: 'Anthropic', model: 'Claude Sonnet 4.5', effort: 'Balanced' },
+        automations: [
+          { id: 'an', label: 'Analyse the posting', on: false },
+          { id: 'rs', label: 'Draft the resume', on: false },
+          { id: 'cv', label: 'Draft the cover letter', on: false }
+        ],
+        voice: 'Plain sentences. Metrics where they exist. Never claim a skill without evidence behind it.',
+        workflows: [
+          { id: 'w1', name: 'Analyse a posting', mode: 'add', custom: '', default: 'Read the captured posting. List the requirements, the evidence that matches each, and the gaps. Never infer a requirement that is not written.' },
+          { id: 'w2', name: 'Draft a resume', mode: 'add', custom: 'Two pages maximum. Lead each role with the platform work.', default: 'Select verified evidence only. Order by relevance to the posting. Keep the user\u2019s wording where it exists.' },
+          { id: 'w3', name: 'Interview a role', mode: 'add', custom: '', default: 'Ask one question at a time. Follow the specifics. Stop when each accomplishment has a number, a scope, and a named skill.' }
+        ]
+      },
+      profile: {
+        headline: 'Staff frontend engineer \u00b7 design systems and accessibility',
+        summary: 'Frontend and design-systems engineer, twelve years in. I do best where the interface and the platform meet \u2014 shared component layers, accessibility that survives a redesign, and getting three product teams to agree on one library.\n\nLooking for a staff or lead role where the design system is a product. Remote or hybrid, East Coast.',
+        contact: [
+          { id: 'c1', label: 'Full name', value: 'Alex Mercer', audience: 'public' },
+          { id: 'c2', label: 'Email', value: 'alex.mercer@fastmail.com', audience: 'application' },
+          { id: 'c3', label: 'Phone', value: '+1 617 555 0148', audience: 'application' },
+          { id: 'c4', label: 'Location', value: 'Somerville, MA', audience: 'public' },
+          { id: 'c5', label: 'Portfolio', value: 'alexmercer.dev', audience: 'public' },
+          { id: 'c6', label: 'Personal email', value: 'alex@mercer.house', audience: 'self' }
+        ],
+        education: [
+          { id: 'e1', school: 'Northeastern University', qual: 'BSc Computer Science', period: '2010\u20132014', detail: 'Two co-ops, both frontend.' },
+          { id: 'e2', school: 'Interaction Design Foundation', qual: 'Accessibility for Designers', period: '2021', detail: 'Where the WCAG AA work started.' }
+        ]
+      },
+      companies: [
+        { id: 'globex', name: 'Globex', voice: 'Plain and metric-led. They print numbers on the wall.', questions: [
+          { id: 'q1', q: 'Why Globex', a: 'Their design system is the product surface for four teams, and nobody owns it yet.' },
+          { id: 'q2', q: 'Salary expectation', a: '' },
+          { id: 'q3', q: 'Notice period', a: 'Four weeks.' }
+        ] },
+        { id: 'umbrella', name: 'Umbrella', voice: 'Formal. They read cover letters properly.', questions: [
+          { id: 'q1', q: 'Why Umbrella', a: 'Regulated frontend work, and the accessibility bar is contractual.' },
+          { id: 'q2', q: 'Salary expectation', a: 'Range given: 195\u2013215.' }
+        ] },
+        { id: 'wonka', name: 'Wonka', voice: 'Craft over process. Show the work, not the method.', questions: [
+          { id: 'q1', q: 'Why Wonka', a: 'Small team, high craft, and Jo says Elin decides fast.' }
+        ] },
+        { id: 'initech', name: 'Initech', voice: 'Straightforward. Short paragraphs.', questions: [
+          { id: 'q1', q: 'Why Initech', a: '' }
+        ] },
+        { id: 'massive', name: 'Massive Dynamic', voice: 'Unknown.', questions: [] },
+        { id: 'vandelay', name: 'Vandelay Industries', lead: true, reason: 'Jo Park knows their engineering lead and offered an introduction.', person: 'Jo Park', followup: 'Today', voice: 'Unknown.', questions: [] },
+        { id: 'cyberdyne', name: 'Cyberdyne', lead: true, reason: 'Hiring thread post \u2014 small platform team, no recruiter.', person: '', followup: '', voice: 'Unknown.', questions: [] }
+      ],
+      apps: [
+        {
+          id: 'glx1', company: 'globex', role: 'Senior Frontend Engineer', status: 'interviewing', days: 4, expectedRounds: 4,
+          brief: { 'Work model': 'Remote, US', Location: 'Remote', Compensation: '210\u2013240k', 'Found via': 'Dana Whitfield', Posted: '18 Aug', Applied: '22 Aug' },
+          analysis: 'Four of five requirements are covered by verified evidence. The gap is influencing teams you do not manage \u2014 the Wayne guild work is the closest match and it is still a draft.',
+          analysisMeta: 'Run 22 Aug',
+          captured: 'Captured 18 Aug', posting: [
+            { h: 'The role', body: 'Own the shared component layer used by four product teams. Set the accessibility bar and hold it.' },
+            { h: 'Requirements', body: 'Eight years frontend. A design system in production. WCAG AA in practice. Influence without authority.' }
+          ],
+          docs: {
+            resume: { state: 'rendered', template: 'Chronological \u2014 engineering', draft: 'Design-systems engineer with twelve years across platform and product...', rendered: 'ALEX MERCER\nStaff frontend engineer\n\nWayne \u2014 Staff Engineer, 2022\u2013present\nOwned the shared component layer for four teams.', changed: 'Rendered 22 Aug', sent: 'v3 sent 22 Aug' },
+            cover: { state: 'rendered', template: 'Letter, formal', draft: 'Dear hiring team, the component layer you are describing is the work I have been doing...', rendered: 'Dear hiring team,\n\nThe shared layer you describe is what I did at Wayne for four teams.', changed: 'Rendered 22 Aug', sent: 'v2 sent 22 Aug' }
+          },
+          interviews: [
+            { id: 'i1', name: 'Recruiter screen', when: '25 Aug, 10:00', who: 'Marcus Feld', notes: 'Comp range confirmed at 210\u2013240. He flagged the panel is craft-heavy.' },
+            { id: 'i2', name: 'Hiring manager call', when: '29 Aug, 14:00', who: 'Priya Raman', notes: 'Pushed hard on influencing teams you do not manage. Answer was thin.' },
+            { id: 'i3', name: 'Systems deep dive', when: 'Today 09:30', who: 'Priya Raman, two engineers', upcoming: true, today: true, notes: '' }
+          ],
+          submission: { submitted: true, note: 'Submitted 22 Aug.' },
+          people: [{ name: 'Dana Whitfield', role: 'Referral' }, { name: 'Marcus Feld', role: 'Recruiter' }, { name: 'Priya Raman', role: 'Hiring manager' }],
+          references: ['Dana Whitfield']
+        },
+        {
+          id: 'won1', company: 'wonka', role: 'Design Engineer', status: 'interviewing', days: 2, expectedRounds: 3,
+          brief: { 'Work model': 'Hybrid, NYC', Location: 'New York', Compensation: 'Not stated', 'Found via': 'Jo Park', Posted: '24 Aug', Applied: '28 Aug' },
+          analysis: 'Craft-weighted posting. Your strongest evidence is the checkout accessibility work; the migration metrics matter less here.',
+          analysisMeta: 'Run 28 Aug', captured: 'Captured 24 Aug',
+          posting: [{ h: 'The role', body: 'Sit between design and engineering on a small team. Own the interface end to end.' }],
+          docs: {
+            resume: { state: 'rendered', template: 'Skills-led', draft: 'Design engineer, twelve years...', rendered: 'ALEX MERCER\nDesign engineer\n\nSelected work\nCheckout accessibility, Wayne.', changed: 'Rendered 28 Aug', sent: 'v1 sent 28 Aug' },
+            cover: { state: 'rendered', template: 'Letter, warm', draft: 'Jo mentioned the role...', rendered: 'Dear Elin,\n\nJo Park mentioned the role and the work speaks for itself.', changed: 'Rendered 28 Aug', sent: 'v1 sent 28 Aug' }
+          },
+          interviews: [
+            { id: 'i1', name: 'Intro with Elin', when: '1 Sep, 11:00', who: 'Elin S\u00f8rensen', notes: '' },
+            { id: 'i2', name: 'Craft panel', when: 'Mon 7 Sep, 13:00', who: 'Elin plus two engineers', upcoming: true, notes: '' }
+          ],
+          submission: { submitted: true, note: 'Submitted 28 Aug.' },
+          people: [{ name: 'Jo Park', role: 'Referral' }, { name: 'Elin S\u00f8rensen', role: 'Hiring manager' }],
+          references: ['Jo Park']
+        },
+        {
+          id: 'umb1', company: 'umbrella', role: 'Frontend Lead', status: 'applied', days: 9,
+          brief: { 'Work model': 'Hybrid, Boston', Location: 'Boston', Compensation: '195\u2013215k', 'Found via': 'Job board', Posted: '20 Aug', Applied: '26 Aug' },
+          analysis: 'Regulated environment. The accessibility evidence is the centre of this one.',
+          analysisMeta: 'Run 26 Aug', captured: 'Captured 20 Aug',
+          posting: [{ h: 'The role', body: 'Lead four engineers on a regulated product surface. Accessibility is contractual.' }],
+          docs: {
+            resume: { state: 'stale', template: 'Chronological \u2014 engineering', draft: 'Frontend lead with twelve years...', rendered: 'ALEX MERCER\nFrontend lead\n\nWayne \u2014 Staff Engineer', changed: 'Rendered 26 Aug', sent: 'v1 sent 26 Aug' },
+            cover: { state: 'rendered', template: 'Letter, formal', draft: 'Dear hiring team...', rendered: 'Dear hiring team,\n\nThe accessibility bar you describe is one I have held under audit.', changed: 'Rendered 26 Aug', sent: 'v1 sent 26 Aug' }
+          },
+          interviews: [{ id: 'i1', name: 'Screening call', when: 'Mon 7 Sep, 09:00', who: 'Sam Ali', upcoming: true, notes: '' }],
+          submission: { submitted: true, note: 'Submitted 26 Aug.' },
+          people: [{ name: 'Sam Ali', role: 'Recruiter' }, { name: 'Nadia Petrov', role: 'Hiring manager' }],
+          references: ['Jo Park']
+        },
+        {
+          id: 'ini1', company: 'initech', role: 'Staff Engineer', status: 'preparing', days: 3,
+          brief: { 'Work model': 'Onsite, Austin', Location: 'Austin', Compensation: 'Not stated', 'Found via': 'Ruth Okafor', Posted: '30 Aug', Applied: 'Not yet' },
+          analysis: 'Platform-heavy and light on product. Two requirements have no evidence behind them yet.',
+          analysisMeta: 'Run 31 Aug', captured: 'Captured 30 Aug',
+          posting: [{ h: 'The role', body: 'Platform engineering across three product lines.' }],
+          docs: {
+            resume: { state: 'drafted', template: 'Chronological \u2014 engineering', draft: 'Staff engineer, platform and design systems...', rendered: null, changed: 'Drafted 31 Aug', sent: null },
+            cover: { state: 'scaffold', template: 'Letter, formal', draft: '', rendered: null, changed: 'never', sent: null }
+          },
+          interviews: [],
+          submission: { submitted: false, note: 'Not submitted.' },
+          people: [{ name: 'Ruth Okafor', role: 'Recruiter' }],
+          references: []
+        },
+        {
+          id: 'glx2', company: 'globex', role: 'Design Systems Engineer', status: 'preparing', days: 1,
+          brief: { 'Work model': 'Remote, US', Location: 'Remote', Compensation: '200\u2013230k', 'Found via': 'Company site', Posted: '1 Sep', Applied: 'Not yet' },
+          analysis: 'Closest match of anything on the board. Every requirement has verified evidence.',
+          analysisMeta: 'Run 2 Sep', captured: 'Captured 1 Sep',
+          posting: [{ h: 'The role', body: 'Own the design system as a product. Versioning, adoption, and the accessibility bar.' }],
+          docs: {
+            resume: { state: 'rendered', template: 'Skills-led', draft: 'Design-systems engineer...', rendered: 'ALEX MERCER\nDesign systems engineer\n\nWayne \u2014 owned the shared layer.', changed: 'Rendered 3 Sep', sent: null },
+            cover: { state: 'rendered', template: 'Letter, formal', draft: 'The system you are describing...', rendered: 'Dear hiring team,\n\nYou are describing the work I already do.', changed: 'Rendered 3 Sep', sent: null }
+          },
+          interviews: [],
+          submission: { submitted: false, note: 'Documents rendered, nothing sent.' },
+          people: [{ name: 'Dana Whitfield', role: 'Referral' }],
+          references: ['Dana Whitfield']
+        },
+        {
+          id: 'mas1', company: 'massive', role: 'Frontend Engineer', status: 'discovered', days: 6,
+          brief: { 'Work model': 'Remote', Location: 'Remote', Compensation: 'Not stated', 'Found via': 'Ruth Okafor', Posted: '29 Aug', Applied: 'Not yet' },
+          analysis: 'No analysis yet.', analysisMeta: 'Never run', captured: 'Nothing captured', posting: [],
+          docs: {
+            resume: { state: 'scaffold', template: 'Chronological \u2014 engineering', draft: '', rendered: null, changed: 'never', sent: null },
+            cover: { state: 'scaffold', template: 'Letter, formal', draft: '', rendered: null, changed: 'never', sent: null }
+          },
+          interviews: [], submission: { submitted: false, note: 'Not submitted.' },
+          people: [{ name: 'Ruth Okafor', role: 'Recruiter' }], references: []
+        },
+        {
+          id: 'glx3', company: 'globex', role: 'Frontend Engineer II', status: 'rejected', days: 30,
+          brief: { 'Work model': 'Remote, US', Location: 'Remote', Compensation: '170\u2013190k', 'Found via': 'Job board', Posted: '12 Jul', Applied: '28 Jul' },
+          analysis: 'Levelled below your scope.', analysisMeta: 'Run 28 Jul', captured: 'Captured 12 Jul', posting: [],
+          docs: {
+            resume: { state: 'rendered', template: 'Chronological \u2014 engineering', draft: 'x', rendered: 'ALEX MERCER', changed: 'Rendered 28 Jul', sent: 'v1 sent 28 Jul' },
+            cover: { state: 'rendered', template: 'Letter, formal', draft: 'x', rendered: 'Dear hiring team,', changed: 'Rendered 28 Jul', sent: 'v1 sent 28 Jul' }
+          },
+          interviews: [], submission: { submitted: true, note: 'Closed 4 Aug.' },
+          people: [], references: []
+        }
+      ],
+      roles: [
+        { id: 'r1', name: 'Wayne \u2014 Staff Engineer', short: 'Wayne', period: '2022\u2013present', state: 'documented', evidence: [
+          { id: 'ev1', title: 'Consolidated four component libraries into one shared layer', state: 'verified', skills: [{ name: 'Design systems', verified: true }, { name: 'Migration', verified: true }] },
+          { id: 'ev2', title: 'Held WCAG AA on checkout through two redesigns', state: 'verified', skills: [{ name: 'Accessibility', verified: true }, { name: 'Testing', verified: true }] },
+          { id: 'ev3', title: 'Ran the frontend guild across three product teams', state: 'draft', skills: [{ name: 'Influence', verified: false }, { name: 'Mentoring', verified: false }] }
+        ] },
+        { id: 'r2', name: 'Acme \u2014 Senior Frontend Engineer', short: 'Acme', period: '2018\u20132022', state: 'source-verified', evidence: [
+          { id: 'ev4', title: 'Cut first-paint on the marketing surface by 41 percent', state: 'verified', skills: [{ name: 'Performance', verified: true }] },
+          { id: 'ev5', title: 'Introduced visual regression testing', state: 'partial', skills: [{ name: 'Testing', verified: true }, { name: 'Tooling', verified: false }] }
+        ] },
+        { id: 'r3', name: 'Initrode \u2014 Frontend Engineer', short: 'Initrode', period: '2016\u20132018', state: 'needs-interview', evidence: [] },
+        { id: 'r4', name: 'Freelance \u2014 Interface work', short: 'Freelance', period: '2014\u20132016', state: 'needs-interview', evidence: [] }
+      ],
+      skillNames: ['Design systems', 'Accessibility', 'Performance', 'Testing', 'Migration', 'Influence', 'Mentoring', 'Tooling'],
+      people: [
+        { name: 'Dana Whitfield', mono: 'DW', relationship: 'Network', sub: 'Worked together at Acme', ref: 'Confirmed', refLine: 'Agreed 14 Aug. Speaks to the Acme migration.', notes: ['Referred you to Globex on 22 Aug \u2014 she pinged Priya directly.'], contacts: [
+          { id: 'k1', kind: 'Work email', value: 'dana.whitfield@globex.com', audience: 'application' },
+          { id: 'k2', kind: 'Personal email', value: 'dwhitfield@fastmail.com', audience: 'self' },
+          { id: 'k3', kind: 'Phone', value: '+1 415 555 0192', audience: 'self' }
+        ], intros: [] },
+        { name: 'Jo Park', mono: 'JP', relationship: 'Network', sub: 'Former manager at Wayne', ref: 'Confirmed', refLine: 'Agreed 2 Aug. Speaks to scope and judgement.', notes: ['Forwarded the Wonka role. Says Elin decides fast.'], contacts: [
+          { id: 'k1', kind: 'Personal email', value: 'jo.park@proton.me', audience: 'application' },
+          { id: 'k2', kind: 'LinkedIn', value: 'linkedin.com/in/joparkdesign', audience: 'public' }
+        ], intros: ['vandelay'] },
+        { name: 'Tomas Reyes', mono: 'TR', relationship: 'Network', sub: 'Tech lead at Wayne', ref: 'Asked', refLine: 'Asked 30 Aug. No reply yet.', notes: ['Nudge after the Globex panel.'], contacts: [
+          { id: 'k1', kind: 'Slack', value: '@treyes', audience: 'self' }
+        ], intros: [] },
+        { name: 'Marcus Feld', mono: 'MF', relationship: 'Recruiter', sub: 'Globex, internal', ref: '', refLine: 'Not asked.', notes: ['Asked for salary expectations on 28 Aug \u2014 you gave a range.'], contacts: [
+          { id: 'k1', kind: 'Work email', value: 'm.feld@globex.com', audience: 'application' }
+        ], intros: [] },
+        { name: 'Priya Raman', mono: 'PR', relationship: 'Hiring manager', sub: 'Would be your manager at Globex', ref: '', refLine: 'Not asked.', notes: ['Pushed on influencing teams you do not manage.'], contacts: [
+          { id: 'k1', kind: 'Work email', value: 'p.raman@globex.com', audience: 'application' }
+        ], intros: [] },
+        { name: 'Sam Ali', mono: 'SA', relationship: 'Recruiter', sub: 'Umbrella, internal', ref: '', refLine: 'Not asked.', notes: [], contacts: [
+          { id: 'k1', kind: 'Work email', value: 'sam.ali@umbrella.com', audience: 'application' }
+        ], intros: [] },
+        { name: 'Nadia Petrov', mono: 'NP', relationship: 'Hiring manager', sub: 'Umbrella', ref: '', refLine: 'Not asked.', notes: [], contacts: [], intros: [] },
+        { name: 'Elin S\u00f8rensen', mono: 'ES', relationship: 'Hiring manager', sub: 'Wonka', ref: '', refLine: 'Not asked.', notes: ['Panel Mon 7 Sep. Jo says she rates craft over process.'], contacts: [
+          { id: 'k1', kind: 'Work email', value: 'elin.sorensen@wonka.com', audience: 'application' }
+        ], intros: [] },
+        { name: 'Ruth Okafor', mono: 'RO', relationship: 'Recruiter', sub: 'Agency, not internal', ref: '', refLine: 'Not asked.', notes: [], contacts: [
+          { id: 'k1', kind: 'Work email', value: 'ruth@okaforsearch.com', audience: 'application' }
+        ], intros: [] }
+      ],
+      conversations: [
+        { id: 'cv1', scope: 'glx1', title: 'Deep dive prep', when: '2 Sep' },
+        { id: 'cv2', scope: 'glx1', title: 'Influence answer', when: '30 Aug' },
+        { id: 'cv3', scope: 'board', title: 'What to drop this week', when: '3 Sep' },
+        { id: 'cv4', scope: 'won1', title: 'Craft panel prep', when: '1 Sep' }
+      ]
+    };
+  }
+
+  d() { return this.state.data; }
+  emptyD() {
+    return { firstRun: { resume: false, interviews: false, extension: false }, settings: this.state.data.settings, profile: { headline: '', summary: '', contact: [], education: [] }, companies: [], apps: [], roles: [], skillNames: [], people: [], conversations: [] };
+  }
+  mutate(fn, msg) {
+    const next = JSON.parse(JSON.stringify(this.state.data));
+    fn(next);
+    this.setState({ data: next, toast: msg || this.state.toast });
+    if (msg) { clearTimeout(this._t); this._t = setTimeout(() => this.setState({ toast: null }), 2600); }
+  }
+  flash(msg) { this.setState({ toast: msg }); clearTimeout(this._t); this._t = setTimeout(() => this.setState({ toast: null }), 2600); }
+  co(id) { return this.d().companies.find(c => c.id === id) || { name: '', questions: [] }; }
+  appsOf(cid) { return this.d().apps.filter(a => a.company === cid); }
+  isClosed(a) { return ['rejected', 'withdrawn', 'closed'].indexOf(a.status) >= 0; }
+  openApp(id, tab) { this.setState({ view: 'app', appId: id, appTab: tab || 'overview' }); }
+  roundOf(a) { return (a.interviews || []).filter(i => !i.upcoming).length; }
+
+  signal(a) {
+    const ivs = a.interviews || [];
+    const dated = ivs.find(i => i.upcoming && i.today);
+    if (dated) return { level: 'red', text: dated.name + ' today', verb: 'Open', tab: 'interviews' };
+    const undoc = ivs.find(i => !i.upcoming && !i.notes);
+    if (undoc) return { level: 'red', text: 'Interview undocumented', verb: 'Document', tab: 'interviews' };
+    const stale = ['resume', 'cover'].find(k => a.docs[k].state === 'stale');
+    if (stale) return { level: 'amber', text: (stale === 'resume' ? 'Resume' : 'Cover letter') + ' stale', verb: 'Render', tab: 'documents' };
+    const scaffold = ['resume', 'cover'].find(k => a.docs[k].state === 'scaffold');
+    if (scaffold) return { level: 'amber', text: (scaffold === 'resume' ? 'Resume' : 'Cover letter') + ' scaffold', verb: 'Draft', tab: 'documents' };
+    const ready = a.docs.resume.state === 'rendered' && a.docs.cover.state === 'rendered';
+    if (!a.submission.submitted && ready) return { level: 'blue', text: 'Ready to submit', verb: 'Submit', tab: 'submission' };
+    return { level: 'grey', text: 'Quiet ' + a.days + ' days', verb: 'Open', tab: 'overview' };
+  }
+  sigColor(level) { return 'var(--sig-' + level + ')'; }
+
+  onDragStart = e => {
+    e.preventDefault();
+    const startX = e.clientX, startW = this.state.assistantW;
+    const move = ev => {
+      const w = Math.min(720, Math.max(340, startW - (ev.clientX - startX)));
+      this.setState({ assistantW: w });
+    };
+    const up = () => { document.removeEventListener('mousemove', move); document.removeEventListener('mouseup', up); };
+    document.addEventListener('mousemove', move);
+    document.addEventListener('mouseup', up);
+  };
+
+  scope() {
+    const s = this.state;
+    if (s.view === 'app' && s.appId) { const a = this.d().apps.find(x => x.id === s.appId); return { key: s.appId, label: this.co(a.company).name + ' \u2014 ' + a.role, short: 'this application' }; }
+    if (s.view === 'company' && s.companyId) return { key: s.companyId, label: this.co(s.companyId).name, short: 'this company' };
+    if (s.view === 'person' && s.personName) return { key: 'person', label: s.personName, short: s.personName.split(' ')[0] };
+    if (s.view === 'experience') return { key: 'experience', label: 'Experience', short: 'your experience' };
+    return { key: 'board', label: 'Board', short: 'the board' };
+  }
+
+  seedMessages(scopeKey) {
+    const d = this.d();
+    if (scopeKey === 'board') return [
+      { role: 'a', text: 'Three things carry a date this week. The Globex deep dive is today; the Wonka panel is Monday; Vandelay expects a reply.', actions: [{ label: 'Prep the deep dive', go: () => this.openApp('glx1', 'interviews') }, { label: 'Open Vandelay', go: () => this.setState({ view: 'company', companyId: 'vandelay' }) }] }
+    ];
+    const a = d.apps.find(x => x.id === scopeKey);
+    if (a) return [
+      { role: 'a', text: 'Round ' + (this.roundOf(a) + 1) + ' of ' + (a.expectedRounds || '?') + '. The weak point last time was influencing teams you do not manage, and the guild evidence behind that answer is still a draft.', actions: [{ label: 'Interview me on the guild', go: () => this.setState({ view: 'experience', expTab: 'roles', roleOpen: { r1: true }, assistant: false }) }, { label: 'Draft three answers', go: () => this.flash('Drafted \u2014 review before the call') }] }
+    ];
+    return [{ role: 'a', text: 'Scoped to ' + this.scope().label + '.', actions: [] }];
+  }
+
+  renderVals() {
+    const s = this.state, d = this.d();
+    const vals = {};
+    const railIdle = 'display:flex;align-items:center;justify-content:space-between;gap:8px;padding:7px 9px;border-radius:8px;cursor:pointer;font:500 13px/1.3 var(--font-sans);color:var(--sidebar-foreground)';
+    const railOn = railIdle + ';background:var(--sidebar-accent);color:var(--sidebar-accent-foreground)';
+    const tabStyle = on => 'padding-bottom:11px;cursor:pointer;border-bottom:2px solid ' + (on ? 'var(--primary)' : 'transparent') + ';color:' + (on ? 'var(--foreground)' : 'var(--muted-foreground)');
+    const chip = on => 'padding:6px 11px;border-radius:8px;cursor:pointer;font:500 12px/1.3 var(--font-sans);border:1px solid ' + (on ? 'var(--primary)' : 'var(--border)') + ';background:' + (on ? 'var(--primary)' : 'var(--card)') + ';color:' + (on ? 'var(--primary-foreground)' : 'var(--foreground)');
+    const pill = 'padding:3px 8px;border-radius:999px;border:1px solid var(--border);background:var(--muted);cursor:pointer;font:500 11px/1.35 var(--font-sans);color:var(--muted-foreground);flex-shrink:0';
+
+    vals.themeClass = d.settings.theme === 'dark' ? 'dark' : 'light';
+    vals.baseColor = d.settings.baseColor;
+    vals.selectStyle = 'border:1px solid var(--input);border-radius:7px;padding:6px 9px;font:400 13px/1.3 var(--font-sans);background:var(--background);color:var(--foreground)';
+    vals.toast = s.toast; vals.hasToast = !!s.toast;
+
+    // rail
+    const open = d.apps.filter(a => !this.isClosed(a));
+    const needy = open.filter(a => ['red', 'amber', 'blue'].indexOf(this.signal(a).level) >= 0).length;
+    const noEvidence = d.roles.filter(r => !r.evidence.length).length;
+    const navDefs = [
+      { k: 'board', label: 'Board', badge: needy || '', view: 'board' },
+      { k: 'experience', label: 'Experience', badge: noEvidence || '', view: 'experience' },
+      { k: 'people', label: 'People', badge: '', view: 'people' },
+      { k: 'profile', label: 'Profile', badge: '', view: 'profile' }
+    ];
+    vals.nav = navDefs.map(n => {
+      const on = s.view === n.view || (n.k === 'board' && (s.view === 'app' || s.view === 'company')) || (n.k === 'people' && s.view === 'person');
+      return { label: n.label, badge: n.badge, style: on ? railOn : railIdle, onClick: () => this.setState({ view: n.view }) };
+    });
+    vals.goSettings = () => this.setState({ view: 'settings' });
+    vals.goBoard = () => this.setState({ view: 'board' });
+    vals.goPeople = () => this.setState({ view: 'people' });
+    vals.isBoard = s.view === 'board'; vals.isApp = s.view === 'app' && !!s.appId;
+    vals.isCompany = s.view === 'company'; vals.isExperience = s.view === 'experience';
+    vals.isPeople = s.view === 'people'; vals.isPerson = s.view === 'person';
+    vals.isProfile = s.view === 'profile'; vals.isSettings = s.view === 'settings';
+
+    // ---- board
+    vals.vaultToggleLabel = s.emptyVault ? 'Restore sample vault' : 'Show an empty vault';
+    vals.toggleVault = () => {
+      if (s.emptyVault) this.setState({ emptyVault: false, data: this.seed(), view: 'board' });
+      else this.setState({ emptyVault: true, data: this.emptyD(), view: 'board' });
+    };
+    const fr = d.firstRun;
+    const clDefs = [
+      { k: 'resume', label: 'Upload a resume', verb: 'Upload', done: fr.resume, go: () => this.mutate(dd => { dd.firstRun.resume = true; }, 'Resume read \u2014 roles scaffolded') },
+      { k: 'interviews', label: 'Start your interviews (' + (d.roles.filter(r => !r.evidence.length).length || 0) + ' roles)', verb: 'Interview', done: fr.interviews, go: () => this.setState({ view: 'experience', expTab: 'roles' }) },
+      { k: 'extension', label: 'Pair the extension', verb: 'Pair', done: fr.extension, go: () => this.setState({ view: 'settings', setTab: 'extension' }) }
+    ];
+    vals.checklistOn = !(fr.resume && fr.interviews && fr.extension);
+    vals.checklist = clDefs.map((c, i) => ({
+      label: c.label, verb: c.verb, pending: !c.done, divider: i < clDefs.length - 1,
+      mark: c.done ? '\u2713' : '', dot: 'width:18px;height:18px;border-radius:10px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font:600 11px/1 var(--font-sans);' + (c.done ? 'background:var(--sig-green);color:var(--card)' : 'border:1px solid var(--border)'),
+      labelStyle: 'font:500 13px/1.3 var(--font-sans);color:' + (c.done ? 'var(--muted-foreground)' : 'var(--foreground)'),
+      onClick: c.go
+    }));
+
+    const todayItems = [];
+    d.apps.filter(a => !this.isClosed(a)).forEach(a => {
+      (a.interviews || []).filter(i => i.upcoming).forEach(i => {
+        todayItems.push({ order: i.today ? 0 : 1, when: i.when, label: i.name, sub: this.co(a.company).name + ' \u2014 ' + a.role, color: i.today ? 'var(--sig-red)' : 'var(--sig-blue)', onClick: () => this.openApp(a.id, 'interviews') });
+      });
+    });
+    d.companies.filter(c => c.lead && c.followup).forEach(c => {
+      todayItems.push({ order: c.followup === 'Today' ? 0 : 1, when: c.followup, label: 'Reply to ' + (c.person || c.name), sub: c.name + ' \u2014 no role yet', color: c.followup === 'Today' ? 'var(--sig-red)' : 'var(--sig-grey)', onClick: () => this.setState({ view: 'company', companyId: c.id }) });
+    });
+    todayItems.sort((x, y) => x.order - y.order);
+    vals.today = todayItems; vals.todayEmpty = !todayItems.length;
+
+    const colDefs = [
+      { k: 'discovered', label: 'Discovered', hue: 'oklch(0.72 0.08 300)', emptyLabel: 'Nothing discovered', emptyVerb: 'Add a company', add: 'company' },
+      { k: 'preparing', label: 'Preparing', hue: 'oklch(0.70 0.10 250)', emptyLabel: 'Nothing in preparation', emptyVerb: 'Add an application', add: 'application' },
+      { k: 'applied', label: 'Applied', hue: 'oklch(0.70 0.09 200)', emptyLabel: 'Nothing submitted', emptyVerb: 'Add an application', add: 'application' },
+      { k: 'interviewing', label: 'Interviewing', hue: 'oklch(0.75 0.11 75)', emptyLabel: 'No interviews', emptyVerb: 'Add an interview', add: 'interview' },
+      { k: 'offer', label: 'Offer', hue: 'oklch(0.70 0.11 150)', emptyLabel: 'No offers', emptyVerb: 'Add an application', add: 'application' }
+    ];
+    const cardOf = a => {
+      const sig = this.signal(a);
+      const round = a.status === 'interviewing' ? ' \u00b7 round ' + (this.roundOf(a) + 1) + (a.expectedRounds ? ' of ' + a.expectedRounds : '') : '';
+      return {
+        role: a.role, company: this.co(a.company).name + round, days: a.days + ' days in column',
+        signalText: sig.text, signalColor: this.sigColor(sig.level), verb: sig.verb,
+        onOpen: () => this.openApp(a.id), onVerb: () => this.openApp(a.id, sig.tab)
+      };
+    };
+    const leadCard = c => ({
+      role: 'No role yet', company: c.name, days: c.followup ? 'Reply ' + c.followup.toLowerCase() : 'No date',
+      signalText: c.person ? 'Introduction offered' : 'Unresearched', signalColor: 'var(--sig-grey)', verb: 'Look into it',
+      onOpen: () => this.setState({ view: 'company', companyId: c.id }), onVerb: () => this.setState({ view: 'company', companyId: c.id })
+    });
+    vals.columns = colDefs.map(col => {
+      let cards = d.apps.filter(a => a.status === col.k).map(cardOf);
+      if (col.k === 'discovered') cards = d.companies.filter(c => c.lead).map(leadCard).concat(cards);
+      return {
+        label: col.label, hue: col.hue, count: cards.length, cards: cards,
+        empty: !cards.length, emptyLabel: col.emptyLabel, emptyVerb: col.emptyVerb,
+        onEmptyAction: () => this.setState({ addKind: col.add, addDraft: {} })
+      };
+    });
+    const closed = d.apps.filter(a => this.isClosed(a));
+    vals.closedOpen = s.closedOpen; vals.closedCount = closed.length;
+    vals.closedLabel = s.closedOpen ? 'Closed' : 'Closed';
+    vals.closedWidth = s.closedOpen ? '272px' : '150px';
+    vals.toggleClosed = () => this.setState({ closedOpen: !s.closedOpen });
+    vals.closedCards = closed.map(a => ({ role: a.role, company: this.co(a.company).name, signalText: a.status, onOpen: () => this.openApp(a.id) }));
+
+    // ---- application
+    const a = d.apps.find(x => x.id === s.appId) || d.apps[0] || null;
+    if (a) {
+      const sig = this.signal(a);
+      const statusVariant = a.status === 'interviewing' || a.status === 'offer' ? 'default' : this.isClosed(a) ? 'outline' : 'secondary';
+      vals.app = {
+        role: a.role, company: this.co(a.company).name, status: a.status, statusVariant: statusVariant,
+        hasRound: a.status === 'interviewing', roundTag: 'round ' + (this.roundOf(a) + 1) + (a.expectedRounds ? ' of ' + a.expectedRounds : ''),
+        days: a.days + ' days in column', signalText: sig.text, signalColor: this.sigColor(sig.level), verb: sig.verb,
+        onVerb: () => this.setState({ appTab: sig.tab }),
+        analysis: a.analysis, analysisMeta: a.analysisMeta, analyseVerb: a.posting.length ? 'Analyse again' : 'Capture first',
+        onAnalyse: () => a.posting.length ? this.flash('Analysis rerun') : this.setState({ appTab: 'posting' }),
+        captured: a.captured, posting: a.posting, hasPosting: !!a.posting.length, noPosting: !a.posting.length,
+        onCapture: () => this.setState({ view: 'settings', setTab: 'extension' }),
+        onCompany: () => this.setState({ view: 'company', companyId: a.company }),
+        people: (a.people || []).map(p => ({ name: p.name, role: p.role, onOpen: () => this.setState({ view: 'person', personName: p.name }) })),
+        noPeople: !(a.people || []).length
+      };
+      const tabDefs = [['overview', 'Overview'], ['posting', 'Posting'], ['documents', 'Documents'], ['interviews', 'Interviews'], ['submission', 'Submission']];
+      vals.appTabs = tabDefs.map(t => ({ label: t[1], style: tabStyle(s.appTab === t[0]), onClick: () => this.setState({ appTab: t[0] }) }));
+      vals.tabOverview = s.appTab === 'overview'; vals.tabPosting = s.appTab === 'posting';
+      vals.tabDocs = s.appTab === 'documents'; vals.tabInterviews = s.appTab === 'interviews';
+      vals.tabSubmission = s.appTab === 'submission';
+      vals.brief = Object.keys(a.brief).map(k => ({
+        label: k, value: a.brief[k],
+        onChange: e => { const v = e.target.value; this.mutate(dd => { dd.apps.find(x => x.id === a.id).brief[k] = v; }); }
+      }));
+      const dBadge = st => st === 'stale' ? 'destructive' : st === 'scaffold' ? 'outline' : st === 'drafted' ? 'secondary' : 'default';
+      const dVerb = st => st === 'scaffold' ? 'Draft' : st === 'drafted' ? 'Render' : st === 'stale' ? 'Render' : 'Render again';
+      const templateSets = {
+        resume: ['Chronological \u2014 engineering', 'Skills-led', 'One page'],
+        cover: ['Letter, formal', 'Letter, warm', 'Short note']
+      };
+      vals.docs = [['resume', 'Resume'], ['cover', 'Cover letter']].map(pair => {
+        const k = pair[0], doc = a.docs[k];
+        return {
+          name: pair[1], state: doc.state, badgeVariant: dBadge(doc.state), meta: doc.sent || doc.changed,
+          template: doc.template, templates: templateSets[k].map(v => ({ v: v })),
+          onTemplate: e => { const v = e.target.value; this.mutate(dd => { const t = dd.apps.find(x => x.id === a.id).docs[k]; t.template = v; if (t.state === 'rendered') t.state = 'stale'; }, pair[1] + ' template changed \u2014 render is stale'); },
+          verb: dVerb(doc.state), onVerb: () => this.mutate(dd => {
+            const t = dd.apps.find(x => x.id === a.id).docs[k];
+            if (t.state === 'scaffold') { if (!t.draft) t.draft = 'Draft written from your verified evidence.'; t.state = 'drafted'; t.changed = 'Drafted just now'; }
+            else { t.state = 'rendered'; t.rendered = t.draft; t.changed = 'Rendered just now'; }
+          }, pair[1] + ' updated'),
+          draft: doc.draft, placeholder: 'Nothing drafted',
+          onDraft: e => { const v = e.target.value; this.mutate(dd => { const t = dd.apps.find(x => x.id === a.id).docs[k]; t.draft = v; if (t.state === 'rendered') t.state = 'stale'; }); },
+          rendered: doc.rendered || 'No render', renderMeta: doc.changed
+        };
+      });
+      vals.interviews = (a.interviews || []).map(i => ({
+        name: i.name, when: i.when, who: i.who,
+        badge: i.upcoming ? (i.today ? 'Today' : 'Upcoming') : i.notes ? 'Documented' : 'Undocumented',
+        badgeVariant: i.upcoming ? 'default' : i.notes ? 'secondary' : 'destructive',
+        accent: i.upcoming ? (i.today ? 'var(--sig-red)' : 'var(--sig-blue)') : i.notes ? 'var(--sig-green)' : 'var(--sig-red)',
+        notes: i.notes, hasNotes: !!i.notes,
+        verb: i.upcoming ? 'Prep' : i.notes ? 'Reopen' : 'Document',
+        onVerb: () => i.upcoming ? this.openAssistant(a.id) : this.mutate(dd => {
+          const t = dd.apps.find(x => x.id === a.id).interviews.find(y => y.id === i.id);
+          if (!t.notes) t.notes = 'Documented from a debrief just now.';
+        }, i.name + ' documented')
+      }));
+      vals.noInterviews = !(a.interviews || []).length;
+      vals.openAddInterview = () => this.setState({ addKind: 'interview', addDraft: { appId: a.id } });
+      const subItems = [
+        { label: 'Resume rendered', ok: a.docs.resume.state === 'rendered', state: a.docs.resume.state },
+        { label: 'Cover letter rendered', ok: a.docs.cover.state === 'rendered', state: a.docs.cover.state },
+        { label: 'Company questions answered', ok: this.co(a.company).questions.every(q => q.a), state: this.co(a.company).questions.filter(q => q.a).length + ' of ' + this.co(a.company).questions.length },
+        { label: 'Reference named', ok: !!(a.references || []).length, state: (a.references || []).length ? a.references.join(', ') : 'none' }
+      ];
+      vals.submission = {
+        meta: a.submission.submitted ? 'Submitted' : 'Advisory',
+        note: a.submission.note,
+        verb: a.submission.submitted ? 'Submitted' : 'Mark applied',
+        onSubmit: () => a.submission.submitted ? this.flash('Already submitted') : this.mutate(dd => {
+          const t = dd.apps.find(x => x.id === a.id);
+          t.submission.submitted = true; t.submission.note = 'Submitted just now.'; t.status = 'applied'; t.days = 0; t.brief.Applied = 'Just now';
+        }, a.role + ' moved to applied'),
+        items: subItems.map(i => ({
+          label: i.label, state: i.state, mark: i.ok ? '\u2713' : '',
+          color: i.ok ? 'var(--sig-green)' : 'var(--sig-amber)',
+          dot: 'width:18px;height:18px;border-radius:10px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font:600 11px/1 var(--font-sans);' + (i.ok ? 'background:var(--sig-green);color:var(--card)' : 'border:1px solid var(--border)')
+        }))
+      };
+    }
+
+    // ---- company
+    const cId = s.companyId || (a ? a.company : (d.companies[0] || {}).id);
+    const c = this.co(cId);
+    const coApps = this.appsOf(cId);
+    vals.company = {
+      name: c.name, isLead: !!c.lead, reason: c.reason || '',
+      followupLine: c.followup ? 'Reply ' + c.followup.toLowerCase() + (c.person ? ' \u2014 ' + c.person : '') : 'No date set',
+      meta: coApps.length ? coApps.length + (coApps.length === 1 ? ' application' : ' applications') : 'No role yet',
+      voice: c.voice, voiceDraft: c.voice,
+      onVoice: e => { const v = e.target.value; this.mutate(dd => { dd.companies.find(x => x.id === cId).voice = v; }); },
+      questions: (c.questions || []).map(q => ({ q: q.q, a: q.a || 'Not answered', color: q.a ? 'var(--foreground)' : 'var(--sig-amber)' })),
+      answers: (c.questions || []).map(q => ({
+        q: q.q, a: q.a,
+        onChange: e => { const v = e.target.value; this.mutate(dd => { dd.companies.find(x => x.id === cId).questions.find(y => y.id === q.id).a = v; }); }
+      })),
+      apps: coApps.map(x => ({ role: x.role, status: x.status, onOpen: () => this.openApp(x.id) })),
+      noApps: !coApps.length,
+      people: d.people.filter(p => coApps.some(x => (x.people || []).some(y => y.name === p.name)) || (p.intros || []).indexOf(cId) >= 0)
+        .map(p => ({ name: p.name, role: p.relationship, onOpen: () => this.setState({ view: 'person', personName: p.name }) })),
+      noPeople: false,
+      onAddRole: () => this.setState({ addKind: 'application', addDraft: { company: cId } }),
+      onPass: () => this.mutate(dd => { dd.companies.find(x => x.id === cId).lead = false; dd.companies.find(x => x.id === cId).archived = true; }, c.name + ' archived \u2014 people stay on file')
+    };
+    vals.company.noPeople = !vals.company.people.length;
+
+    // ---- experience
+    const expDefs = [['roles', 'Roles', d.roles.length], ['matrix', 'Skills', d.skillNames.length]];
+    vals.expTabs = expDefs.map(t => ({ label: t[1], count: t[2], style: tabStyle(s.expTab === t[0]), onClick: () => this.setState({ expTab: t[0] }) }));
+    vals.expRolesTab = s.expTab === 'roles'; vals.expMatrixTab = s.expTab === 'matrix';
+    vals.resumeVerb = d.firstRun.resume ? 'Upload a resume' : 'Upload a resume';
+    vals.onUploadResume = () => this.mutate(dd => { dd.firstRun.resume = true; }, 'Resume read \u2014 one role per entry, evidence empty');
+    const evBadge = st => st === 'verified' ? 'default' : st === 'partial' ? 'secondary' : 'outline';
+    const roleBadge = st => st === 'documented' ? 'default' : st === 'source-verified' ? 'secondary' : 'outline';
+    vals.roles = d.roles.map(r => ({
+      name: r.name, period: r.period, state: r.state, badgeVariant: roleBadge(r.state),
+      evidenceCount: r.evidence.length ? r.evidence.length + ' evidence' : 'no evidence',
+      verb: r.evidence.length ? 'Interview' : 'Interview', verbVariant: r.evidence.length ? 'outline' : 'default',
+      onVerb: () => { this.mutate(dd => { dd.firstRun.interviews = true; }); this.openAssistant('experience'); },
+      open: !!s.roleOpen[r.id], onToggle: () => this.setState({ roleOpen: Object.assign({}, s.roleOpen, { [r.id]: !s.roleOpen[r.id] }) }),
+      noEvidence: !r.evidence.length,
+      evidence: r.evidence.map(ev => ({
+        title: ev.title, state: ev.state, badgeVariant: evBadge(ev.state),
+        verb: ev.state === 'verified' ? 'Reopen' : 'Verify',
+        onVerb: () => this.mutate(dd => {
+          const t = dd.roles.find(x => x.id === r.id).evidence.find(y => y.id === ev.id);
+          if (t.state === 'verified') { t.state = 'draft'; t.skills.forEach(k => { k.verified = false; }); }
+          else { t.state = 'verified'; t.skills.forEach(k => { k.verified = true; }); }
+        }, ev.state === 'verified' ? 'Reopened' : 'Verified'),
+        skills: ev.skills.map(k => ({
+          label: k.name,
+          style: 'padding:3px 9px;border-radius:999px;cursor:pointer;font:500 11px/1.4 var(--font-sans);border:1px solid ' + (k.verified ? 'var(--sig-green)' : 'var(--border)') + ';color:' + (k.verified ? 'var(--sig-green)' : 'var(--muted-foreground)'),
+          onClick: () => this.mutate(dd => {
+            const t = dd.roles.find(x => x.id === r.id).evidence.find(y => y.id === ev.id).skills.find(z => z.name === k.name);
+            t.verified = !t.verified;
+            const par = dd.roles.find(x => x.id === r.id).evidence.find(y => y.id === ev.id);
+            par.state = par.skills.every(z => z.verified) ? 'verified' : par.skills.some(z => z.verified) ? 'partial' : 'draft';
+          }, k.name + (k.verified ? ' unverified' : ' verified'))
+        }))
+      }))
+    }));
+    vals.noRoles = !d.roles.length;
+    const verifiedCount = d.roles.reduce((n, r) => n + r.evidence.filter(e => e.state === 'verified').length, 0);
+    vals.matrixNote = verifiedCount + ' verified accomplishments across ' + d.roles.length + ' roles. Unverified skills never reach a resume.';
+    vals.skillQ = s.skillQ;
+    vals.onSkillQ = e => this.setState({ skillQ: e.target.value });
+    const sq = s.skillQ.trim().toLowerCase();
+    vals.matrixGrid = '210px repeat(' + Math.max(1, d.roles.length) + ', minmax(80px, 1fr))';
+    vals.matrixCols = d.roles.map(r => ({ label: r.short }));
+    vals.matrixRows = d.skillNames.filter(n => !sq || n.toLowerCase().includes(sq)).map(sn => ({
+      name: sn,
+      cells: d.roles.map(r => {
+        const hits = r.evidence.filter(ev => ev.skills.some(k => k.name === sn));
+        const ver = hits.filter(ev => ev.skills.some(k => k.name === sn && k.verified));
+        const bg = ver.length ? 'var(--sig-green)' : hits.length ? 'var(--muted)' : 'transparent';
+        return {
+          v: ver.length ? ver.length : hits.length ? hits.length : '',
+          style: 'height:30px;border-radius:5px;display:flex;align-items:center;justify-content:center;font:600 12px/1 var(--font-sans);cursor:pointer;background:' + bg + ';color:' + (ver.length ? 'var(--card)' : 'var(--muted-foreground)') + ';border:' + (hits.length ? 'none' : '1px solid var(--border)'),
+          onClick: () => hits.length ? this.setState({ expTab: 'roles', roleOpen: Object.assign({}, s.roleOpen, { [r.id]: true }) }) : this.flash('No evidence for ' + sn + ' at ' + r.short)
+        };
+      })
+    }));
+
+    // ---- people
+    vals.pq = s.pq; vals.onPq = e => this.setState({ pq: e.target.value });
+    const pq = s.pq.trim().toLowerCase();
+    const shownPeople = d.people.filter(p => !pq || (p.name + ' ' + p.sub + ' ' + p.relationship).toLowerCase().includes(pq));
+    vals.people = shownPeople.map(p => ({
+      name: p.name, mono: p.mono, relationship: p.relationship, sub: p.sub,
+      isRef: p.ref === 'Confirmed',
+      links: (function (self) {
+        const n = d.apps.filter(x => (x.people || []).some(y => y.name === p.name) || (x.references || []).indexOf(p.name) >= 0).length;
+        return n ? n + (n === 1 ? ' application' : ' applications') : '';
+      })(this),
+      onOpen: () => this.setState({ view: 'person', personName: p.name, noteDraft: '' })
+    }));
+    vals.noPeople = !shownPeople.length;
+    vals.openAddPerson = () => this.setState({ addKind: 'person', addDraft: {} });
+
+    // ---- person
+    const pv = d.people.find(p => p.name === s.personName) || d.people[0] || { name: '', mono: '', relationship: '', sub: '', notes: [], contacts: [], intros: [], ref: '', refLine: '' };
+    const pApps = d.apps.filter(x => (x.people || []).some(y => y.name === pv.name) || (x.references || []).indexOf(pv.name) >= 0);
+    vals.person = {
+      name: pv.name, mono: pv.mono, relationship: pv.relationship, sub: pv.sub,
+      appCount: pApps.length ? pApps.length + (pApps.length === 1 ? ' application' : ' applications') : '',
+      apps: pApps.map(x => {
+        const parts = [];
+        const own = (x.people || []).find(y => y.name === pv.name);
+        if (own) parts.push(own.role);
+        if ((x.references || []).indexOf(pv.name) >= 0) parts.push('Named as a reference');
+        return {
+          title: this.co(x.company).name + ' \u2014 ' + x.role, part: parts.join(' \u00b7 ') || 'Contact',
+          status: x.status, statusVariant: x.status === 'interviewing' || x.status === 'offer' ? 'default' : 'secondary',
+          onOpen: () => this.openApp(x.id)
+        };
+      }),
+      noApps: !pApps.length,
+      notes: (pv.notes || []).map((t, i) => ({ text: t, onDelete: () => this.mutate(dd => { dd.people.find(x => x.name === pv.name).notes.splice(i, 1); }, 'Archived') })),
+      noNotes: !(pv.notes || []).length,
+      refState: pv.ref || 'Not asked', refVariant: pv.ref === 'Confirmed' ? 'secondary' : 'outline', refLine: pv.refLine,
+      refVerb: pv.ref === 'Confirmed' ? 'Withdraw' : pv.ref === 'Asked' ? 'They agreed' : 'Ask',
+      onRefStep: () => this.mutate(dd => {
+        const t = dd.people.find(x => x.name === pv.name);
+        if (t.ref === 'Confirmed') { t.ref = ''; t.refLine = 'Not asked.'; }
+        else if (t.ref === 'Asked') { t.ref = 'Confirmed'; t.refLine = 'Agreed just now.'; }
+        else { t.ref = 'Asked'; t.refLine = 'Asked just now.'; }
+      }, 'Reference updated'),
+      contacts: (pv.contacts || []).map(ct => ({
+        kind: ct.kind, value: ct.value, audience: ct.audience, pill: pill,
+        onCycle: () => this.mutate(dd => {
+          const t = dd.people.find(x => x.name === pv.name).contacts.find(y => y.id === ct.id);
+          t.audience = t.audience === 'self' ? 'application' : t.audience === 'application' ? 'public' : 'self';
+        })
+      })),
+      hasIntros: !!(pv.intros || []).length,
+      intros: (pv.intros || []).map(cid => ({
+        name: this.co(cid).name, state: this.appsOf(cid).length ? 'application' : 'no role yet',
+        onOpen: () => this.setState({ view: 'company', companyId: cid })
+      })),
+      onDraft: () => this.openAssistant('person')
+    };
+    vals.noteDraft = s.noteDraft;
+    vals.onNoteDraft = e => this.setState({ noteDraft: e.target.value });
+    vals.addNote = () => {
+      const t = s.noteDraft.trim();
+      if (!t) { this.flash('Nothing to add'); return; }
+      this.mutate(dd => { const p = dd.people.find(x => x.name === pv.name); p.notes = p.notes || []; p.notes.push(t); }, 'Note added');
+      this.setState({ noteDraft: '' });
+    };
+    vals.contactKinds = ['Email', 'Work email', 'Phone', 'LinkedIn', 'Slack'].map(v => ({ v: v }));
+    vals.cdKind = s.contactDraft.kind; vals.cdValue = s.contactDraft.value;
+    vals.onCdKind = e => this.setState({ contactDraft: Object.assign({}, s.contactDraft, { kind: e.target.value }) });
+    vals.onCdValue = e => this.setState({ contactDraft: Object.assign({}, s.contactDraft, { value: e.target.value }) });
+    vals.addContact = () => {
+      const v = s.contactDraft.value.trim();
+      if (!v) { this.flash('Nothing to add'); return; }
+      this.mutate(dd => {
+        const p = dd.people.find(x => x.name === pv.name); p.contacts = p.contacts || [];
+        p.contacts.push({ id: 'k' + Date.now(), kind: s.contactDraft.kind, value: v, audience: 'self' });
+      }, 'Contact added');
+      this.setState({ contactDraft: { kind: 'Email', value: '' } });
+    };
+
+    // ---- profile
+    const prof = d.profile;
+    const profDefs = [['about', 'About'], ['contact', 'Contact'], ['education', 'Education']];
+    vals.profileTabs = profDefs.map(t => ({ label: t[1], style: tabStyle(s.profileTab === t[0]), onClick: () => this.setState({ profileTab: t[0] }) }));
+    vals.profAbout = s.profileTab === 'about'; vals.profContact = s.profileTab === 'contact'; vals.profEdu = s.profileTab === 'education';
+    vals.headline = prof.headline; vals.summary = prof.summary;
+    vals.onHeadline = e => { const v = e.target.value; this.mutate(dd => { dd.profile.headline = v; }); };
+    vals.onSummary = e => { const v = e.target.value; this.mutate(dd => { dd.profile.summary = v; }); };
+    vals.myContacts = prof.contact.map(ct => ({
+      label: ct.label, value: ct.value, audience: ct.audience, pill: pill,
+      onLabel: e => { const v = e.target.value; this.mutate(dd => { dd.profile.contact.find(x => x.id === ct.id).label = v; }); },
+      onValue: e => { const v = e.target.value; this.mutate(dd => { dd.profile.contact.find(x => x.id === ct.id).value = v; }); },
+      onCycle: () => this.mutate(dd => {
+        const t = dd.profile.contact.find(x => x.id === ct.id);
+        t.audience = t.audience === 'self' ? 'application' : t.audience === 'application' ? 'public' : 'self';
+      }),
+      onDelete: () => this.mutate(dd => { dd.profile.contact = dd.profile.contact.filter(x => x.id !== ct.id); }, 'Removed')
+    }));
+    vals.mkLabel = s.myDraft.label; vals.mkValue = s.myDraft.value;
+    vals.onMkLabel = e => this.setState({ myDraft: Object.assign({}, s.myDraft, { label: e.target.value }) });
+    vals.onMkValue = e => this.setState({ myDraft: Object.assign({}, s.myDraft, { value: e.target.value }) });
+    vals.addMyContact = () => {
+      if (!(s.myDraft.label.trim() && s.myDraft.value.trim())) { this.flash('Type and value'); return; }
+      this.mutate(dd => dd.profile.contact.push({ id: 'c' + Date.now(), label: s.myDraft.label.trim(), value: s.myDraft.value.trim(), audience: 'application' }), 'Added');
+      this.setState({ myDraft: { label: '', value: '' } });
+    };
+    vals.education = prof.education.map(ed => ({
+      school: ed.school, qual: ed.qual, period: ed.period, detail: ed.detail,
+      onDelete: () => this.mutate(dd => { dd.profile.education = dd.profile.education.filter(x => x.id !== ed.id); }, 'Removed')
+    }));
+    const ed = s.eduDraft;
+    vals.edSchool = ed.school || ''; vals.edQual = ed.qual || ''; vals.edPeriod = ed.period || ''; vals.edDetail = ed.detail || '';
+    const setEd = (k, v) => this.setState({ eduDraft: Object.assign({}, s.eduDraft, { [k]: v }) });
+    vals.onEdSchool = e => setEd('school', e.target.value);
+    vals.onEdQual = e => setEd('qual', e.target.value);
+    vals.onEdPeriod = e => setEd('period', e.target.value);
+    vals.onEdDetail = e => setEd('detail', e.target.value);
+    vals.addEdu = () => {
+      if (!((ed.school || '').trim() && (ed.qual || '').trim())) { this.flash('School and qualification'); return; }
+      this.mutate(dd => dd.profile.education.push({ id: 'e' + Date.now(), school: ed.school.trim(), qual: ed.qual.trim(), period: (ed.period || '').trim() || 'Undated', detail: (ed.detail || '').trim() }), 'Added');
+      this.setState({ eduDraft: {} });
+    };
+
+    // ---- settings
+    const st2 = d.settings;
+    const setDefs = [['appearance', 'Appearance'], ['extension', 'Extension'], ['templates', 'Templates'], ['assistant', 'Assistant'], ['workflows', 'Workflows']];
+    vals.setTabs = setDefs.map(t => ({ label: t[1], style: tabStyle(s.setTab === t[0]), onClick: () => this.setState({ setTab: t[0] }) }));
+    vals.setAppearance = s.setTab === 'appearance'; vals.setExtension = s.setTab === 'extension';
+    vals.setTemplates = s.setTab === 'templates'; vals.setAssistant = s.setTab === 'assistant'; vals.setWorkflows = s.setTab === 'workflows';
+    vals.themeOptions = [['light', 'Light'], ['dark', 'Dark']].map(t => ({
+      label: t[1], style: chip(st2.theme === t[0]), onClick: () => this.mutate(dd => { dd.settings.theme = t[0]; })
+    }));
+    vals.colorOptions = ['mist', 'neutral', 'stone', 'zinc', 'taupe', 'mauve', 'olive'].map(cName => ({
+      label: cName, style: chip(st2.baseColor === cName), onClick: () => this.mutate(dd => { dd.settings.baseColor = cName; })
+    }));
+    vals.ext = {
+      paired: st2.paired, unpaired: !st2.paired,
+      state: st2.paired ? 'Paired' : 'Not paired', badgeVariant: st2.paired ? 'default' : 'outline',
+      line: st2.paired ? 'Paired with this vault. Captures land in Discovered.' : 'Pair the browser extension to capture postings.',
+      primaryVerb: st2.paired ? 'Re-pair' : 'Pair',
+      popupState: st2.paired ? 'Capture preview' : 'Unpaired',
+      excerpt: 'Own the platform layer for a small product team. Boston, hybrid three days. Requirements: eight years frontend, a system in production, WCAG AA in practice.',
+      onPrimary: () => this.mutate(dd => { dd.settings.paired = true; dd.firstRun.extension = true; }, 'Extension paired'),
+      onRevoke: () => this.mutate(dd => { dd.settings.paired = false; dd.firstRun.extension = false; }, 'Pairing revoked'),
+      onCaptureApp: () => this.setState({ addKind: 'application', addDraft: { company: 'vandelay', role: 'Staff Engineer' } }),
+      onCaptureCo: () => this.setState({ addKind: 'company', addDraft: { name: 'Vandelay Industries' } })
+    };
+    vals.templateRows = [
+      { k: 'resume', label: 'Default resume', options: ['Chronological \u2014 engineering', 'Skills-led', 'One page'] },
+      { k: 'cover', label: 'Default cover letter', options: ['Letter, formal', 'Letter, warm', 'Short note'] }
+    ].map(r => ({
+      label: r.label, value: st2.templates[r.k], options: r.options.map(v => ({ v: v })),
+      onChange: e => { const v = e.target.value; this.mutate(dd => { dd.settings.templates[r.k] = v; }); }
+    }));
+    vals.assistantRows = [
+      { k: 'provider', label: 'Provider', options: ['Anthropic', 'OpenAI', 'Local'] },
+      { k: 'model', label: 'Model', options: ['Claude Sonnet 4.5', 'Claude Opus 4.1', 'Claude Haiku 4'] },
+      { k: 'effort', label: 'Effort', options: ['Quick', 'Balanced', 'Thorough'] }
+    ].map(r => ({
+      label: r.label, value: st2.assistant[r.k], options: r.options.map(v => ({ v: v })),
+      onChange: e => { const v = e.target.value; this.mutate(dd => { dd.settings.assistant[r.k] = v; }); }
+    }));
+    vals.automations = st2.automations.map(au => ({
+      label: au.label, state: au.on ? 'on' : 'off',
+      pill: 'padding:4px 11px;border-radius:999px;cursor:pointer;font:500 11px/1.35 var(--font-sans);border:1px solid ' + (au.on ? 'var(--primary)' : 'var(--border)') + ';background:' + (au.on ? 'var(--primary)' : 'var(--card)') + ';color:' + (au.on ? 'var(--primary-foreground)' : 'var(--muted-foreground)'),
+      onToggle: () => this.mutate(dd => { const t = dd.settings.automations.find(x => x.id === au.id); t.on = !t.on; })
+    }));
+    vals.voice = st2.voice;
+    vals.onVoice = e => { const v = e.target.value; this.mutate(dd => { dd.settings.voice = v; }); };
+    vals.workflows = st2.workflows.map(w => ({
+      name: w.name, default: w.default, custom: w.custom,
+      placeholder: w.mode === 'add' ? 'Added to the default' : 'Replaces the default',
+      modeNote: w.mode === 'add' ? 'Appended to the default.' : 'Replaces the default. Truth and privacy rules still apply.',
+      modes: [['add', 'Add'], ['replace', 'Replace']].map(m => ({
+        label: m[1], style: chip(w.mode === m[0]),
+        onClick: () => this.mutate(dd => { dd.settings.workflows.find(x => x.id === w.id).mode = m[0]; })
+      })),
+      onChange: e => { const v = e.target.value; this.mutate(dd => { dd.settings.workflows.find(x => x.id === w.id).custom = v; }); },
+      onReset: () => this.mutate(dd => { const t = dd.settings.workflows.find(x => x.id === w.id); t.custom = ''; t.mode = 'add'; }, w.name + ' reset')
+    }));
+
+    // ---- assistant
+    const sc = this.scope();
+    vals.assistantOpen = s.assistant;
+    vals.assistantWidth = s.assistantW + 'px';
+    vals.assistantButtonLabel = s.assistant ? 'Hide assistant' : 'Assistant';
+    vals.toggleAssistant = () => this.setState({ assistant: !s.assistant, messages: s.assistant ? s.messages : null });
+    vals.onDragStart = this.onDragStart;
+    vals.scopeLabel = sc.label; vals.scopeShort = sc.short;
+    const convos = d.conversations.filter(cv => cv.scope === sc.key || (sc.key === 'board' && cv.scope === 'board'));
+    vals.conversations = convos.map(cv => ({ title: cv.title, when: cv.when, onOpen: () => this.flash(cv.title) }));
+    vals.noConversations = !convos.length;
+    const msgs = s.messages || this.seedMessages(sc.key);
+    vals.messages = msgs.map(m => ({
+      text: m.text,
+      wrap: 'display:flex;flex-direction:column;align-items:' + (m.role === 'u' ? 'flex-end' : 'flex-start'),
+      bubble: 'max-width:88%;border-radius:12px;padding:11px 13px;font:400 13px/1.65 var(--font-sans);white-space:pre-wrap;' + (m.role === 'u' ? 'background:var(--primary);color:var(--primary-foreground)' : 'background:var(--muted);color:var(--foreground)'),
+      hasActions: !!(m.actions || []).length,
+      actions: (m.actions || []).map(ac => ({ label: ac.label, onClick: ac.go }))
+    }));
+    vals.input = s.input;
+    vals.onInput = e => this.setState({ input: e.target.value });
+    vals.onSend = () => {
+      const t = s.input.trim();
+      if (!t) return;
+      const next = msgs.concat([{ role: 'u', text: t }, { role: 'a', text: 'Working from ' + sc.label + '. Nothing changes until you click.', actions: [{ label: 'Show me the gaps', go: () => this.flash('Two requirements have no verified evidence') }] }]);
+      this.setState({ messages: next, input: '' });
+    };
+    vals.onCompact = () => { this.setState({ messages: [{ role: 'a', text: 'Compacted. ' + convos.length + ' conversations summarised into the scope.', actions: [] }] }); this.flash('Context compacted'); };
+    const used = 42 + msgs.length * 3;
+    vals.footerLine = st2.assistant.provider + ' \u00b7 ' + st2.assistant.model + ' \u00b7 ' + st2.assistant.effort + ' \u00b7 ' + used + 'k of 200k';
+    vals.contextPct = Math.min(100, Math.round(used / 2)) + '%';
+
+    // ---- universal add
+    const ad = s.addDraft;
+    const setAd = (k, v) => this.setState({ addDraft: Object.assign({}, s.addDraft, { [k]: v }) });
+    const txt = (k, label, ph) => ({ label: label, isText: true, isSelect: false, value: ad[k] || '', placeholder: ph || '', onChange: e => setAd(k, e.target.value) });
+    const sel = (k, label, options) => ({ label: label, isSelect: true, isText: false, value: ad[k] || options[0].v, options: options, onChange: e => setAd(k, e.target.value) });
+    vals.addMenuLabel = s.addMenu ? 'Close' : '+  Add';
+    vals.addMenuOpen = s.addMenu;
+    vals.toggleAddMenu = () => this.setState({ addMenu: !s.addMenu });
+    vals.addOptions = [
+      { k: 'application', label: 'Application' },
+      { k: 'company', label: 'Company' },
+      { k: 'person', label: 'Person' },
+      { k: 'experience', label: 'Experience' },
+      { k: 'interview', label: 'Interview' }
+    ].map(o => ({ label: o.label, onClick: () => this.setState({ addMenu: false, addKind: o.k, addDraft: {} }) }));
+    vals.addModal = !!s.addKind;
+    vals.closeAdd = () => this.setState({ addKind: null, addDraft: {} });
+    vals.stopModal = e => { if (e && e.stopPropagation) e.stopPropagation(); };
+    const coOpts = d.companies.map(x => ({ v: x.id, label: x.name }));
+    const appOpts = d.apps.filter(x => !this.isClosed(x)).map(x => ({ v: x.id, label: this.co(x.company).name + ' \u2014 ' + x.role }));
+    const kind = s.addKind;
+    if (kind === 'application') {
+      vals.addTitle = 'New application'; vals.addCta = 'Create and open';
+      vals.addFields = [sel('company', 'Company', coOpts.length ? coOpts : [{ v: '', label: 'No companies' }]), txt('role', 'Role', 'Senior Frontend Engineer')];
+    } else if (kind === 'company') {
+      vals.addTitle = 'New company'; vals.addCta = 'Save to Discovered';
+      vals.addFields = [txt('name', 'Company', 'Vandelay Industries'), txt('reason', 'Reason', 'Jo Park knows their engineering lead'), txt('person', 'Person', 'Jo Park'), txt('followup', 'Follow-up', 'Mon 7 Sep')];
+    } else if (kind === 'person') {
+      vals.addTitle = 'New person'; vals.addCta = 'Create and open';
+      vals.addFields = [txt('name', 'Full name', 'Ada Okonkwo'), sel('relationship', 'Relationship', ['Network', 'Recruiter', 'Hiring manager'].map(v => ({ v: v, label: v }))), txt('sub', 'Context', 'Worked together at Acme')];
+    } else if (kind === 'experience') {
+      vals.addTitle = 'New role'; vals.addCta = 'Create role';
+      vals.addFields = [txt('name', 'Company and title', 'Acme \u2014 Design Systems Lead'), txt('period', 'Period', '2019\u20132022')];
+    } else if (kind === 'interview') {
+      vals.addTitle = 'New interview'; vals.addCta = 'Create and open';
+      vals.addFields = [sel('appId', 'Application', appOpts.length ? appOpts : [{ v: '', label: 'No open applications' }]), txt('name', 'What it is', 'Hiring manager call'), txt('when', 'When', 'Mon 7 Sep, 10:00')];
+    } else {
+      vals.addTitle = ''; vals.addCta = 'Save'; vals.addFields = [];
+    }
+    vals.submitAdd = () => {
+      const g = k => (ad[k] || '').trim();
+      if (kind === 'application') {
+        const cid = ad.company || (coOpts[0] || {}).v;
+        if (!cid || !g('role')) { this.flash('Company and role'); return; }
+        const nid = 'app' + Date.now();
+        this.mutate(dd => {
+          const target = dd.companies.find(x => x.id === cid);
+          if (target) { target.lead = false; target.followup = ''; }
+          dd.apps.push({
+            id: nid, company: cid, role: g('role'), status: 'preparing', days: 0,
+            brief: { 'Work model': 'Not known', Location: 'Not known', Compensation: 'Not known', 'Found via': 'Added by hand', Posted: '\u2014', Applied: 'Not yet' },
+            analysis: 'No analysis yet.', analysisMeta: 'Never run', captured: 'Nothing captured', posting: [],
+            docs: { resume: { state: 'scaffold', template: dd.settings.templates.resume, draft: '', rendered: null, changed: 'never', sent: null }, cover: { state: 'scaffold', template: dd.settings.templates.cover, draft: '', rendered: null, changed: 'never', sent: null } },
+            interviews: [], submission: { submitted: false, note: 'Not submitted.' }, people: [], references: []
+          });
+        }, g('role') + ' created');
+        this.setState({ addKind: null, addDraft: {} }, () => this.openApp(nid));
+      } else if (kind === 'company') {
+        if (!g('name')) { this.flash('Name the company'); return; }
+        const cid = 'co' + Date.now();
+        this.mutate(dd => dd.companies.push({ id: cid, name: g('name'), lead: true, reason: g('reason'), person: g('person'), followup: g('followup'), voice: 'Unknown.', questions: [] }), g('name') + ' saved to Discovered');
+        this.setState({ view: 'company', companyId: cid, addKind: null, addDraft: {} });
+      } else if (kind === 'person') {
+        const nm = g('name');
+        if (!nm) { this.flash('A name'); return; }
+        this.mutate(dd => dd.people.push({
+          name: nm, mono: nm.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase(),
+          relationship: ad.relationship || 'Network', sub: g('sub') || 'No context yet',
+          ref: '', refLine: 'Not asked.', notes: [], contacts: [], intros: []
+        }), nm + ' added');
+        this.setState({ view: 'person', personName: nm, addKind: null, addDraft: {}, noteDraft: '' });
+      } else if (kind === 'experience') {
+        const nm = g('name');
+        if (!nm) { this.flash('Name the role'); return; }
+        const rid = 'r' + Date.now();
+        this.mutate(dd => dd.roles.unshift({ id: rid, name: nm, short: nm.split(' ')[0], period: g('period') || 'Undated', state: 'needs-interview', evidence: [] }), nm + ' added');
+        this.setState({ view: 'experience', expTab: 'roles', roleOpen: Object.assign({}, s.roleOpen, { [rid]: true }), addKind: null, addDraft: {} });
+      } else if (kind === 'interview') {
+        const target = ad.appId || (appOpts[0] || {}).v;
+        if (!target || !g('name')) { this.flash('Application and name'); return; }
+        this.mutate(dd => {
+          const t = dd.apps.find(x => x.id === target);
+          t.interviews.push({ id: 'i' + Date.now(), name: g('name'), when: g('when') || 'Date to confirm', who: 'Not set', upcoming: true, notes: '' });
+          if (t.status === 'applied' || t.status === 'preparing') t.status = 'interviewing';
+        }, g('name') + ' scheduled');
+        this.setState({ addKind: null, addDraft: {} }, () => this.openApp(target, 'interviews'));
+      }
+    };
+
+    return vals;
+  }
+
+  openAssistant(scopeKey) {
+    this.setState({ assistant: true, messages: this.seedMessages(scopeKey) });
+  }
+}
+</script>
+</body>
+</html>
+
